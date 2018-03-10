@@ -114,7 +114,6 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, dryRu
 			}
 		}
 
-		fmt.Fprintln(stdout, distgo.ProductDistArtifactPaths(projectInfo, productOutputInfo))
 		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Creating distribution for %s at %v", productParam.ID, strings.Join(distgo.ProductDistArtifactPaths(projectInfo, productOutputInfo)[currDistID], ", ")), dryRun)
 		if !dryRun {
 			// run dist task
