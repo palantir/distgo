@@ -19,9 +19,7 @@ import (
 
 	"github.com/palantir/godel/framework/godellauncher"
 	"github.com/palantir/godel/framework/pluginapi"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/palantir/distgo/assetapi"
 	"github.com/palantir/distgo/dister"
@@ -46,10 +44,9 @@ var RootCmd = &cobra.Command{
 }
 
 func InitAssetCmds(args []string) error {
-	if err := RootCmd.ParseFlags(args); err != nil && err != pflag.ErrHelp {
-		return errors.Wrapf(err, "failed to parse arguments")
-	}
-
+	// parse the flags to retrieve the value of the "--assets" flag. Ignore any errors that occur in flag parsing so
+	// that, if provided flags are invalid, the regular logic handles the error printing.
+	_ = RootCmd.ParseFlags(args)
 	allAssets, err := assetapi.LoadAssets(assetsFlagVal)
 	if err != nil {
 		return err
