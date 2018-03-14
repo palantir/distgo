@@ -49,6 +49,18 @@ func BuildProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectPa
 		return err
 	}
 
+	filteredDockerProductsMap := make(map[distgo.ProductID]distgo.ProductParam)
+	// copy old values into new map
+	for k, v := range projectParam.Products {
+		filteredDockerProductsMap[k] = v
+	}
+	// copy computed params into map, which may filter dists for products
+	for _, v := range productParams {
+		filteredDockerProductsMap[v.ID] = v
+	}
+	// update products for projectParam
+	projectParam.Products = filteredDockerProductsMap
+
 	// sort Docker product tasks in topological order
 	allProducts, _, _ := distgo.ClassifyProductParams(productParams)
 	targetProducts, topoOrderedIDs, err := distgo.TopoSortProductParams(projectParam, allProducts)
