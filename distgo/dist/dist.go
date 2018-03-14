@@ -20,6 +20,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -27,7 +28,7 @@ import (
 	"github.com/palantir/distgo/distgo/build"
 )
 
-func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productDistIDs []distgo.ProductDistID, dryRun bool, stdout io.Writer) error {
+func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDistIDs []distgo.ProductDistID, dryRun bool, stdout io.Writer) error {
 	productParams, err := distgo.ProductParamsForDistProductArgs(projectParam.Products, productDistIDs...)
 	if err != nil {
 		return err
@@ -66,7 +67,7 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 		return err
 	}
 	for _, currProductID := range topoOrderedIDs {
-		requiresDistParam, err := RequiresDist(projectInfo, targetProducts[currProductID])
+		requiresDistParam, err := RequiresDist(projectInfo, targetProducts[currProductID], configModTime)
 		if err != nil {
 			return err
 		}
