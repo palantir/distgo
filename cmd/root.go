@@ -15,7 +15,9 @@
 package cmd
 
 import (
+	"os"
 	"path"
+	"time"
 
 	"github.com/palantir/godel/framework/godellauncher"
 	"github.com/palantir/godel/framework/pluginapi"
@@ -108,6 +110,18 @@ func init() {
 
 func distgoProjectParamFromFlags() (distgo.ProjectInfo, distgo.ProjectParam, error) {
 	return distgoProjectParamFromVals(projectDirFlagVal, distgoConfigFileFlagVal, godelConfigFileFlagVal, cliDisterFactory, cliDefaultDisterCfg, cliDockerBuilderFactory)
+}
+
+func distgoConfigModTime() *time.Time {
+	if distgoConfigFileFlagVal == "" {
+		return nil
+	}
+	fi, err := os.Stat(distgoConfigFileFlagVal)
+	if err != nil {
+		return nil
+	}
+	modTime := fi.ModTime()
+	return &modTime
 }
 
 func distgoProjectParamFromVals(projectDir, distgoConfigFile, godelConfigFile string, disterFactory distgo.DisterFactory, defaultDisterCfg distgo.DisterConfig, dockerBuilderFactory distgo.DockerBuilderFactory) (distgo.ProjectInfo, distgo.ProjectParam, error) {
