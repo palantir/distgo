@@ -34,6 +34,18 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 		return err
 	}
 
+	filteredDistProductsMap := make(map[distgo.ProductID]distgo.ProductParam)
+	// copy old values into new map
+	for k, v := range projectParam.Products {
+		filteredDistProductsMap[k] = v
+	}
+	// copy computed params into map, which may filter dists for products
+	for _, v := range productParams {
+		filteredDistProductsMap[v.ID] = v
+	}
+	// update products for projectParam
+	projectParam.Products = filteredDistProductsMap
+
 	allProducts, _, dependentProducts := distgo.ClassifyProductParams(productParams)
 	var productParamsToBuild []distgo.ProductParam
 	for _, currProductID := range sortedMapKeys(allProducts) {
