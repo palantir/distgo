@@ -71,6 +71,8 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 		}, stdout); err != nil {
 			return err
 		}
+		// if any of the products needed to be re-built, require dist to be performed
+		configModTime = nil
 	}
 
 	// sort dist product tasks in topological order
