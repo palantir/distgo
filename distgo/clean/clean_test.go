@@ -111,6 +111,64 @@ func TestClean(t *testing.T) {
 			},
 		},
 		{
+			"cleans build output for multiple versions",
+			distgo.ProjectConfig{
+				Products: map[distgo.ProductID]distgo.ProductConfig{
+					"foo": {
+						Build: &distgo.BuildConfig{
+							MainPkg: stringPtr("foo"),
+						},
+					},
+				},
+			},
+			func(projectDir string) {
+				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
+					{
+						RelPath: "foo/main.go",
+						Src:     "package main; func main(){}",
+					},
+				})
+				require.NoError(t, err)
+				gittest.CommitAllFiles(t, projectDir, "Add foo")
+
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			func(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+				err := build.Products(projectInfo, projectParam, nil, build.Options{}, ioutil.Discard)
+				require.NoError(t, err)
+
+				productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
+				require.NoError(t, err)
+
+				buildOutput := path.Join(productTaskOutputInfo.ProductBuildOutputDir(), osarch.Current().String(), productTaskOutputInfo.Product.BuildOutputInfo.BuildNameTemplateRendered)
+				_, err = os.Stat(buildOutput)
+				require.NoError(t, err, "expected build output to exist at %s", buildOutput)
+
+				projectInfo.Version = "0.1.0-dirty"
+				err = build.Products(projectInfo, projectParam, nil, build.Options{}, ioutil.Discard)
+				require.NoError(t, err)
+
+				productTaskOutputInfo, err = distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
+				require.NoError(t, err)
+
+				buildOutput = path.Join(productTaskOutputInfo.ProductBuildOutputDir(), osarch.Current().String(), productTaskOutputInfo.Product.BuildOutputInfo.BuildNameTemplateRendered)
+				_, err = os.Stat(buildOutput)
+				require.NoError(t, err, "expected build output to exist at %s", buildOutput)
+			},
+			func(caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+				productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
+				require.NoError(t, err)
+
+				buildOutput := path.Join(productTaskOutputInfo.ProductBuildOutputDir(), osarch.Current().String(), productTaskOutputInfo.Product.BuildOutputInfo.BuildNameTemplateRendered)
+				_, err = os.Stat(buildOutput)
+				assert.True(t, os.IsNotExist(err))
+
+				outputDir := path.Join(projectInfo.ProjectDir, "out")
+				_, err = os.Stat(outputDir)
+				assert.True(t, os.IsNotExist(err))
+			},
+		},
+		{
 			"cleans dist output",
 			distgo.ProjectConfig{
 				Products: map[distgo.ProductID]distgo.ProductConfig{
@@ -149,6 +207,78 @@ func TestClean(t *testing.T) {
 				require.Equal(t, 1, len(outputPaths))
 
 				distArtifactPath := outputPaths[productTaskOutputInfo.Product.DistOutputInfos.DistIDs[0]][0]
+				_, err = os.Stat(distArtifactPath)
+				require.NoError(t, err, "expected dist output to exist at %s", distArtifactPath)
+			},
+			func(caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+				productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
+				require.NoError(t, err)
+
+				outputPaths := productTaskOutputInfo.ProductDistArtifactPaths()
+				require.Equal(t, 1, len(outputPaths))
+
+				distArtifactPath := outputPaths[productTaskOutputInfo.Product.DistOutputInfos.DistIDs[0]][0]
+				_, err = os.Stat(distArtifactPath)
+				assert.True(t, os.IsNotExist(err))
+
+				outputDir := path.Join(projectInfo.ProjectDir, "out")
+				_, err = os.Stat(outputDir)
+				assert.True(t, os.IsNotExist(err))
+			},
+		},
+		{
+			"cleans dist output for multiple versions",
+			distgo.ProjectConfig{
+				Products: map[distgo.ProductID]distgo.ProductConfig{
+					"foo": {
+						Build: &distgo.BuildConfig{
+							MainPkg: stringPtr("foo"),
+						},
+						Dist: &distgo.DistConfig{
+							Disters: &distgo.DistersConfig{
+								dister.OSArchBinDistTypeName: defaultDisterConfig,
+							},
+						},
+					},
+				},
+			},
+			func(projectDir string) {
+				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
+					{
+						RelPath: "foo/main.go",
+						Src:     "package main; func main(){}",
+					},
+				})
+				require.NoError(t, err)
+				gittest.CommitAllFiles(t, projectDir, "Add foo")
+
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			func(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+				err := dist.Products(projectInfo, projectParam, nil, nil, false, ioutil.Discard)
+				require.NoError(t, err)
+
+				productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
+				require.NoError(t, err)
+
+				outputPaths := productTaskOutputInfo.ProductDistArtifactPaths()
+				require.Equal(t, 1, len(outputPaths))
+
+				distArtifactPath := outputPaths[productTaskOutputInfo.Product.DistOutputInfos.DistIDs[0]][0]
+				_, err = os.Stat(distArtifactPath)
+				require.NoError(t, err, "expected dist output to exist at %s", distArtifactPath)
+
+				projectInfo.Version = "0.1.0-dirty"
+				err = dist.Products(projectInfo, projectParam, nil, nil, false, ioutil.Discard)
+				require.NoError(t, err)
+
+				productTaskOutputInfo, err = distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
+				require.NoError(t, err)
+
+				outputPaths = productTaskOutputInfo.ProductDistArtifactPaths()
+				require.Equal(t, 1, len(outputPaths))
+
+				distArtifactPath = outputPaths[productTaskOutputInfo.Product.DistOutputInfos.DistIDs[0]][0]
 				_, err = os.Stat(distArtifactPath)
 				require.NoError(t, err, "expected dist output to exist at %s", distArtifactPath)
 			},
