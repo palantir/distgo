@@ -53,11 +53,27 @@ var RootCmd = &cobra.Command{
 	Use: "distgo",
 }
 
+func restoreRootFlagsFn() func() {
+	origProjectDirFlagVal := projectDirFlagVal
+	origDistgoConfigFileFlagVal := distgoConfigFileFlagVal
+	origGodelConfigFileFlagVal := godelConfigFileFlagVal
+	origAssetsFlagVal := assetsFlagVal
+	return func() {
+		projectDirFlagVal = origProjectDirFlagVal
+		distgoConfigFileFlagVal = origDistgoConfigFileFlagVal
+		godelConfigFileFlagVal = origGodelConfigFileFlagVal
+		assetsFlagVal = origAssetsFlagVal
+	}
+}
+
 func InitAssetCmds(args []string) error {
+	restoreFn := restoreRootFlagsFn()
 	// parse the flags to retrieve the value of the "--assets" flag. Ignore any errors that occur in flag parsing so
 	// that, if provided flags are invalid, the regular logic handles the error printing.
 	_ = RootCmd.ParseFlags(args)
 	allAssets, err := assetapi.LoadAssets(assetsFlagVal)
+	// restore the root flags to undo any parsing done by RootCmd.ParseFlags
+	restoreFn()
 	if err != nil {
 		return err
 	}
