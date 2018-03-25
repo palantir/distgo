@@ -27,12 +27,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/palantir/distgo/dister"
+	"github.com/palantir/distgo/dister/disterfactory"
+	"github.com/palantir/distgo/dister/osarchbin"
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/build"
 	"github.com/palantir/distgo/distgo/clean"
+	distgoconfig "github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/distgo/dist"
-	"github.com/palantir/distgo/dockerbuilder"
+	"github.com/palantir/distgo/dockerbuilder/dockerbuilderfactory"
+	"github.com/palantir/distgo/publisher/publisherfactory"
 )
 
 const (
@@ -49,7 +52,7 @@ func main() {
 )
 
 func TestClean(t *testing.T) {
-	defaultDisterConfig, err := dister.DefaultConfig()
+	defaultDisterConfig, err := disterfactory.DefaultConfig()
 	require.NoError(t, err)
 
 	tmp, cleanup, err := dirs.TempDir("", "")
@@ -58,21 +61,21 @@ func TestClean(t *testing.T) {
 
 	for i, tc := range []struct {
 		name          string
-		projectConfig distgo.ProjectConfig
+		projectConfig distgoconfig.ProjectConfig
 		preAction     func(projectDir string)
 		action        func(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam)
 		validate      func(caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam)
 	}{
 		{
 			"cleans build output",
-			distgo.ProjectConfig{
-				Products: map[distgo.ProductID]distgo.ProductConfig{
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
-						Build: &distgo.BuildConfig{
+						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
 							MainPkg: stringPtr("foo"),
-						},
+						}),
 					},
-				},
+				}),
 			},
 			func(projectDir string) {
 				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
@@ -112,14 +115,14 @@ func TestClean(t *testing.T) {
 		},
 		{
 			"cleans build output for multiple versions",
-			distgo.ProjectConfig{
-				Products: map[distgo.ProductID]distgo.ProductConfig{
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
-						Build: &distgo.BuildConfig{
+						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
 							MainPkg: stringPtr("foo"),
-						},
+						}),
 					},
-				},
+				}),
 			},
 			func(projectDir string) {
 				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
@@ -170,19 +173,19 @@ func TestClean(t *testing.T) {
 		},
 		{
 			"cleans dist output",
-			distgo.ProjectConfig{
-				Products: map[distgo.ProductID]distgo.ProductConfig{
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
-						Build: &distgo.BuildConfig{
+						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
 							MainPkg: stringPtr("foo"),
-						},
-						Dist: &distgo.DistConfig{
-							Disters: &distgo.DistersConfig{
-								dister.OSArchBinDistTypeName: defaultDisterConfig,
-							},
-						},
+						}),
+						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+								osarchbin.TypeName: distgoconfig.ToDisterConfig(defaultDisterConfig),
+							}),
+						}),
 					},
-				},
+				}),
 			},
 			func(projectDir string) {
 				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
@@ -228,19 +231,19 @@ func TestClean(t *testing.T) {
 		},
 		{
 			"cleans dist output for multiple versions",
-			distgo.ProjectConfig{
-				Products: map[distgo.ProductID]distgo.ProductConfig{
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
-						Build: &distgo.BuildConfig{
+						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
 							MainPkg: stringPtr("foo"),
-						},
-						Dist: &distgo.DistConfig{
-							Disters: &distgo.DistersConfig{
-								dister.OSArchBinDistTypeName: defaultDisterConfig,
-							},
-						},
+						}),
+						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+								osarchbin.TypeName: distgoconfig.ToDisterConfig(defaultDisterConfig),
+							}),
+						}),
 					},
-				},
+				}),
 			},
 			func(projectDir string) {
 				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
@@ -300,19 +303,19 @@ func TestClean(t *testing.T) {
 		},
 		{
 			"clean works even if output does not exist",
-			distgo.ProjectConfig{
-				Products: map[distgo.ProductID]distgo.ProductConfig{
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
-						Build: &distgo.BuildConfig{
+						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
 							MainPkg: stringPtr("foo"),
-						},
-						Dist: &distgo.DistConfig{
-							Disters: &distgo.DistersConfig{
-								dister.OSArchBinDistTypeName: defaultDisterConfig,
-							},
-						},
+						}),
+						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+								osarchbin.TypeName: distgoconfig.ToDisterConfig(defaultDisterConfig),
+							}),
+						}),
 					},
-				},
+				}),
 			},
 			func(projectDir string) {
 				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
@@ -355,16 +358,19 @@ func TestClean(t *testing.T) {
 
 		tc.preAction(projectDir)
 
-		disterFactory, err := dister.NewDisterFactory()
+		disterFactory, err := disterfactory.New(nil, nil)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		defaultDistInfoCfg, err := dister.DefaultConfig()
+		defaultDistInfoCfg, err := disterfactory.DefaultConfig()
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		dockerBuilderFactory, err := dockerbuilder.NewDockerBuilderFactory()
+		dockerBuilderFactory, err := dockerbuilderfactory.New(nil, nil)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		projectParam, err := tc.projectConfig.ToParam(projectDir, disterFactory, defaultDistInfoCfg, dockerBuilderFactory)
+		publisherFactory, err := publisherfactory.New(nil, nil)
+		require.NoError(t, err, "Case %d: %s", i, tc.name)
+
+		projectParam, err := tc.projectConfig.ToParam(projectDir, disterFactory, defaultDistInfoCfg, dockerBuilderFactory, publisherFactory)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		projectInfo, err := projectParam.ProjectInfo(projectDir)

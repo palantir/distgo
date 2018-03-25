@@ -20,11 +20,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var PluginInfo = pluginapi.MustNewInfo(
-	"com.palantir.godel",
-	"distgo-plugin",
+var PluginInfo = pluginapi.MustNewPluginInfo(
+	"com.palantir.distgo",
+	"dist-plugin",
 	cobracli.Version,
-	"dist.yml",
+	pluginapi.PluginInfoUsesConfigFile(),
+	pluginapi.PluginInfoGlobalFlagOptions(
+		pluginapi.GlobalFlagOptionsParamDebugFlag("--"+pluginapi.DebugFlagName),
+		pluginapi.GlobalFlagOptionsParamProjectDirFlag("--"+pluginapi.ProjectDirFlagName),
+		pluginapi.GlobalFlagOptionsParamGodelConfigFlag("--"+pluginapi.GodelConfigFlagName),
+		pluginapi.GlobalFlagOptionsParamConfigFlag("--"+pluginapi.ConfigFlagName),
+	),
 	newTaskInfoFromCmd(artifactsCmd),
 	newTaskInfoFromCmd(buildCmd),
 	newTaskInfoFromCmd(cleanCmd),
@@ -34,18 +40,15 @@ var PluginInfo = pluginapi.MustNewInfo(
 	newTaskInfoFromCmd(projectVersionCmd),
 	newTaskInfoFromCmd(publishCmd),
 	newTaskInfoFromCmd(runCmd),
+	pluginapi.PluginInfoUpgradeConfigTaskInfo(
+		pluginapi.UpgradeConfigTaskInfoCommand("upgrade-config"),
+	),
 )
 
-func newTaskInfoFromCmd(cmd *cobra.Command) pluginapi.TaskInfo {
-	return pluginapi.MustNewTaskInfo(
+func newTaskInfoFromCmd(cmd *cobra.Command) pluginapi.PluginInfoParam {
+	return pluginapi.PluginInfoTaskInfo(
 		cmd.Name(),
 		cmd.Short,
-		pluginapi.TaskInfoGlobalFlagOptions(pluginapi.NewGlobalFlagOptions(
-			pluginapi.GlobalFlagOptionsParamDebugFlag("--"+pluginapi.DebugFlagName),
-			pluginapi.GlobalFlagOptionsParamProjectDirFlag("--"+pluginapi.ProjectDirFlagName),
-			pluginapi.GlobalFlagOptionsParamGodelConfigFlag("--"+pluginapi.GodelConfigFlagName),
-			pluginapi.GlobalFlagOptionsParamConfigFlag("--"+pluginapi.ConfigFlagName),
-		)),
 		pluginapi.TaskInfoCommand(cmd.Name()),
 	)
 }
