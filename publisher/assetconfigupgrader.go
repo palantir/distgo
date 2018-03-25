@@ -19,6 +19,8 @@ import (
 	"os/exec"
 
 	"github.com/pkg/errors"
+
+	"github.com/palantir/distgo/assetapi"
 )
 
 type assetConfigUpgrader struct {
@@ -34,7 +36,7 @@ func (u *assetConfigUpgrader) UpgradeConfig(config []byte) ([]byte, error) {
 	upgradeConfigCmd := exec.Command(u.assetPath, "upgrade-config", base64.StdEncoding.EncodeToString(config))
 	output, err := upgradeConfigCmd.CombinedOutput()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to upgrade asset configuration")
+		return nil, assetapi.UpgradeConfigError(err, output)
 	}
 	decodedBytes, err := base64.StdEncoding.DecodeString(string(output))
 	if err != nil {
