@@ -41,6 +41,7 @@ func init() {
 
 func addPublishSubcommands(publisherTypes []string, publishers []distgo.Publisher) {
 	for i, publisher := range publishers {
+		publisher := publisher
 		publisherType := publisherTypes[i]
 		currFlags, err := publisher.Flags()
 		if err != nil {

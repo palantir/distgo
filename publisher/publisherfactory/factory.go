@@ -15,6 +15,8 @@
 package publisherfactory
 
 import (
+	"sort"
+
 	"github.com/pkg/errors"
 
 	"github.com/palantir/distgo/distgo"
@@ -26,13 +28,23 @@ func New(providedPublisherCreators []publisher.Creator, providedConfigUpgraders 
 	seenTypes := make(map[string]struct{})
 	publisherCreators := make(map[string]publisher.Creator)
 	configUpgraders := make(map[string]distgo.ConfigUpgrader)
-	for k, v := range builtinPublishers() {
+
+	var sortedKeys []string
+	for k := range builtinPublishers() {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+
+	builtinPublishersMap := builtinPublishers()
+	for _, k := range sortedKeys {
+		v := builtinPublishersMap[k]
 		types = append(types, k)
 		seenTypes[k] = struct{}{}
 		publisherCreators[k] = v.Creator
 		configUpgraders[k] = v.Upgrader
 	}
 	for _, currCreator := range providedPublisherCreators {
+		currCreator := currCreator
 		if _, ok := seenTypes[currCreator.TypeName()]; ok {
 			return nil, errors.Errorf("publisher creator with type %q specified more than once", currCreator.TypeName())
 		}
