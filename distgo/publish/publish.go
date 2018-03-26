@@ -80,7 +80,7 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publi
 		publishCfgBytes = productParam.Publish.PublishInfo[distgo.PublisherTypeID(publisherType)].ConfigBytes
 	}
 	if err := publisher.RunPublish(productTaskOutputInfo, publishCfgBytes, flagVals, dryRun, stdout); err != nil {
-		return errors.Wrapf(err, "failed to publish %s", productParam.ID)
+		return errors.Wrapf(err, "failed to publish %s using %s publisher", productParam.ID, publisherType)
 	}
 
 	return nil
