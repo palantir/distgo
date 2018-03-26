@@ -22,13 +22,22 @@ import (
 )
 
 func New(providedPublisherCreators []publisher.Creator, providedConfigUpgraders []distgo.ConfigUpgrader) (distgo.PublisherFactory, error) {
+	var types []string
+	seenTypes := make(map[string]struct{})
 	publisherCreators := make(map[string]publisher.Creator)
 	configUpgraders := make(map[string]distgo.ConfigUpgrader)
 	for k, v := range builtinPublishers() {
+		types = append(types, k)
+		seenTypes[k] = struct{}{}
 		publisherCreators[k] = v.Creator
 		configUpgraders[k] = v.Upgrader
 	}
 	for _, currCreator := range providedPublisherCreators {
+		if _, ok := seenTypes[currCreator.TypeName()]; ok {
+			return nil, errors.Errorf("publisher creator with type %q specified more than once", currCreator.TypeName())
+		}
+		seenTypes[currCreator.TypeName()] = struct{}{}
+		types = append(types, currCreator.TypeName())
 		publisherCreators[currCreator.TypeName()] = currCreator
 	}
 	for _, currUpgrader := range providedConfigUpgraders {
@@ -36,6 +45,7 @@ func New(providedPublisherCreators []publisher.Creator, providedConfigUpgraders 
 		configUpgraders[currUpgrader.TypeName()] = currUpgrader
 	}
 	return &publisherFactoryImpl{
+		types:                    types,
 		publisherCreators:        publisherCreators,
 		publisherConfigUpgraders: configUpgraders,
 	}, nil

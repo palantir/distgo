@@ -22,13 +22,22 @@ import (
 )
 
 func New(providedDockerBuilderCreators []dockerbuilder.Creator, providedConfigUpgraders []distgo.ConfigUpgrader) (distgo.DockerBuilderFactory, error) {
+	var types []string
+	seenTypes := make(map[string]struct{})
 	dockerBuilderCreators := make(map[string]dockerbuilder.CreatorFunction)
 	configUpgraders := make(map[string]distgo.ConfigUpgrader)
 	for k, v := range builtinDockerBuilders() {
+		types = append(types, k)
+		seenTypes[k] = struct{}{}
 		dockerBuilderCreators[k] = v.creator
 		configUpgraders[k] = v.upgrader
 	}
 	for _, currCreator := range providedDockerBuilderCreators {
+		if _, ok := seenTypes[currCreator.TypeName()]; ok {
+			return nil, errors.Errorf("docker builder creator with type %q specified more than once", currCreator.TypeName())
+		}
+		seenTypes[currCreator.TypeName()] = struct{}{}
+		types = append(types, currCreator.TypeName())
 		dockerBuilderCreators[currCreator.TypeName()] = currCreator.Creator()
 	}
 	for _, currUpgrader := range providedConfigUpgraders {
@@ -36,6 +45,7 @@ func New(providedDockerBuilderCreators []dockerbuilder.Creator, providedConfigUp
 		configUpgraders[currUpgrader.TypeName()] = currUpgrader
 	}
 	return &dockerBuilderFactory{
+		types: types,
 		dockerBuilderCreators:        dockerBuilderCreators,
 		dockerBuilderConfigUpgraders: configUpgraders,
 	}, nil
