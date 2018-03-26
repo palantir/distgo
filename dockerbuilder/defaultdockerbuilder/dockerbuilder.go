@@ -17,6 +17,7 @@ package defaultdockerbuilder
 import (
 	"io"
 	"os/exec"
+	"path"
 
 	"github.com/palantir/distgo/distgo"
 )
@@ -39,17 +40,18 @@ func (d *DefaultDockerBuilder) TypeName() (string, error) {
 
 func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, verbose, dryRun bool, stdout io.Writer) error {
 	dockerBuilderOutputInfo := productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID]
+	contextDirPath := path.Join(productTaskOutputInfo.Project.ProjectDir, dockerBuilderOutputInfo.ContextDir)
 	args := []string{
 		"build",
-		"--file", dockerBuilderOutputInfo.DockerfilePath,
+		"--file", path.Join(contextDirPath, dockerBuilderOutputInfo.DockerfilePath),
 	}
 	for _, tag := range dockerBuilderOutputInfo.RenderedTags {
 		args = append(args,
 			"-t", tag,
 		)
 	}
-	args = append(args, dockerBuilderOutputInfo.ContextDir)
 	args = append(args, d.BuildArgs...)
+	args = append(args, contextDirPath)
 
 	cmd := exec.Command("docker", args...)
 	if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
