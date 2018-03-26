@@ -22,13 +22,22 @@ import (
 )
 
 func New(providedDisterCreators []dister.Creator, providedConfigUpgraders []distgo.ConfigUpgrader) (distgo.DisterFactory, error) {
+	var types []string
+	seenTypes := make(map[string]struct{})
 	disterCreators := make(map[string]dister.CreatorFunction)
 	configUpgraders := make(map[string]distgo.ConfigUpgrader)
 	for k, v := range builtinDisters() {
+		types = append(types, k)
+		seenTypes[k] = struct{}{}
 		disterCreators[k] = v.creator
 		configUpgraders[k] = v.upgrader
 	}
 	for _, currCreator := range providedDisterCreators {
+		if _, ok := seenTypes[currCreator.TypeName()]; ok {
+			return nil, errors.Errorf("dister creator with type %q specified more than once", currCreator.TypeName())
+		}
+		seenTypes[currCreator.TypeName()] = struct{}{}
+		types = append(types, currCreator.TypeName())
 		disterCreators[currCreator.TypeName()] = currCreator.Creator()
 	}
 	for _, currUpgrader := range providedConfigUpgraders {
@@ -36,6 +45,7 @@ func New(providedDisterCreators []dister.Creator, providedConfigUpgraders []dist
 		configUpgraders[currUpgrader.TypeName()] = currUpgrader
 	}
 	return &disterFactoryImpl{
+		types:                 types,
 		disterCreators:        disterCreators,
 		disterConfigUpgraders: configUpgraders,
 	}, nil
