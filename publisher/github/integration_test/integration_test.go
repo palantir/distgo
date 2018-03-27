@@ -37,7 +37,7 @@ const (
 `
 )
 
-func TestPublish(t *testing.T) {
+func TestGitHubPublish(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 
@@ -89,7 +89,7 @@ products:
 	)
 }
 
-func TestUpgradeConfig(t *testing.T) {
+func TestGitHubUpgradeConfig(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 

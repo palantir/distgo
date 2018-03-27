@@ -15,7 +15,6 @@
 package integration_test
 
 import (
-	"fmt"
 	"path"
 	"testing"
 
@@ -39,7 +38,7 @@ const (
 `
 )
 
-func TestDist(t *testing.T) {
+func TestOSArchBinDist(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 
@@ -79,9 +78,9 @@ products:
 `,
 				},
 				WantOutput: func(projectDir string) string {
-					return fmt.Sprintf(`Creating distribution for foo at %s/out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-darwin-amd64.tgz, %s/out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-linux-amd64.tgz
+					return `Creating distribution for foo at out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-darwin-amd64.tgz, out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-linux-amd64.tgz
 Finished creating os-arch-bin distribution for foo
-`, projectDir, projectDir)
+`
 				},
 				Validate: func(projectDir string) {
 					wantLayout := specdir.NewLayoutSpec(
@@ -107,7 +106,7 @@ Finished creating os-arch-bin distribution for foo
 	)
 }
 
-func TestUpgradeConfig(t *testing.T) {
+func TestOSArchBinUpgradeConfig(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 
