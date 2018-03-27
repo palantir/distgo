@@ -37,7 +37,7 @@ const (
 `
 )
 
-func TestPublish(t *testing.T) {
+func TestBintrayPublish(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 
@@ -83,10 +83,10 @@ products:
 					"--dry-run",
 				},
 				WantOutput: func(projectDir string) string {
-					return fmt.Sprintf(`[DRY RUN] Uploading %s/out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://bintray.domain.com/content/testSubject/testRepo/testProduct/1.0.0/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+					return fmt.Sprintf(`[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://bintray.domain.com/content/testSubject/testRepo/testProduct/1.0.0/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
 [DRY RUN] Running Bintray publish for uploaded artifacts...done
 [DRY RUN] Adding artifact to Bintray downloads list for package...done
-`, projectDir, osarch.Current().String(), osarch.Current().String())
+`, osarch.Current().String(), osarch.Current().String())
 				},
 			},
 			{
@@ -125,17 +125,17 @@ products:
 					"--dry-run",
 				},
 				WantOutput: func(projectDir string) string {
-					return fmt.Sprintf(`[DRY RUN] Uploading %s/out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://bintray.domain.com/content/testSubject/testRepo/foo/1.0.0/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+					return fmt.Sprintf(`[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://bintray.domain.com/content/testSubject/testRepo/foo/1.0.0/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
 [DRY RUN] Running Bintray publish for uploaded artifacts...done
 [DRY RUN] Adding artifact to Bintray downloads list for package...done
-`, projectDir, osarch.Current().String(), osarch.Current().String())
+`, osarch.Current().String(), osarch.Current().String())
 				},
 			},
 		},
 	)
 }
 
-func TestUpgradeConfig(t *testing.T) {
+func TestBintrayUpgradeConfig(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 

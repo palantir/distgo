@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -87,7 +88,12 @@ func (p *localPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutp
 	}
 
 	pomPath := path.Join(productPath, pomName)
-	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing POM to %s", pomPath), dryRun)
+
+	// if error is non-nil, wd will be empty
+	wd, _ := os.Getwd()
+	pomDisplayPath := toRelPath(pomPath, wd)
+
+	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing POM to %s", pomDisplayPath), dryRun)
 	if !dryRun {
 		if err := ioutil.WriteFile(pomPath, []byte(pomContent), 0644); err != nil {
 			return errors.Wrapf(err, "failed to write POM")
@@ -96,7 +102,7 @@ func (p *localPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutp
 
 	for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
 		for _, currArtifactPath := range productTaskOutputInfo.ProductDistArtifactPaths()[currDistID] {
-			if _, err := copyArtifact(currArtifactPath, productPath, dryRun, stdout); err != nil {
+			if _, err := copyArtifact(currArtifactPath, productPath, wd, dryRun, stdout); err != nil {
 				return errors.Wrapf(err, "failed to copy artifact")
 			}
 		}
@@ -104,13 +110,24 @@ func (p *localPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutp
 	return nil
 }
 
-func copyArtifact(src, dstDir string, dryRun bool, stdout io.Writer) (string, error) {
+func copyArtifact(src, dstDir, wd string, dryRun bool, stdout io.Writer) (string, error) {
 	dst := path.Join(dstDir, path.Base(src))
-	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Copying artifact from %s to %s", src, dst), dryRun)
+	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Copying artifact from %s to %s", toRelPath(src, wd), dst), dryRun)
 	if !dryRun {
 		if err := shutil.CopyFile(src, dst, false); err != nil {
 			return "", errors.Wrapf(err, "failed to copy %s to %s", src, dst)
 		}
 	}
 	return dst, nil
+}
+
+func toRelPath(path, wd string) string {
+	if !filepath.IsAbs(path) || wd == "" {
+		return path
+	}
+	relPath, err := filepath.Rel(wd, path)
+	if err != nil {
+		return path
+	}
+	return relPath
 }

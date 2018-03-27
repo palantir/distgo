@@ -37,7 +37,7 @@ const (
 `
 )
 
-func TestPublish(t *testing.T) {
+func TestLocalPublish(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 
@@ -77,15 +77,15 @@ products:
 				},
 				WantOutput: func(projectDir string) string {
 					return fmt.Sprintf(`[DRY RUN] Writing POM to out/publish/com/test/group/foo/1.0.0/foo-1.0.0.pom
-[DRY RUN] Copying artifact from %s/out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to out/publish/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
-`, projectDir, osarch.Current().String(), osarch.Current().String())
+[DRY RUN] Copying artifact from out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to out/publish/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+`, osarch.Current().String(), osarch.Current().String())
 				},
 			},
 		},
 	)
 }
 
-func TestUpgradeConfig(t *testing.T) {
+func TestLocalUpgradeConfig(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 

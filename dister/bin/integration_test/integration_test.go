@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"fmt"
 	"io/ioutil"
 	"path"
 	"testing"
@@ -41,7 +40,7 @@ const (
 `
 )
 
-func TestDist(t *testing.T) {
+func TestBinDist(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 
@@ -75,9 +74,9 @@ products:
 `,
 				},
 				WantOutput: func(projectDir string) string {
-					return fmt.Sprintf(`Creating distribution for foo at %s/out/dist/foo/1.0.0/bin/foo-1.0.0.tgz
+					return `Creating distribution for foo at out/dist/foo/1.0.0/bin/foo-1.0.0.tgz
 Finished creating bin distribution for foo
-`, projectDir)
+`
 				},
 				Validate: func(projectDir string) {
 					// layout for the contents of the directory (working directory and in TGZ)
@@ -141,9 +140,9 @@ products:
 `,
 				},
 				WantOutput: func(projectDir string) string {
-					return fmt.Sprintf(`Creating distribution for foo at %s/out/dist/foo/1.0.0/bin/foo-1.0.0.tgz
+					return `Creating distribution for foo at out/dist/foo/1.0.0/bin/foo-1.0.0.tgz
 Finished creating bin distribution for foo
-`, projectDir)
+`
 				},
 				Validate: func(projectDir string) {
 					// layout for the contents of the directory (working directory and in TGZ)
@@ -207,9 +206,9 @@ products:
 `,
 				},
 				WantOutput: func(projectDir string) string {
-					return fmt.Sprintf(`Creating distribution for foo at %s/out/dist/foo/1.0.0/bin/foo-1.0.0.tgz
+					return `Creating distribution for foo at out/dist/foo/1.0.0/bin/foo-1.0.0.tgz
 Finished creating bin distribution for foo
-`, projectDir)
+`
 				},
 				Validate: func(projectDir string) {
 					// layout for the contents of the directory (working directory and in TGZ)
@@ -324,7 +323,7 @@ func verifyLayoutAndTGZ(t *testing.T, projectDir string, wantLayout specdir.Layo
 	assert.NoError(t, wantLayout.Validate(path.Join(tmpDir, "foo-1.0.0"), nil))
 }
 
-func TestUpgradeConfig(t *testing.T) {
+func TestBinUpgradeConfig(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 

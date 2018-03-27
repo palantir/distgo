@@ -37,7 +37,7 @@ const (
 `
 )
 
-func TestPublish(t *testing.T) {
+func TestArtifactoryPublish(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 
@@ -79,9 +79,9 @@ products:
 					"--dry-run",
 				},
 				WantOutput: func(projectDir string) string {
-					return fmt.Sprintf(`[DRY RUN] Uploading %s/out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+					return fmt.Sprintf(`[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
 [DRY RUN] Uploading to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0.pom
-`, projectDir, osarch.Current().String(), osarch.Current().String())
+`, osarch.Current().String(), osarch.Current().String())
 				},
 			},
 			{
@@ -116,9 +116,9 @@ products:
 					"--repository", "testRepo",
 				},
 				WantOutput: func(projectDir string) string {
-					return fmt.Sprintf(`[DRY RUN] Uploading %s/out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+					return fmt.Sprintf(`[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
 [DRY RUN] Uploading to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0.pom
-`, projectDir, osarch.Current().String(), osarch.Current().String())
+`, osarch.Current().String(), osarch.Current().String())
 				},
 			},
 			{
@@ -165,17 +165,17 @@ products:
 					"--dry-run",
 				},
 				WantOutput: func(projectDir string) string {
-					return fmt.Sprintf(`[DRY RUN] Uploading %s/out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-darwin-amd64.tgz to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0-darwin-amd64.tgz
-[DRY RUN] Uploading %s/out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-linux-amd64.tgz to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0-linux-amd64.tgz
+					return `[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-darwin-amd64.tgz to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0-darwin-amd64.tgz
+[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-linux-amd64.tgz to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0-linux-amd64.tgz
 [DRY RUN] Uploading to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0.pom
-`, projectDir, projectDir)
+`
 				},
 			},
 		},
 	)
 }
 
-func TestUpgradeConfig(t *testing.T) {
+func TestArtifactoryUpgradeConfig(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 

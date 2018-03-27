@@ -39,7 +39,7 @@ const (
 `
 )
 
-func TestDist(t *testing.T) {
+func TestManualDist(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 
@@ -79,9 +79,9 @@ products:
 `,
 				},
 				WantOutput: func(projectDir string) string {
-					return fmt.Sprintf(`Creating distribution for foo at %s/out/dist/foo/1.0.0/manual/foo-1.0.0.tar
+					return `Creating distribution for foo at out/dist/foo/1.0.0/manual/foo-1.0.0.tar
 Finished creating manual distribution for foo
-`, projectDir)
+`
 				},
 				Validate: func(projectDir string) {
 					wantLayout := specdir.NewLayoutSpec(
@@ -125,9 +125,9 @@ products:
 `,
 				},
 				WantOutput: func(projectDir string) string {
-					return fmt.Sprintf(`Creating distribution for foo at %s/out/dist/foo/1.0.0/manual/foo-1.0.0.zip
+					return fmt.Sprintf(`Creating distribution for foo at out/dist/foo/1.0.0/manual/foo-1.0.0.zip
 Error: dist failed for foo: expected output does not exist at %s/out/dist/foo/1.0.0/manual/foo-1.0.0.zip: stat %s/out/dist/foo/1.0.0/manual/foo-1.0.0.zip: no such file or directory
-`, projectDir, projectDir, projectDir)
+`, projectDir, projectDir)
 				},
 				WantError: true,
 			},
@@ -135,7 +135,7 @@ Error: dist failed for foo: expected output does not exist at %s/out/dist/foo/1.
 	)
 }
 
-func TestUpgradeConfig(t *testing.T) {
+func TestManualUpgradeConfig(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 
