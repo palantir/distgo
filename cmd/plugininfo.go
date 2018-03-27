@@ -15,7 +15,7 @@
 package cmd
 
 import (
-	"github.com/palantir/godel/framework/pluginapi"
+	"github.com/palantir/godel/framework/pluginapi/v2/pluginapi"
 	"github.com/palantir/pkg/cobracli"
 	"github.com/spf13/cobra"
 )
@@ -42,6 +42,7 @@ var PluginInfo = pluginapi.MustNewPluginInfo(
 	newTaskInfoFromCmd(runCmd),
 	pluginapi.PluginInfoUpgradeConfigTaskInfo(
 		pluginapi.UpgradeConfigTaskInfoCommand("upgrade-config"),
+		pluginapi.LegacyConfigFile("dist.yml"),
 	),
 )
 

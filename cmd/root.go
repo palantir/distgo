@@ -17,10 +17,9 @@ package cmd
 import (
 	"io/ioutil"
 	"os"
-	"path"
 	"time"
 
-	"github.com/palantir/godel/framework/godellauncher"
+	godelconfig "github.com/palantir/godel/framework/godel/config"
 	"github.com/palantir/godel/framework/pluginapi"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -170,7 +169,7 @@ func distgoProjectParamFromVals(projectDir, distgoConfigFile, godelConfigFile st
 		distgoCfg = cfg
 	}
 	if godelConfigFile != "" {
-		cfg, err := godellauncher.ReadGodelConfig(path.Dir(godelConfigFile))
+		cfg, err := godelconfig.ReadGodelConfigFromFile(godelConfigFile)
 		if err != nil {
 			return distgo.ProjectInfo{}, distgo.ProjectParam{}, err
 		}
