@@ -70,8 +70,8 @@
 [[projects]]
   branch = "master"
   name = "github.com/palantir/godel"
-  packages = ["framework/artifactresolver","framework/builtintasks","framework/builtintasks/checkpath","framework/builtintasks/githooks","framework/builtintasks/githubwiki","framework/builtintasks/idea","framework/builtintasks/installupdate","framework/builtintasks/installupdate/layout","framework/builtintasks/packages","framework/godel","framework/godellauncher","framework/internal/legacyplugins","framework/internal/pathsinternal","framework/pluginapi","framework/pluginapitester","framework/plugins","framework/verifyorder","godelgetter","pkg/osarch","pkg/products","pkg/versionedconfig"]
-  revision = "9a68fc561092131fdf43a4a15d1ae920acf391e2"
+  packages = ["framework/artifactresolver","framework/builtintasks","framework/builtintasks/checkpath","framework/builtintasks/githooks","framework/builtintasks/githubwiki","framework/builtintasks/idea","framework/builtintasks/installupdate","framework/builtintasks/installupdate/layout","framework/builtintasks/packages","framework/godel","framework/godel/config","framework/godel/config/internal/legacy","framework/godel/config/internal/v0","framework/godellauncher","framework/internal/pathsinternal","framework/pluginapi","framework/pluginapi/v2/pluginapi","framework/pluginapitester","framework/plugins","framework/verifyorder","godelgetter","pkg/osarch","pkg/products","pkg/versionedconfig"]
+  revision = "6a18740965bc152c5bae989d0eb79f9af15eefdd"
 
 [[projects]]
   branch = "master"
@@ -160,6 +160,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d6dce81a492090ae4a76102462c38388608ba03985b7c6938c21382d690449ca"
+  inputs-digest = "9ea1b8d5dc7349933586f346db94ad418597b6f4ca126cef50aa58c67576a612"
   solver-name = "gps-cdcl"
   solver-version = 1
