@@ -189,6 +189,9 @@ func distgoProjectParamFromVals(projectDir, distgoConfigFile, godelConfigFile st
 
 func loadConfigFromFile(cfgFile string) (config.ProjectConfig, error) {
 	cfgBytes, err := ioutil.ReadFile(cfgFile)
+	if os.IsNotExist(err) {
+		return config.ProjectConfig{}, nil
+	}
 	if err != nil {
 		return config.ProjectConfig{}, errors.Wrapf(err, "failed to read configuration file")
 	}
