@@ -330,10 +330,14 @@ products:
         info:
           omit-init-sh: true
       script: |
+               if [ "$IS_SNAPSHOT" == "1" ]; then
+                 echo "snapshot"
+               fi
                # move bin directory into service directory
                mv $DIST_DIR/bin/darwin-amd64 $DIST_DIR/service/bin/darwin-amd64
                mv $DIST_DIR/bin/linux-amd64 $DIST_DIR/service/bin/linux-amd64
                rm -rf $DIST_DIR/bin
+group-id: com.palantir.group
 `,
 				},
 				WantOutput: "Upgraded configuration for dist-plugin.yml\n",
@@ -366,11 +370,20 @@ products:
             cp -r "$PROJECT_DIR"/bar/dist/bar/. "$DIST_WORK_DIR"
             find "$DIST_WORK_DIR" -type f -name .gitkeep -exec rm '{}' \;
             ### END: auto-generated back-compat code for "input-dir" behavior ###
+            ### START: auto-generated back-compat code for "IS_SNAPSHOT" variable ###
+            IS_SNAPSHOT=0
+            if [[ $VERSION =~ .+g[-+.]?[a-fA-F0-9]{3,}$ ]]; then IS_SNAPSHOT=1; fi
+            ### END: auto-generated back-compat code for "IS_SNAPSHOT" variable ###
+            if [ "$IS_SNAPSHOT" == "1" ]; then
+              echo "snapshot"
+            fi
             # move bin directory into service directory
             mv $DIST_WORK_DIR/bin/darwin-amd64 $DIST_WORK_DIR/service/bin/darwin-amd64
             mv $DIST_WORK_DIR/bin/linux-amd64 $DIST_WORK_DIR/service/bin/linux-amd64
             rm -rf $DIST_WORK_DIR/bin
-    publish: null
+    publish:
+      group-id: null
+      info: null
     docker: null
     dependencies: null
   foo:
@@ -401,7 +414,9 @@ products:
             # move bin directory into service directory
             mkdir $DIST_WORK_DIR/service
             mv $DIST_WORK_DIR/bin $DIST_WORK_DIR/service/bin
-    publish: null
+    publish:
+      group-id: null
+      info: null
     docker:
       repository: null
       docker-builders:
@@ -434,7 +449,9 @@ product-defaults:
   build: null
   run: null
   dist: null
-  publish: null
+  publish:
+    group-id: com.palantir.group
+    info: null
   docker: null
   dependencies: null
 script-includes: ""
