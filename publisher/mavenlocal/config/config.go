@@ -15,7 +15,7 @@
 package config
 
 import (
-	"github.com/palantir/distgo/publisher/local/config/internal/v0"
+	"github.com/palantir/distgo/publisher/mavenlocal/config/internal/v0"
 )
 
-type Local v0.Config
+type MavenLocal v0.Config
