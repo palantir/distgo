@@ -492,6 +492,8 @@ func upgradeLegacyConfig(
 			GroupID: stringPtr(legacyCfg.GroupID),
 		}
 	}
+	upgradedCfg.ProductDefaults = productDefaults
+
 	// Exclude
 	upgradedCfg.Exclude = legacyCfg.Exclude
 
@@ -793,6 +795,13 @@ func upgradeLegacyConfig(
 			}
 			product.Docker = &upgradedProductDockerConfig
 		}
+
+		// if new configuration has defaults for "publish" operation and current product does not have any publish
+		// configuration, give it an empty publish configuration so the defaults are used.
+		if upgradedCfg.ProductDefaults.Publish != nil && product.Publish == nil {
+			product.Publish = &v0.PublishConfig{}
+		}
+
 		products[distgo.ProductID(k)] = product
 	}
 	upgradedCfg.Products = products
@@ -864,6 +873,14 @@ chmod 755 "$DIST_WORK_DIR"/bin/"$PRODUCT".sh
 
 func translateEnvVars(in string) string {
 	out := in
+	if strings.Contains(out, "IS_SNAPSHOT") {
+		const isSnapshotScript = `### START: auto-generated back-compat code for "IS_SNAPSHOT" variable ###
+IS_SNAPSHOT=0
+if [[ $VERSION =~ .+g[-+.]?[a-fA-F0-9]{3,}$ ]]; then IS_SNAPSHOT=1; fi
+### END: auto-generated back-compat code for "IS_SNAPSHOT" variable ###
+`
+		out = isSnapshotScript + out
+	}
 	out = translateVar(out, "DIST_DIR", "DIST_WORK_DIR")
 	return out
 }
