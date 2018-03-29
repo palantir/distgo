@@ -23,8 +23,8 @@ import (
 	bintrayconfig "github.com/palantir/distgo/publisher/bintray/config"
 	"github.com/palantir/distgo/publisher/github"
 	githubconfig "github.com/palantir/distgo/publisher/github/config"
-	"github.com/palantir/distgo/publisher/local"
-	localconfig "github.com/palantir/distgo/publisher/local/config"
+	"github.com/palantir/distgo/publisher/mavenlocal"
+	mavenlocalconfig "github.com/palantir/distgo/publisher/mavenlocal/config"
 )
 
 type creatorWithUpgrader struct {
@@ -34,9 +34,9 @@ type creatorWithUpgrader struct {
 
 func builtinPublishers() map[string]creatorWithUpgrader {
 	return map[string]creatorWithUpgrader{
-		local.TypeName: {
-			Creator:  local.PublisherCreator(),
-			Upgrader: distgo.NewConfigUpgrader(local.TypeName, localconfig.UpgradeConfig),
+		mavenlocal.TypeName: {
+			Creator:  mavenlocal.PublisherCreator(),
+			Upgrader: distgo.NewConfigUpgrader(mavenlocal.TypeName, mavenlocalconfig.UpgradeConfig),
 		},
 		artifactory.TypeName: {
 			Creator:  artifactory.PublisherCreator(),

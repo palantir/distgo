@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package local
+package mavenlocal
 
 import (
 	"fmt"
@@ -29,40 +29,40 @@ import (
 
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/publisher"
-	"github.com/palantir/distgo/publisher/local/config"
+	"github.com/palantir/distgo/publisher/mavenlocal/config"
 )
 
-const TypeName = "local" // publishes output artifacts to a location in the local filesystem
+const TypeName = "maven-local" // publishes output artifacts to a location in the local filesystem
 
 func PublisherCreator() publisher.Creator {
 	return publisher.NewCreator(TypeName, func() distgo.Publisher {
-		return &localPublisher{}
+		return &mavenLocalPublisher{}
 	})
 }
 
-type localPublisher struct{}
+type mavenLocalPublisher struct{}
 
-func (p *localPublisher) TypeName() (string, error) {
+func (p *mavenLocalPublisher) TypeName() (string, error) {
 	return TypeName, nil
 }
 
 var (
-	localPublisherBaseDirFlag = distgo.PublisherFlag{
+	mavenLocalPublisherBaseDirFlag = distgo.PublisherFlag{
 		Name:        "base-dir",
-		Description: "base output directory for the local publish",
+		Description: "base output directory for the local publish (if blank, defaults to ${HOME}/.m2/repository)",
 		Type:        distgo.StringFlag,
 	}
 )
 
-func (p *localPublisher) Flags() ([]distgo.PublisherFlag, error) {
+func (p *mavenLocalPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	return []distgo.PublisherFlag{
-		localPublisherBaseDirFlag,
+		mavenLocalPublisherBaseDirFlag,
 		publisher.GroupIDFlag,
 	}, nil
 }
 
-func (p *localPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]interface{}, dryRun bool, stdout io.Writer) error {
-	var cfg config.Local
+func (p *mavenLocalPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]interface{}, dryRun bool, stdout io.Writer) error {
+	var cfg config.MavenLocal
 	if err := yaml.Unmarshal(cfgYML, &cfg); err != nil {
 		return errors.Wrapf(err, "failed to unmarshal configuration")
 	}
@@ -70,12 +70,17 @@ func (p *localPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutp
 	if err != nil {
 		return err
 	}
-	if err := publisher.SetConfigValue(flagVals, localPublisherBaseDirFlag, &cfg.BaseDir); err != nil {
+	if err := publisher.SetConfigValue(flagVals, mavenLocalPublisherBaseDirFlag, &cfg.BaseDir); err != nil {
 		return err
 	}
 
+	baseDir := cfg.BaseDir
+	if baseDir == "" {
+		baseDir = path.Join(os.Getenv("HOME"), ".m2", "repository")
+	}
+
 	groupPath := strings.Replace(groupID, ".", "/", -1)
-	productPath := path.Join(cfg.BaseDir, groupPath, string(productTaskOutputInfo.Product.ID), productTaskOutputInfo.Project.Version)
+	productPath := path.Join(baseDir, groupPath, string(productTaskOutputInfo.Product.ID), productTaskOutputInfo.Project.Version)
 	if !dryRun {
 		if err := os.MkdirAll(productPath, 0755); err != nil {
 			return errors.Wrapf(err, "failed to create %s", productPath)
@@ -89,17 +94,15 @@ func (p *localPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutp
 
 	pomPath := path.Join(productPath, pomName)
 
-	// if error is non-nil, wd will be empty
-	wd, _ := os.Getwd()
-	pomDisplayPath := toRelPath(pomPath, wd)
-
-	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing POM to %s", pomDisplayPath), dryRun)
+	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing POM to %s", pomPath), dryRun)
 	if !dryRun {
 		if err := ioutil.WriteFile(pomPath, []byte(pomContent), 0644); err != nil {
 			return errors.Wrapf(err, "failed to write POM")
 		}
 	}
 
+	// if error is non-nil, wd will be empty
+	wd, _ := os.Getwd()
 	for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
 		for _, currArtifactPath := range productTaskOutputInfo.ProductDistArtifactPaths()[currDistID] {
 			if _, err := copyArtifact(currArtifactPath, productPath, wd, dryRun, stdout); err != nil {
