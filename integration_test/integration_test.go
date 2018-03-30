@@ -444,7 +444,6 @@ group-id: com.palantir.group
           - snapshot
     dependencies:
     - bar
-    - foo
 product-defaults:
   build: null
   run: null

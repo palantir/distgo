@@ -756,7 +756,11 @@ func upgradeLegacyConfig(
 						if product.Dependencies == nil {
 							product.Dependencies = &[]distgo.ProductID{}
 						}
-						*product.Dependencies = addDepIfNotPresent(*product.Dependencies, distgo.ProductID(currLegacyDockerDep.Product))
+
+						currLegacyDockerDepProductID := distgo.ProductID(currLegacyDockerDep.Product)
+						if currLegacyDockerDepProductID != distgo.ProductID(k) {
+							*product.Dependencies = addDepIfNotPresent(*product.Dependencies, distgo.ProductID(currLegacyDockerDep.Product))
+						}
 					}
 				}
 
