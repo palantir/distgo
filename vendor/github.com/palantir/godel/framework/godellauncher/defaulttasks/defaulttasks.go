@@ -15,7 +15,10 @@
 package defaulttasks
 
 import (
+	"sort"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/palantir/godel/framework/godel/config"
 )
@@ -30,96 +33,20 @@ var defaultPluginsConfig = config.PluginsConfig{
 		{
 			LocatorWithResolverConfig: config.ToLocatorWithResolverConfig(config.LocatorWithResolverConfig{
 				Locator: config.ToLocatorConfig(config.LocatorConfig{
-					ID: "com.palantir.distgo:distgo-plugin:1.0.0-rc3",
+					ID: "com.palantir.distgo:dist-plugin:1.0.0-rc7",
 				}),
 			}),
 		},
 		{
 			LocatorWithResolverConfig: config.ToLocatorWithResolverConfig(config.LocatorWithResolverConfig{
 				Locator: config.ToLocatorConfig(config.LocatorConfig{
-					ID: "com.palantir.godel-format-plugin:format-plugin:1.0.0-rc2",
-				}),
-			}),
-			Assets: config.ToLocatorWithResolverConfigs([]config.LocatorWithResolverConfig{
-				{
-					Locator: config.ToLocatorConfig(config.LocatorConfig{
-						ID: "com.palantir.godel-format-asset-ptimports:ptimports-asset:1.0.0-rc3",
-					}),
-				},
-			}),
-		},
-		{
-			LocatorWithResolverConfig: config.ToLocatorWithResolverConfig(config.LocatorWithResolverConfig{
-				Locator: config.ToLocatorConfig(config.LocatorConfig{
-					ID: "com.palantir.godel-goland-plugin:goland-plugin:1.0.0-rc1",
-				}),
-			}),
-		},
-		{
-			LocatorWithResolverConfig: config.ToLocatorWithResolverConfig(config.LocatorWithResolverConfig{
-				Locator: config.ToLocatorConfig(config.LocatorConfig{
-					ID: "com.palantir.okgo:okgo-plugin:1.0.0-rc2",
+					ID: "com.palantir.godel-format-plugin:format-plugin:1.0.0-rc5",
 				}),
 			}),
 			Assets: config.ToLocatorWithResolverConfigs([]config.LocatorWithResolverConfig{
 				{
 					Locator: config.ToLocatorConfig(config.LocatorConfig{
-						ID: "com.palantir.godel-okgo-asset-compiles:compiles-asset:1.0.0-rc2",
-					}),
-				},
-				{
-					Locator: config.ToLocatorConfig(config.LocatorConfig{
-						ID: "com.palantir.godel-okgo-asset-deadcode:deadcode-asset:1.0.0-rc1",
-					}),
-				},
-				{
-					Locator: config.ToLocatorConfig(config.LocatorConfig{
-						ID: "com.palantir.godel-okgo-asset-errcheck:errcheck-asset:1.0.0-rc1",
-					}),
-				},
-				{
-					Locator: config.ToLocatorConfig(config.LocatorConfig{
-						ID: "com.palantir.godel-okgo-asset-extimport:extimport-asset:1.0.0-rc1",
-					}),
-				},
-				{
-					Locator: config.ToLocatorConfig(config.LocatorConfig{
-						ID: "com.palantir.godel-okgo-asset-golint:golint-asset:1.0.0-rc2",
-					}),
-				},
-				{
-					Locator: config.ToLocatorConfig(config.LocatorConfig{
-						ID: "com.palantir.godel-okgo-asset-govet:govet-asset:1.0.0-rc2",
-					}),
-				},
-				{
-					Locator: config.ToLocatorConfig(config.LocatorConfig{
-						ID: "com.palantir.godel-okgo-asset-importalias:importalias-asset:1.0.0-rc1",
-					}),
-				},
-				{
-					Locator: config.ToLocatorConfig(config.LocatorConfig{
-						ID: "com.palantir.godel-okgo-asset-ineffassign:ineffassign-asset:1.0.0-rc1",
-					}),
-				},
-				{
-					Locator: config.ToLocatorConfig(config.LocatorConfig{
-						ID: "com.palantir.godel-okgo-asset-novendor:novendor-asset:1.0.0-rc1",
-					}),
-				},
-				{
-					Locator: config.ToLocatorConfig(config.LocatorConfig{
-						ID: "com.palantir.godel-okgo-asset-outparamcheck:outparamcheck-asset:1.0.0-rc1",
-					}),
-				},
-				{
-					Locator: config.ToLocatorConfig(config.LocatorConfig{
-						ID: "com.palantir.godel-okgo-asset-unconvert:unconvert-asset:1.0.0-rc2",
-					}),
-				},
-				{
-					Locator: config.ToLocatorConfig(config.LocatorConfig{
-						ID: "com.palantir.godel-okgo-asset-varcheck:varcheck-asset:1.0.0-rc1",
+						ID: "com.palantir.godel-format-asset-ptimports:ptimports-asset:1.0.0-rc4",
 					}),
 				},
 			}),
@@ -127,14 +54,90 @@ var defaultPluginsConfig = config.PluginsConfig{
 		{
 			LocatorWithResolverConfig: config.ToLocatorWithResolverConfig(config.LocatorWithResolverConfig{
 				Locator: config.ToLocatorConfig(config.LocatorConfig{
-					ID: "com.palantir.go-license:license-plugin:1.0.0-rc2",
+					ID: "com.palantir.godel-goland-plugin:goland-plugin:1.0.0-rc2",
 				}),
 			}),
 		},
 		{
 			LocatorWithResolverConfig: config.ToLocatorWithResolverConfig(config.LocatorWithResolverConfig{
 				Locator: config.ToLocatorConfig(config.LocatorConfig{
-					ID: "com.palantir.godel-test-plugin:test-plugin:1.0.0-rc3",
+					ID: "com.palantir.okgo:check-plugin:1.0.0-rc4",
+				}),
+			}),
+			Assets: config.ToLocatorWithResolverConfigs([]config.LocatorWithResolverConfig{
+				{
+					Locator: config.ToLocatorConfig(config.LocatorConfig{
+						ID: "com.palantir.godel-okgo-asset-compiles:compiles-asset:1.0.0-rc3",
+					}),
+				},
+				{
+					Locator: config.ToLocatorConfig(config.LocatorConfig{
+						ID: "com.palantir.godel-okgo-asset-deadcode:deadcode-asset:1.0.0-rc2",
+					}),
+				},
+				{
+					Locator: config.ToLocatorConfig(config.LocatorConfig{
+						ID: "com.palantir.godel-okgo-asset-errcheck:errcheck-asset:1.0.0-rc2",
+					}),
+				},
+				{
+					Locator: config.ToLocatorConfig(config.LocatorConfig{
+						ID: "com.palantir.godel-okgo-asset-extimport:extimport-asset:1.0.0-rc2",
+					}),
+				},
+				{
+					Locator: config.ToLocatorConfig(config.LocatorConfig{
+						ID: "com.palantir.godel-okgo-asset-golint:golint-asset:1.0.0-rc3",
+					}),
+				},
+				{
+					Locator: config.ToLocatorConfig(config.LocatorConfig{
+						ID: "com.palantir.godel-okgo-asset-govet:govet-asset:1.0.0-rc3",
+					}),
+				},
+				{
+					Locator: config.ToLocatorConfig(config.LocatorConfig{
+						ID: "com.palantir.godel-okgo-asset-importalias:importalias-asset:1.0.0-rc2",
+					}),
+				},
+				{
+					Locator: config.ToLocatorConfig(config.LocatorConfig{
+						ID: "com.palantir.godel-okgo-asset-ineffassign:ineffassign-asset:1.0.0-rc2",
+					}),
+				},
+				{
+					Locator: config.ToLocatorConfig(config.LocatorConfig{
+						ID: "com.palantir.godel-okgo-asset-novendor:novendor-asset:1.0.0-rc2",
+					}),
+				},
+				{
+					Locator: config.ToLocatorConfig(config.LocatorConfig{
+						ID: "com.palantir.godel-okgo-asset-outparamcheck:outparamcheck-asset:1.0.0-rc2",
+					}),
+				},
+				{
+					Locator: config.ToLocatorConfig(config.LocatorConfig{
+						ID: "com.palantir.godel-okgo-asset-unconvert:unconvert-asset:1.0.0-rc3",
+					}),
+				},
+				{
+					Locator: config.ToLocatorConfig(config.LocatorConfig{
+						ID: "com.palantir.godel-okgo-asset-varcheck:varcheck-asset:1.0.0-rc2",
+					}),
+				},
+			}),
+		},
+		{
+			LocatorWithResolverConfig: config.ToLocatorWithResolverConfig(config.LocatorWithResolverConfig{
+				Locator: config.ToLocatorConfig(config.LocatorConfig{
+					ID: "com.palantir.go-license:license-plugin:1.0.0-rc3",
+				}),
+			}),
+		},
+		{
+			LocatorWithResolverConfig: config.ToLocatorWithResolverConfig(config.LocatorWithResolverConfig{
+				Locator: config.ToLocatorConfig(config.LocatorConfig{
+					ID: "com.palantir.godel-test-plugin:test-plugin:1.0.0-rc4",
 				}),
 			}),
 		},
@@ -145,7 +148,7 @@ func BuiltinPluginsConfig() config.PluginsConfig {
 	return defaultPluginsConfig
 }
 
-func PluginsConfig(cfg config.DefaultTasksConfig) config.PluginsConfig {
+func PluginsConfig(cfg config.DefaultTasksConfig) (config.PluginsConfig, error) {
 	// start with configuration that uses default resolver
 	pluginsCfg := config.PluginsConfig{
 		DefaultResolvers: defaultPluginsConfig.DefaultResolvers,
@@ -153,8 +156,10 @@ func PluginsConfig(cfg config.DefaultTasksConfig) config.PluginsConfig {
 	// append default resolvers provided by the configuration
 	pluginsCfg.DefaultResolvers = append(pluginsCfg.DefaultResolvers, cfg.DefaultResolvers...)
 
+	defaultPluginKeys := make(map[string]struct{})
 	for _, currPlugin := range defaultPluginsConfig.Plugins {
 		currKey := locatorIDWithoutVersion(currPlugin.Locator.ID)
+		defaultPluginKeys[currKey] = struct{}{}
 
 		var assets []config.LocatorWithResolverConfig
 		for _, asset := range currPlugin.Assets {
@@ -183,7 +188,26 @@ func PluginsConfig(cfg config.DefaultTasksConfig) config.PluginsConfig {
 		currCfg.Assets = append(currCfg.Assets, taskCfg.Assets...)
 		pluginsCfg.Plugins = append(pluginsCfg.Plugins, config.ToSinglePluginConfig(currCfg))
 	}
-	return pluginsCfg
+
+	var invalidKeys []string
+	for providedDefaultCfgKey := range cfg.Tasks {
+		if _, ok := defaultPluginKeys[providedDefaultCfgKey]; ok {
+			continue
+		}
+		invalidKeys = append(invalidKeys, providedDefaultCfgKey)
+	}
+	sort.Strings(invalidKeys)
+
+	if len(invalidKeys) > 0 {
+		var validKeys []string
+		for k := range defaultPluginKeys {
+			validKeys = append(validKeys, k)
+		}
+		sort.Strings(validKeys)
+		return config.PluginsConfig{}, errors.Errorf("default-task key(s) specified but are not valid: %v. Valid values: %v", invalidKeys, validKeys)
+	}
+
+	return pluginsCfg, nil
 }
 
 func assetConfigFromDefault(baseCfg []config.LocatorWithResolverConfig, cfg config.SingleDefaultTaskConfig) []config.LocatorWithResolverConfig {

@@ -29,17 +29,15 @@ import (
 	"github.com/palantir/distgo/publisher/publishertester"
 )
 
-const (
-	godelYML = `exclude:
+func TestMavenLocalPublish(t *testing.T) {
+	const godelYML = `exclude:
   names:
     - "\\..+"
     - "vendor"
   paths:
     - "godel"
 `
-)
 
-func TestMavenLocalPublish(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 
@@ -154,7 +152,7 @@ products:
 	)
 }
 
-func TestLocalUpgradeConfig(t *testing.T) {
+func TestMavenLocalUpgradeConfig(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 
@@ -165,7 +163,6 @@ func TestLocalUpgradeConfig(t *testing.T) {
 			{
 				Name: `valid v0 config works`,
 				ConfigFiles: map[string]string{
-					"godel/config/godel.yml": godelYML,
 					"godel/config/dist-plugin.yml": `
 products:
   foo:
