@@ -30,17 +30,15 @@ import (
 	"github.com/palantir/distgo/dister/distertester"
 )
 
-const (
-	godelYML = `exclude:
+func TestBinDist(t *testing.T) {
+	const godelYML = `exclude:
   names:
     - "\\..+"
     - "vendor"
   paths:
     - "godel"
 `
-)
 
-func TestBinDist(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 
@@ -334,10 +332,7 @@ func TestBinUpgradeConfig(t *testing.T) {
 			{
 				Name: `legacy configuration is upgraded`,
 				ConfigFiles: map[string]string{
-					"godel/config/godel.yml": godelYML,
-					"godel/config/dist-plugin.yml": `
-legacy-config: true
-products:
+					"godel/config/dist.yml": `products:
   foo:
     build:
       main-pkg: ./foo
@@ -353,6 +348,7 @@ products:
           omit-init-sh: false
 `,
 				},
+				Legacy: true,
 				WantOutput: `Upgraded configuration for dist-plugin.yml
 `,
 				WantFiles: map[string]string{
@@ -433,7 +429,6 @@ exclude:
 			{
 				Name: `valid v0 config works`,
 				ConfigFiles: map[string]string{
-					"godel/config/godel.yml": godelYML,
 					"godel/config/dist-plugin.yml": `
 products:
   foo:

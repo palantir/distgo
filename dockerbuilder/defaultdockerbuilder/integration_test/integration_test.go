@@ -104,7 +104,6 @@ func TestUpgradeConfig(t *testing.T) {
 			{
 				Name: `valid v0 config works`,
 				ConfigFiles: map[string]string{
-					"godel/config/godel.yml": godelYML,
 					"godel/config/dist-plugin.yml": `
 products:
   foo:

@@ -74,7 +74,10 @@ func runGodelApp(osArgs []string) int {
 		tasksCfgInfo.TasksConfig = config.TasksConfig(godelCfg.TasksConfig)
 
 		// add default tasks
-		defaultTasksCfg := defaulttasks.PluginsConfig(config.DefaultTasksConfig(godelCfg.DefaultTasks))
+		defaultTasksCfg, err := defaulttasks.PluginsConfig(config.DefaultTasksConfig(godelCfg.DefaultTasks))
+		if err != nil {
+			printErrAndExit(err, global.Debug)
+		}
 		defaultTasksParam, err := defaultTasksCfg.ToParam()
 		if err != nil {
 			printErrAndExit(err, global.Debug)
@@ -139,7 +142,6 @@ func createTasks(defaultTasks, pluginTasks []godellauncher.Task, upgradeConfigTa
 	allTasks = append(allTasks, defaultTasks...)
 	allTasks = append(allTasks, builtintasks.VerifyTask(append(allTasks, pluginTasks...)))
 	allTasks = append(allTasks, builtintasks.UpgradeConfigTask(upgradeConfigTasks))
-	allTasks = append(allTasks, builtintasks.UpgradeLegacyConfigTask(upgradeConfigTasks))
 	allTasks = append(allTasks, pluginTasks...)
 	return allTasks
 }

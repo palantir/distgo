@@ -23,41 +23,41 @@ import (
 	"github.com/pkg/errors"
 )
 
-// RunUpgradeConfig runs the "upgrade--config" task by invoking "{{projectDir}}/godelw upgrade-config".
+// RunUpgradeConfig runs the "upgrade-config" task by invoking "{{projectDir}}/godelw upgrade-config".
 func RunUpgradeConfig(projectDir string, stdout, stderr io.Writer) error {
-	godelw := path.Join(projectDir, "godelw")
-	cmd := exec.Command(godelw, "upgrade-config")
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	return cmd.Run()
+	return runUpgradeConfig(projectDir, nil, stdout, stderr)
 }
 
-// RunUpgradeLegacyConfig runs the "upgrade-legacy-config" task by invoking
-// "{{projectDir}}/godelw upgrade-legacy-config".
+// RunUpgradeLegacyConfig runs the "upgrade-config" task in legacy mode by invoking
+// "{{projectDir}}/godelw upgrade-config --legacy".
 func RunUpgradeLegacyConfig(projectDir string, stdout, stderr io.Writer) error {
+	return runUpgradeConfig(projectDir, []string{"--legacy"}, stdout, stderr)
+}
+
+func runUpgradeConfig(projectDir string, args []string, stdout, stderr io.Writer) error {
 	godelw := path.Join(projectDir, "godelw")
-	cmd := exec.Command(godelw, "upgrade-legacy-config")
+	cmd := exec.Command(godelw, append([]string{"upgrade-config"}, args...)...)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	return cmd.Run()
 }
 
-// GodelVersion returns the Version returned by "{{projectDir}}/godelw version".
-func GodelVersion(projectDir string) (Version, error) {
+// getGodelVersion returns the Version returned by "{{projectDir}}/godelw version".
+func getGodelVersion(projectDir string) (godelVersion, error) {
 	godelw := path.Join(projectDir, "godelw")
 	cmd := exec.Command(godelw, "version")
 	output, err := cmd.Output()
 	if err != nil {
-		return Version{}, errors.Wrapf(err, "failed to execute command %v: %s", cmd.Args, string(output))
+		return godelVersion{}, errors.Wrapf(err, "failed to execute command %v: %s", cmd.Args, string(output))
 	}
 	outputString := strings.TrimSpace(string(output))
 	parts := strings.Split(outputString, " ")
 	if len(parts) != 3 {
-		return Version{}, errors.Errorf(`expected output %s to have 3 parts when split by " ", but was %v`, outputString, parts)
+		return godelVersion{}, errors.Errorf(`expected output %s to have 3 parts when split by " ", but was %v`, outputString, parts)
 	}
-	v, err := NewVersion(parts[2])
+	v, err := newGodelVersion(parts[2])
 	if err != nil {
-		return Version{}, errors.Wrapf(err, "failed to create version from output")
+		return godelVersion{}, errors.Wrapf(err, "failed to create version from output")
 	}
 	return v, nil
 }
