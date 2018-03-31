@@ -27,19 +27,19 @@ import (
 
 type ProjectConfig struct {
 	// Products maps product names to configurations.
-	Products map[distgo.ProductID]ProductConfig `yaml:"products"`
+	Products map[distgo.ProductID]ProductConfig `yaml:"products,omitempty"`
 
 	// ProductDefaults specifies the default values that should be used for unspecified values in the products map. If a
 	// field in a top-level key in a "ProductConfig" value in the "Products" map is nil and the corresponding value in
 	// ProductDefaults is non-nil, the value in ProductDefaults is used.
-	ProductDefaults ProductConfig `yaml:"product-defaults"`
+	ProductDefaults ProductConfig `yaml:"product-defaults,omitempty"`
 
 	// ScriptIncludes specifies a string that is appended to every script that is written out. Can be used to define
 	// functions or constants for all scripts.
-	ScriptIncludes string `yaml:"script-includes"`
+	ScriptIncludes string `yaml:"script-includes,omitempty"`
 
 	// Exclude matches the paths to exclude when determining the projects to build.
-	Exclude matcher.NamesPathsCfg `yaml:"exclude"`
+	Exclude matcher.NamesPathsCfg `yaml:"exclude,omitempty"`
 }
 
 func UpgradeConfig(

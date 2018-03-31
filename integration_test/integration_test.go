@@ -345,25 +345,19 @@ group-id: com.palantir.group
 					"godel/config/dist-plugin.yml": `products:
   bar:
     build:
-      name-template: null
       output-dir: bar/build/bin
       main-pkg: ./bar/main/bar
-      build-args-script: null
       version-var: github.com/palantir/bar/main.version
-      environment: null
       os-archs:
       - os: darwin
         arch: amd64
       - os: linux
         arch: amd64
-    run: null
     dist:
       output-dir: bar/build/distributions
       disters:
         bin:
           type: bin
-          config: null
-          name-template: null
           script: |
             #!/bin/bash
             ### START: auto-generated back-compat code for "input-dir" behavior ###
@@ -381,30 +375,20 @@ group-id: com.palantir.group
             mv $DIST_WORK_DIR/bin/darwin-amd64 $DIST_WORK_DIR/service/bin/darwin-amd64
             mv $DIST_WORK_DIR/bin/linux-amd64 $DIST_WORK_DIR/service/bin/linux-amd64
             rm -rf $DIST_WORK_DIR/bin
-    publish:
-      group-id: null
-      info: null
-    docker: null
-    dependencies: null
+    publish: {}
   foo:
     build:
-      name-template: null
       output-dir: foo/build/bin
       main-pkg: ./foo/main/foo
-      build-args-script: null
       version-var: github.com/palantir/foo/main.version
-      environment: null
       os-archs:
       - os: linux
         arch: amd64
-    run: null
     dist:
       output-dir: foo/build/distributions
       disters:
         bin:
           type: bin
-          config: null
-          name-template: null
           script: |
             #!/bin/bash
             ### START: auto-generated back-compat code for "input-dir" behavior ###
@@ -414,30 +398,19 @@ group-id: com.palantir.group
             # move bin directory into service directory
             mkdir $DIST_WORK_DIR/service
             mv $DIST_WORK_DIR/bin $DIST_WORK_DIR/service/bin
-    publish:
-      group-id: null
-      info: null
+    publish: {}
     docker:
-      repository: null
       docker-builders:
         docker-image-0:
           type: default
-          config: null
-          dockerfile-path: null
           context-dir: foo/dist/docker
-          input-products-dir: null
-          input-builds: null
           input-dists:
           - foo.bin
           tag-templates:
           - snapshot
         docker-image-1:
           type: default
-          config: null
-          dockerfile-path: null
           context-dir: other/foo/dist/docker
-          input-products-dir: null
-          input-builds: null
           input-dists:
           - foo.bin
           tag-templates:
@@ -445,18 +418,8 @@ group-id: com.palantir.group
     dependencies:
     - bar
 product-defaults:
-  build: null
-  run: null
-  dist: null
   publish:
     group-id: com.palantir.group
-    info: null
-  docker: null
-  dependencies: null
-script-includes: ""
-exclude:
-  names: []
-  paths: []
 `,
 				},
 			},
