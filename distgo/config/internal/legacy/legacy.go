@@ -552,6 +552,26 @@ func upgradeLegacyConfig(
 				Args: &runArgs,
 			}
 		}
+
+		if len(legacyProduct.Dist) == 0 && product.Build.OSArchs != nil && len(*product.Build.OSArchs) > 0 {
+			// if previous configuration did not specify a "dist" configuration but has build OS/Arch combinations,
+			// previous behavior was to default to os-arch-bin dist type, so explicitly add that. Note that the behavior
+			// where a blank os/arch would build an os-arch-bin dist for the current OS is no longer supported.
+			legacyProduct.Dist = RawDistConfigs{
+				{
+					DistType: DistInfo{
+						Type: string(OSArchBinDistType),
+						Info: OSArchBinDist{
+							ConfigWithLegacy: versionedconfig.ConfigWithLegacy{
+								Legacy: true,
+							},
+							OSArchs: *product.Build.OSArchs,
+						},
+					},
+				},
+			}
+		}
+
 		if len(legacyProduct.Dist) > 0 {
 			if len(legacyProduct.Dist) > 1 {
 				return nil, errors.Errorf(`product %q specifies more than 1 dist configuration and migrations are not supported for these configurations`, k)

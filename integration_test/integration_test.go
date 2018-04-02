@@ -250,16 +250,6 @@ products:
 	assert.Equal(t, fmt.Sprintf("read: %q", stdInContent), content)
 }
 
-const (
-	godelYML = `exclude:
-  names:
-    - "\\..+"
-    - "vendor"
-  paths:
-    - "godel"
-`
-)
-
 func TestUpgradeConfig(t *testing.T) {
 	pluginPath, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
@@ -272,9 +262,7 @@ func TestUpgradeConfig(t *testing.T) {
 			{
 				Name: "legacy configuration is upgraded",
 				ConfigFiles: map[string]string{
-					"godel/config/godel.yml": godelYML,
-					"godel/config/dist-plugin.yml": `
-legacy-config: true
+					"godel/config/dist.yml": `
 products:
   foo:
     build:
@@ -337,9 +325,18 @@ products:
                mv $DIST_DIR/bin/darwin-amd64 $DIST_DIR/service/bin/darwin-amd64
                mv $DIST_DIR/bin/linux-amd64 $DIST_DIR/service/bin/linux-amd64
                rm -rf $DIST_DIR/bin
+  baz:
+    build:
+      main-pkg: ./baz/main/baz
+      os-archs:
+        - os: darwin
+          arch: amd64
+        - os: linux
+          arch: amd64
 group-id: com.palantir.group
 `,
 				},
+				Legacy:     true,
 				WantOutput: "Upgraded configuration for dist-plugin.yml\n",
 				WantFiles: map[string]string{
 					"godel/config/dist-plugin.yml": `products:
@@ -375,6 +372,25 @@ group-id: com.palantir.group
             mv $DIST_WORK_DIR/bin/darwin-amd64 $DIST_WORK_DIR/service/bin/darwin-amd64
             mv $DIST_WORK_DIR/bin/linux-amd64 $DIST_WORK_DIR/service/bin/linux-amd64
             rm -rf $DIST_WORK_DIR/bin
+    publish: {}
+  baz:
+    build:
+      main-pkg: ./baz/main/baz
+      os-archs:
+      - os: darwin
+        arch: amd64
+      - os: linux
+        arch: amd64
+    dist:
+      disters:
+        os-arch-bin:
+          type: os-arch-bin
+          config:
+            os-archs:
+            - os: darwin
+              arch: amd64
+            - os: linux
+              arch: amd64
     publish: {}
   foo:
     build:
@@ -424,9 +440,32 @@ product-defaults:
 				},
 			},
 			{
+				Name: "legacy configuration dist block is not upgraded if os-archs not specified for build",
+				ConfigFiles: map[string]string{
+					"godel/config/dist.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo/main/foo
+      output-dir: foo/build/bin
+      version-var: github.com/palantir/foo/main.version
+`,
+				},
+				Legacy:     true,
+				WantOutput: "Upgraded configuration for dist-plugin.yml\n",
+				WantFiles: map[string]string{
+					"godel/config/dist-plugin.yml": `products:
+  foo:
+    build:
+      output-dir: foo/build/bin
+      main-pkg: ./foo/main/foo
+      version-var: github.com/palantir/foo/main.version
+`,
+				},
+			},
+			{
 				Name: "valid v0 configuration is not modified",
 				ConfigFiles: map[string]string{
-					"godel/config/godel.yml": godelYML,
 					"godel/config/dist-plugin.yml": `
 products:
   # comment
