@@ -375,7 +375,7 @@ func ProductParamsForDockerProductArgs(inputProducts map[ProductID]ProductParam,
 	validIDs := make(map[string]struct{})
 	for productID, productParam := range inputProducts {
 		validIDs[string(productID)] = struct{}{}
-		if productParam.Dist == nil {
+		if productParam.Docker == nil {
 			continue
 		}
 		for dockerID := range (*productParam.Docker).DockerBuilderParams {
