@@ -12,18 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
-
-import (
-	"github.com/palantir/godel/framework/pluginapi"
-
-	"github.com/palantir/distgo/distgo/config"
-)
-
-var upgradeConfigCmd = pluginapi.CobraUpgradeConfigCmd(func(cfgBytes []byte) ([]byte, error) {
-	return config.UpgradeConfig(cfgBytes, cliProjectVersionerFactory, cliDisterFactory, cliDockerBuilderFactory, cliPublisherFactory)
-})
-
-func init() {
-	RootCmd.AddCommand(upgradeConfigCmd)
-}
+// Package integration contains the integration tests for distgo.
+package integration
