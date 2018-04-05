@@ -37,7 +37,7 @@ type TestCase struct {
 	ConfigFiles map[string]string
 	Setup       func(testDir string)
 	WantError   bool
-	WantOutput  *regexp.Regexp
+	WantOutput  func(projectDir string) *regexp.Regexp
 }
 
 var builtinSpecs = []gofiles.GoFileSpec{
@@ -131,7 +131,7 @@ func RunAssetProjectVersionTest(t *testing.T,
 				require.NoError(t, err, "Case %d: %s\nOutput:\n%s", i, tc.Name, outputBuf.String())
 			}
 			if tc.WantOutput != nil {
-				assert.Regexp(t, tc.WantOutput, outputBuf.String(), "Case %d: %s", i, tc.Name)
+				assert.Regexp(t, tc.WantOutput(projectDir), outputBuf.String(), "Case %d: %s", i, tc.Name)
 			}
 		}()
 	}

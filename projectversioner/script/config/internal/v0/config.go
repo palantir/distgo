@@ -21,8 +21,8 @@ import (
 
 type Config struct {
 	// Script specifies the content of the script that is run to determine the version for the project. This script is
-	// written to a temporary directory with executable permissions (0755) and run with the absolute path to the project
-	// directory provided as the first argument to the script. The script is written exactly as provided, so any
+	// written to a temporary directory with executable permissions (0755) and run. The absolute path to the project
+	// directory is set as the environment variable "PROJECT_DIR". The script is written exactly as provided, so any
 	// necessary headers (#! etc.) should be included. If the script exits with an exit code of 0, the result of calling
 	// strings.TrimSpace on the output produced by the script (STDOUT and STDERR) is returned as the version. If the
 	// script exist with a non-0 exit code, that is treated as an error.

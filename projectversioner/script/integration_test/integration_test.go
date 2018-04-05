@@ -55,7 +55,27 @@ project-versioner:
             echo "1.0.0"
 `,
 				},
-				WantOutput: regexp.MustCompile("^" + regexp.QuoteMeta("1.0.0") + "\n$"),
+				WantOutput: func(projectDir string) *regexp.Regexp {
+					return regexp.MustCompile("^" + regexp.QuoteMeta("1.0.0") + "\n$")
+				},
+			},
+			{
+				Name: "project directory is available as environment variable",
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+project-versioner:
+  type: script
+  config:
+    # comment
+    script: |
+            #!/usr/bin/env bash
+            echo "$PROJECT_DIR"
+`,
+				},
+				WantOutput: func(projectDir string) *regexp.Regexp {
+					return regexp.MustCompile("^" + regexp.QuoteMeta(projectDir) + "\n$")
+				},
 			},
 		},
 	)
