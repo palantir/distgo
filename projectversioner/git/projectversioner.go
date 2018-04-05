@@ -12,18 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package git
 
 import (
-	"github.com/palantir/godel/framework/pluginapi"
-
-	"github.com/palantir/distgo/distgo/config"
+	"github.com/palantir/distgo/distgo"
+	"github.com/palantir/distgo/pkg/git"
 )
 
-var upgradeConfigCmd = pluginapi.CobraUpgradeConfigCmd(func(cfgBytes []byte) ([]byte, error) {
-	return config.UpgradeConfig(cfgBytes, cliProjectVersionerFactory, cliDisterFactory, cliDockerBuilderFactory, cliPublisherFactory)
-})
+const TypeName = "git"
 
-func init() {
-	RootCmd.AddCommand(upgradeConfigCmd)
+type ProjectVersioner struct{}
+
+func New() distgo.ProjectVersioner {
+	return &ProjectVersioner{}
+}
+
+func (v *ProjectVersioner) TypeName() (string, error) {
+	return TypeName, nil
+}
+
+func (v *ProjectVersioner) ProjectVersion(projectDir string) (string, error) {
+	return git.ProjectVersion(projectDir)
 }

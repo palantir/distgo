@@ -12,18 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package v0
 
 import (
-	"github.com/palantir/godel/framework/pluginapi"
-
-	"github.com/palantir/distgo/distgo/config"
+	"github.com/palantir/godel/pkg/versionedconfig"
 )
 
-var upgradeConfigCmd = pluginapi.CobraUpgradeConfigCmd(func(cfgBytes []byte) ([]byte, error) {
-	return config.UpgradeConfig(cfgBytes, cliProjectVersionerFactory, cliDisterFactory, cliDockerBuilderFactory, cliPublisherFactory)
-})
-
-func init() {
-	RootCmd.AddCommand(upgradeConfigCmd)
+func UpgradeConfig(cfgBytes []byte) ([]byte, error) {
+	return versionedconfig.ConfigNotSupported("git-version", cfgBytes)
 }

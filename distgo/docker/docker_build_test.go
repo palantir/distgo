@@ -40,6 +40,7 @@ import (
 	"github.com/palantir/distgo/distgo/docker"
 	"github.com/palantir/distgo/dockerbuilder"
 	"github.com/palantir/distgo/dockerbuilder/dockerbuilderfactory"
+	"github.com/palantir/distgo/projectversioner/projectversionerfactory"
 	"github.com/palantir/distgo/publisher/publisherfactory"
 )
 
@@ -234,6 +235,8 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 			tc.preDockerAction(projectDir, tc.projectCfg)
 		}
 
+		projectVersionerFactory, err := projectversionerfactory.New(nil, nil)
+		require.NoError(t, err, "Case %d: %s", i, tc.name)
 		disterFactory, err := disterfactory.New(nil, nil)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 		defaultDisterCfg, err := disterfactory.DefaultConfig()
@@ -243,7 +246,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 		publisherFactory, err := publisherfactory.New(nil, nil)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		projectParam, err := tc.projectCfg.ToParam(projectDir, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
+		projectParam, err := tc.projectCfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		projectInfo, err := projectParam.ProjectInfo(projectDir)

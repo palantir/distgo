@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package distgo
 
-import (
-	"github.com/palantir/godel/framework/pluginapi"
+type ProjectVersioner interface {
+	// TypeName returns the type of this project versioner.
+	TypeName() (string, error)
 
-	"github.com/palantir/distgo/distgo/config"
-)
+	// ProjectVersion returns the string that should be used as the version for the project in the given directory.
+	ProjectVersion(projectDir string) (string, error)
+}
 
-var upgradeConfigCmd = pluginapi.CobraUpgradeConfigCmd(func(cfgBytes []byte) ([]byte, error) {
-	return config.UpgradeConfig(cfgBytes, cliProjectVersionerFactory, cliDisterFactory, cliDockerBuilderFactory, cliPublisherFactory)
-})
-
-func init() {
-	RootCmd.AddCommand(upgradeConfigCmd)
+type ProjectVersionerFactory interface {
+	Types() []string
+	NewProjectVersioner(typeName string, cfgYMLBytes []byte) (ProjectVersioner, error)
+	ConfigUpgrader(typeName string) (ConfigUpgrader, error)
 }

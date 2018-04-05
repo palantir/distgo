@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"path"
+	"regexp"
 	"testing"
 
 	"github.com/nmiyake/pkg/dirs"
@@ -27,25 +28,25 @@ import (
 
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/projectversion"
+	"github.com/palantir/distgo/projectversioner/git"
+	"github.com/palantir/distgo/projectversioner/script"
 )
 
-func TestProjectVersion(t *testing.T) {
+func TestProjectVersionDefaultParam(t *testing.T) {
 	rootDir, cleanup, err := dirs.TempDir("", "")
 	require.NoError(t, err)
 	defer cleanup()
 
 	for i, tc := range []struct {
-		name         string
-		setup        func(testDir string)
-		projectParam distgo.ProjectParam
-		want         string
+		name  string
+		setup func(testDir string)
+		want  string
 	}{
 		{
 			"version of project with no tags is 'unspecified'",
 			func(testDir string) {
 				gittest.CommitRandomFile(t, testDir, "Initial commit")
 			},
-			distgo.ProjectParam{},
 			"^unspecified\n$",
 		},
 		{
@@ -54,7 +55,6 @@ func TestProjectVersion(t *testing.T) {
 				gittest.CommitRandomFile(t, testDir, "Initial commit")
 				gittest.CreateGitTag(t, testDir, "1.0.0")
 			},
-			distgo.ProjectParam{},
 			"^1.0.0\n$",
 		},
 		{
@@ -65,7 +65,6 @@ func TestProjectVersion(t *testing.T) {
 				err := ioutil.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
 				require.NoError(t, err)
 			},
-			distgo.ProjectParam{},
 			"^1.0.0-dirty\n$",
 		},
 		{
@@ -76,7 +75,6 @@ func TestProjectVersion(t *testing.T) {
 				gittest.CommitRandomFile(t, testDir, "Test commit message")
 				require.NoError(t, err)
 			},
-			distgo.ProjectParam{},
 			"^1.0.0-1-g[a-f0-9]{7}\n$",
 		},
 		{
@@ -88,8 +86,55 @@ func TestProjectVersion(t *testing.T) {
 				err := ioutil.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
 				require.NoError(t, err)
 			},
-			distgo.ProjectParam{},
 			"^1.0.0-1-g[a-f0-9]{7}-dirty\n$",
+		},
+	} {
+		projectDir, err := ioutil.TempDir(rootDir, "")
+		require.NoError(t, err, "Case %d: %s", i, tc.name)
+
+		gittest.InitGitDir(t, projectDir)
+		tc.setup(projectDir)
+
+		projectParam := distgo.ProjectParam{
+			ProjectVersionerParam: distgo.ProjectVersionerParam{
+				ProjectVersioner: git.New(),
+			},
+		}
+		projectInfo, err := projectParam.ProjectInfo(projectDir)
+		require.NoError(t, err, "Case %d: %s", i, tc.name)
+
+		buf := &bytes.Buffer{}
+		err = projectversion.Run(projectInfo, buf)
+		require.NoError(t, err, "Case %d: %s", i, tc.name)
+		assert.Regexp(t, tc.want, buf.String(), "Case %d: %s", i, tc.name)
+	}
+}
+
+func TestProjectVersionScriptParam(t *testing.T) {
+	rootDir, cleanup, err := dirs.TempDir("", "")
+	require.NoError(t, err)
+	defer cleanup()
+
+	for i, tc := range []struct {
+		name         string
+		setup        func(testDir string)
+		projectParam distgo.ProjectParam
+		want         string
+	}{
+		{
+			"project version uses script versioner param if specified",
+			func(testDir string) {
+				gittest.CommitRandomFile(t, testDir, "Initial commit")
+			},
+			distgo.ProjectParam{
+				ProjectVersionerParam: distgo.ProjectVersionerParam{
+					ProjectVersioner: script.New(`#!/usr/bin/env bash
+echo "3.2.1"
+`,
+					),
+				},
+			},
+			`^` + regexp.QuoteMeta("3.2.1") + `\n$`,
 		},
 	} {
 		projectDir, err := ioutil.TempDir(rootDir, "")

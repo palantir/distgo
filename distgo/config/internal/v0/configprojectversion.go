@@ -12,18 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package v0
 
 import (
-	"github.com/palantir/godel/framework/pluginapi"
-
-	"github.com/palantir/distgo/distgo/config"
+	"gopkg.in/yaml.v2"
 )
 
-var upgradeConfigCmd = pluginapi.CobraUpgradeConfigCmd(func(cfgBytes []byte) ([]byte, error) {
-	return config.UpgradeConfig(cfgBytes, cliProjectVersionerFactory, cliDisterFactory, cliDockerBuilderFactory, cliPublisherFactory)
-})
+type ProjectVersionConfig struct {
+	// Type is the type of the project versioner. This field must be non-empty and resolve to a valid ProjectVersioner.
+	Type string `yaml:"type,omitempty"`
 
-func init() {
-	RootCmd.AddCommand(upgradeConfigCmd)
+	// Config is the YAML configuration content for the project versioner.
+	Config yaml.MapSlice `yaml:"config,omitempty"`
 }
