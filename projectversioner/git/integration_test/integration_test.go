@@ -56,7 +56,9 @@ project-versioner:
 				Setup: func(testDir string) {
 					gittest.CommitRandomFile(t, testDir, "Second commit")
 				},
-				WantOutput: regexp.MustCompile("^unspecified\n$"),
+				WantOutput: func(projectDir string) *regexp.Regexp {
+					return regexp.MustCompile("^unspecified\n$")
+				},
 			},
 			{
 				Name: "version of project tagged with 1.0.0 is 1.0.0",
@@ -71,7 +73,9 @@ project-versioner:
 					gittest.CommitRandomFile(t, testDir, "Second commit")
 					gittest.CreateGitTag(t, testDir, "1.0.0")
 				},
-				WantOutput: regexp.MustCompile("^1.0.0\n$"),
+				WantOutput: func(projectDir string) *regexp.Regexp {
+					return regexp.MustCompile("^1.0.0\n$")
+				},
 			},
 			{
 				Name: "version of project tagged with v1.0.0 is 1.0.0",
@@ -86,7 +90,9 @@ project-versioner:
 					gittest.CommitRandomFile(t, testDir, "Second commit")
 					gittest.CreateGitTag(t, testDir, "v1.0.0")
 				},
-				WantOutput: regexp.MustCompile("^1.0.0\n$"),
+				WantOutput: func(projectDir string) *regexp.Regexp {
+					return regexp.MustCompile("^1.0.0\n$")
+				},
 			},
 			{
 				Name: "version of project with tagged commit with uncommited files ends in -dirty",
@@ -103,7 +109,9 @@ project-versioner:
 					err := ioutil.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
 					require.NoError(t, err)
 				},
-				WantOutput: regexp.MustCompile("^1.0.0-dirty\n$"),
+				WantOutput: func(projectDir string) *regexp.Regexp {
+					return regexp.MustCompile("^1.0.0-dirty\n$")
+				},
 			},
 			{
 				Name: "non-tagged commit output",
@@ -119,7 +127,9 @@ project-versioner:
 					gittest.CreateGitTag(t, testDir, "1.0.0")
 					gittest.CommitRandomFile(t, testDir, "Test commit message")
 				},
-				WantOutput: regexp.MustCompile("^1.0.0-1-g[a-f0-9]{7}\n$"),
+				WantOutput: func(projectDir string) *regexp.Regexp {
+					return regexp.MustCompile("^1.0.0-1-g[a-f0-9]{7}\n$")
+				},
 			},
 			{
 				Name: "non-tagged commit dirty output",
@@ -137,7 +147,9 @@ project-versioner:
 					err := ioutil.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
 					require.NoError(t, err)
 				},
-				WantOutput: regexp.MustCompile("^1.0.0-1-g[a-f0-9]{7}-dirty\n$"),
+				WantOutput: func(projectDir string) *regexp.Regexp {
+					return regexp.MustCompile("^1.0.0-1-g[a-f0-9]{7}-dirty\n$")
+				},
 			},
 		},
 	)

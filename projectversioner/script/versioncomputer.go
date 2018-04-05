@@ -15,6 +15,7 @@
 package script
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -59,6 +60,7 @@ func (v *ProjectVersioner) ProjectVersion(projectDir string) (rVersion string, r
 	}
 	versionScriptCmd := exec.Command(versionScript)
 	versionScriptCmd.Dir = projectDir
+	versionScriptCmd.Env = append(os.Environ(), fmt.Sprintf("PROJECT_DIR=%s", projectDir))
 	outputBytes, err := versionScriptCmd.CombinedOutput()
 	output := string(outputBytes)
 	if err != nil {
