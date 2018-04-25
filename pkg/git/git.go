@@ -28,7 +28,7 @@ const Unspecified = "unspecified"
 var fullDescribeRegexp = regexp.MustCompile(`^(.+)-([0-9]+)-g([0-9a-f]{40})$`)
 
 // ProjectVersion returns the version string for the git repository that the provided directory is in. The output is the
-// output of "git describe --tags --first-parent" followed by "-dirty" if the repository currently has any uncommitted
+// output of "git describe --tags --first-parent" followed by ".dirty" if the repository currently has any uncommitted
 // changes (including untracked files) as determined by "git status --porcelain". If the "git describe" output includes
 // a trailing commit hash ("-g[0-9a-f]+", where [0-9a-f]+ is the commit hash), then the commit hash will be 7
 // characters long even if the "git describe" operation returns a longer hash. If the output starts with the character
@@ -69,7 +69,7 @@ func ProjectVersion(gitDir string) (string, error) {
 		return "", err
 	}
 	if dirtyFiles != "" {
-		result += "-dirty"
+		result += ".dirty"
 	}
 	return result, nil
 }

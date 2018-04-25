@@ -95,7 +95,7 @@ project-versioner:
 				},
 			},
 			{
-				Name: "version of project with tagged commit with uncommited files ends in -dirty",
+				Name: "version of project with tagged commit with uncommited files ends in .dirty",
 				ConfigFiles: map[string]string{
 					"godel/config/godel.yml": godelYML,
 					"godel/config/dist-plugin.yml": `
@@ -110,7 +110,7 @@ project-versioner:
 					require.NoError(t, err)
 				},
 				WantOutput: func(projectDir string) *regexp.Regexp {
-					return regexp.MustCompile(`^` + regexp.QuoteMeta("1.0.0-dirty") + `\n$`)
+					return regexp.MustCompile(`^` + regexp.QuoteMeta("1.0.0.dirty") + `\n$`)
 				},
 			},
 			{
@@ -148,7 +148,7 @@ project-versioner:
 					require.NoError(t, err)
 				},
 				WantOutput: func(projectDir string) *regexp.Regexp {
-					return regexp.MustCompile(`^` + regexp.QuoteMeta("1.0.0") + `-1-g[a-f0-9]{7}` + regexp.QuoteMeta("-dirty") + `\n$`)
+					return regexp.MustCompile(`^` + regexp.QuoteMeta("1.0.0") + `-1-g[a-f0-9]{7}` + regexp.QuoteMeta(".dirty") + `\n$`)
 				},
 			},
 		},
