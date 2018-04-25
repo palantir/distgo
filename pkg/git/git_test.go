@@ -38,7 +38,15 @@ func TestProjectInfo(t *testing.T) {
 		want          string
 	}{
 		{
+			gitOperations: func(gitDir string) {},
+			want:          "^unspecified$",
+		},
+		{
 			gitOperations: func(gitDir string) {
+				gittest.CreateBranch(t, gitDir, "featureBranch")
+				gittest.CommitRandomFile(t, gitDir, "commit on feature branch")
+				gittest.CreateGitTag(t, gitDir, "featureBranchTag1.0")
+				gittest.RunGitCommand(t, gitDir, "checkout", "master")
 			},
 			want: "^unspecified$",
 		},

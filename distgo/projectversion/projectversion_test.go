@@ -55,7 +55,7 @@ func TestProjectVersionDefaultParam(t *testing.T) {
 				gittest.CommitRandomFile(t, testDir, "Initial commit")
 				gittest.CreateGitTag(t, testDir, "1.0.0")
 			},
-			"^1.0.0\n$",
+			`^` + regexp.QuoteMeta("1.0.0") + `\n$`,
 		},
 		{
 			"version of project with tagged commit with uncommited files ends in -dirty",
@@ -65,7 +65,7 @@ func TestProjectVersionDefaultParam(t *testing.T) {
 				err := ioutil.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
 				require.NoError(t, err)
 			},
-			"^1.0.0-dirty\n$",
+			`^` + regexp.QuoteMeta("1.0.0-dirty") + `\n$`,
 		},
 		{
 			"non-tagged commit output",
@@ -75,7 +75,7 @@ func TestProjectVersionDefaultParam(t *testing.T) {
 				gittest.CommitRandomFile(t, testDir, "Test commit message")
 				require.NoError(t, err)
 			},
-			"^1.0.0-1-g[a-f0-9]{7}\n$",
+			`^` + regexp.QuoteMeta("1.0.0-1-g") + `[a-f0-9]{7}\n$`,
 		},
 		{
 			"non-tagged commit dirty output",
@@ -86,7 +86,7 @@ func TestProjectVersionDefaultParam(t *testing.T) {
 				err := ioutil.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
 				require.NoError(t, err)
 			},
-			"^1.0.0-1-g[a-f0-9]{7}-dirty\n$",
+			`^` + regexp.QuoteMeta("1.0.0-1-g") + `[a-f0-9]{7}` + regexp.QuoteMeta(`-dirty`) + `\n$`,
 		},
 	} {
 		projectDir, err := ioutil.TempDir(rootDir, "")
