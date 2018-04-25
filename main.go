@@ -23,8 +23,6 @@ import (
 	"github.com/palantir/distgo/cmd"
 )
 
-var debugFlagVal bool
-
 func main() {
 	if ok := pluginapi.InfoCmd(os.Args, os.Stdout, cmd.PluginInfo); ok {
 		return
@@ -34,6 +32,5 @@ func main() {
 	if err := cmd.InitAssetCmds(os.Args[1:]); err != nil {
 		panic(err)
 	}
-	pluginapi.AddDebugPFlagPtr(cmd.RootCmd.PersistentFlags(), &debugFlagVal)
-	os.Exit(cobracli.ExecuteWithDebugVarAndDefaultParams(cmd.RootCmd, &debugFlagVal))
+	os.Exit(cobracli.ExecuteWithDebugVarAndDefaultParams(cmd.RootCmd, &cmd.DebugFlagVal))
 }
