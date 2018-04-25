@@ -74,7 +74,7 @@ project-versioner:
 					gittest.CreateGitTag(t, testDir, "1.0.0")
 				},
 				WantOutput: func(projectDir string) *regexp.Regexp {
-					return regexp.MustCompile("^1.0.0\n$")
+					return regexp.MustCompile(`^` + regexp.QuoteMeta("1.0.0") + `\n$`)
 				},
 			},
 			{
@@ -91,7 +91,7 @@ project-versioner:
 					gittest.CreateGitTag(t, testDir, "v1.0.0")
 				},
 				WantOutput: func(projectDir string) *regexp.Regexp {
-					return regexp.MustCompile("^1.0.0\n$")
+					return regexp.MustCompile(`^` + regexp.QuoteMeta("1.0.0") + `\n$`)
 				},
 			},
 			{
@@ -110,7 +110,7 @@ project-versioner:
 					require.NoError(t, err)
 				},
 				WantOutput: func(projectDir string) *regexp.Regexp {
-					return regexp.MustCompile("^1.0.0-dirty\n$")
+					return regexp.MustCompile(`^` + regexp.QuoteMeta("1.0.0-dirty") + `\n$`)
 				},
 			},
 			{
@@ -128,7 +128,7 @@ project-versioner:
 					gittest.CommitRandomFile(t, testDir, "Test commit message")
 				},
 				WantOutput: func(projectDir string) *regexp.Regexp {
-					return regexp.MustCompile("^1.0.0-1-g[a-f0-9]{7}\n$")
+					return regexp.MustCompile(`^` + regexp.QuoteMeta("1.0.0") + `-1-g[a-f0-9]{7}\n$`)
 				},
 			},
 			{
@@ -148,7 +148,7 @@ project-versioner:
 					require.NoError(t, err)
 				},
 				WantOutput: func(projectDir string) *regexp.Regexp {
-					return regexp.MustCompile("^1.0.0-1-g[a-f0-9]{7}-dirty\n$")
+					return regexp.MustCompile(`^` + regexp.QuoteMeta("1.0.0") + `-1-g[a-f0-9]{7}` + regexp.QuoteMeta("-dirty") + `\n$`)
 				},
 			},
 		},
