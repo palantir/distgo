@@ -34,7 +34,6 @@ func main() {
 	if err := cmd.InitAssetCmds(os.Args[1:]); err != nil {
 		panic(err)
 	}
-
 	pluginapi.AddDebugPFlagPtr(cmd.RootCmd.PersistentFlags(), &debugFlagVal)
-	os.Exit(cobracli.ExecuteWithDefaultParamsWithVersion(cmd.RootCmd, &debugFlagVal, ""))
+	os.Exit(cobracli.ExecuteWithDebugVarAndDefaultParams(cmd.RootCmd, &debugFlagVal))
 }
