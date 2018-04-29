@@ -25,5 +25,5 @@ var upgradeConfigCmd = pluginapi.CobraUpgradeConfigCmd(func(cfgBytes []byte) ([]
 })
 
 func init() {
-	RootCmd.AddCommand(upgradeConfigCmd)
+	rootCmd.AddCommand(upgradeConfigCmd)
 }

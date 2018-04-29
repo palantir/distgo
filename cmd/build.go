@@ -52,5 +52,5 @@ func init() {
 	buildCmd.Flags().StringSliceVar(&buildOSArchsFlagVal, "os-arch", nil, "if specified, only builds the binaries for the specified GOOS-GOARCH(s)")
 	buildCmd.Flags().BoolVar(&buildDryRunFlagVal, "dry-run", false, "print the operations that would be performed")
 
-	RootCmd.AddCommand(buildCmd)
+	rootCmd.AddCommand(buildCmd)
 }
