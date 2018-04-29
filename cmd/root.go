@@ -21,6 +21,7 @@ import (
 
 	godelconfig "github.com/palantir/godel/framework/godel/config"
 	"github.com/palantir/godel/framework/pluginapi"
+	"github.com/palantir/pkg/cobracli"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -38,7 +39,7 @@ import (
 )
 
 var (
-	DebugFlagVal            bool
+	debugFlagVal            bool
 	projectDirFlagVal       string
 	distgoConfigFileFlagVal string
 	godelConfigFileFlagVal  string
@@ -51,8 +52,12 @@ var (
 	cliPublisherFactory        distgo.PublisherFactory
 )
 
-var RootCmd = &cobra.Command{
+var rootCmd = &cobra.Command{
 	Use: "distgo",
+}
+
+func Execute() int {
+	return cobracli.ExecuteWithDebugVarAndDefaultParams(rootCmd, &debugFlagVal)
 }
 
 func restoreRootFlagsFn() func() {
@@ -72,9 +77,9 @@ func InitAssetCmds(args []string) error {
 	restoreFn := restoreRootFlagsFn()
 	// parse the flags to retrieve the value of the "--assets" flag. Ignore any errors that occur in flag parsing so
 	// that, if provided flags are invalid, the regular logic handles the error printing.
-	_ = RootCmd.ParseFlags(args)
+	_ = rootCmd.ParseFlags(args)
 	allAssets, err := assetapi.LoadAssets(assetsFlagVal)
-	// restore the root flags to undo any parsing done by RootCmd.ParseFlags
+	// restore the root flags to undo any parsing done by rootCmd.ParseFlags
 	restoreFn()
 	if err != nil {
 		return err
@@ -108,13 +113,13 @@ func InitAssetCmds(args []string) error {
 }
 
 func init() {
-	pluginapi.AddDebugPFlagPtr(RootCmd.PersistentFlags(), &DebugFlagVal)
-	pluginapi.AddProjectDirPFlagPtr(RootCmd.PersistentFlags(), &projectDirFlagVal)
-	pluginapi.AddConfigPFlagPtr(RootCmd.PersistentFlags(), &distgoConfigFileFlagVal)
-	pluginapi.AddGodelConfigPFlagPtr(RootCmd.PersistentFlags(), &godelConfigFileFlagVal)
-	pluginapi.AddAssetsPFlagPtr(RootCmd.PersistentFlags(), &assetsFlagVal)
+	pluginapi.AddDebugPFlagPtr(rootCmd.PersistentFlags(), &debugFlagVal)
+	pluginapi.AddProjectDirPFlagPtr(rootCmd.PersistentFlags(), &projectDirFlagVal)
+	pluginapi.AddConfigPFlagPtr(rootCmd.PersistentFlags(), &distgoConfigFileFlagVal)
+	pluginapi.AddGodelConfigPFlagPtr(rootCmd.PersistentFlags(), &godelConfigFileFlagVal)
+	pluginapi.AddAssetsPFlagPtr(rootCmd.PersistentFlags(), &assetsFlagVal)
 
-	RootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		allAssets, err := assetapi.LoadAssets(assetsFlagVal)
 		if err != nil {
 			return err
