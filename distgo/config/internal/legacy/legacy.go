@@ -737,11 +737,16 @@ func upgradeLegacyConfig(
 				upgradedDockerBuilderConfig := v0.DockerBuilderConfig{}
 
 				// Tag
+				tagVal := "{{Repository}}" + legacyDockerImage.Repository + ":"
 				if legacyDockerImage.Tag != "" {
-					upgradedDockerBuilderConfig.TagTemplates = &[]string{
-						legacyDockerImage.Tag,
-					}
+					tagVal += legacyDockerImage.Tag
+				} else {
+					tagVal += "{{Version}}"
 				}
+				upgradedDockerBuilderConfig.TagTemplates = &[]string{
+					tagVal,
+				}
+
 				// ContextDir
 				if legacyDockerImage.ContextDir != "" {
 					upgradedDockerBuilderConfig.ContextDir = stringPtr(legacyDockerImage.ContextDir)

@@ -52,6 +52,8 @@ type DockerBuilderConfig struct {
 	// InputDists specifies the products whose dist outputs should be made available to the Docker build task. The
 	// specified dists will be hard-linked into the context directory. The referenced products must be this product
 	// or one of its declared dependencies.
-	InputDists   *[]distgo.ProductDistID `yaml:"input-dists,omitempty"`
-	TagTemplates *[]string               `yaml:"tag-templates,omitempty"`
+	InputDists *[]distgo.ProductDistID `yaml:"input-dists,omitempty"`
+	// TagTemplates specifies the templates that should be used to render the tag(s) for the Docker image. If multiple
+	// values are specified, the image will be tagged with all of them.
+	TagTemplates *[]string `yaml:"tag-templates,omitempty"`
 }
