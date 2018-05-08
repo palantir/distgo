@@ -423,14 +423,14 @@ group-id: com.palantir.group
           input-dists:
           - foo.bin
           tag-templates:
-          - snapshot
+          - '{{Repository}}test/foo:snapshot'
         docker-image-1:
           type: default
           context-dir: other/foo/dist/docker
           input-dists:
           - foo.bin
           tag-templates:
-          - snapshot
+          - '{{Repository}}test/foo-other:snapshot'
     dependencies:
     - bar
 product-defaults:
@@ -460,6 +460,49 @@ products:
       output-dir: foo/build/bin
       main-pkg: ./foo/main/foo
       version-var: github.com/palantir/foo/main.version
+`,
+				},
+			},
+			{
+				Name: "legacy configuration with no Docker tag is upgraded",
+				ConfigFiles: map[string]string{
+					"godel/config/dist.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+      os-archs:
+        - os: linux
+          arch: amd64
+    dist:
+      dist-type:
+        type: bin
+    docker:
+    - repository: repo/foo
+      context-dir: foo-docker
+`,
+				},
+				Legacy:     true,
+				WantOutput: "Upgraded configuration for dist-plugin.yml\n",
+				WantFiles: map[string]string{
+					"godel/config/dist-plugin.yml": `products:
+  foo:
+    build:
+      main-pkg: ./foo
+      os-archs:
+      - os: linux
+        arch: amd64
+    dist:
+      disters:
+        bin:
+          type: bin
+    docker:
+      docker-builders:
+        docker-image-0:
+          type: default
+          context-dir: foo-docker
+          tag-templates:
+          - '{{Repository}}repo/foo:{{Version}}'
 `,
 				},
 			},
