@@ -425,7 +425,7 @@ func ProductParamsForDockerProductArgs(inputProducts map[ProductID]ProductParam,
 	filteredProducts := make(map[ProductID]ProductParam)
 	for productID, dockerIDs := range productIDToDockerIDs {
 		currProductParam := inputProducts[productID]
-		if currProductParam.Dist == nil {
+		if currProductParam.Docker == nil {
 			continue
 		}
 		var newDockerBuilders map[DockerID]DockerBuilderParam
