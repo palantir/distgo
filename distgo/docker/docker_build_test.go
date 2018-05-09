@@ -266,7 +266,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 		}
 
 		if tc.wantStdout != "" {
-			assert.Equal(t, tc.wantStdout, buffer.String(), "Case %d: %s", i, tc.name)
+			assert.Equal(t, tc.wantStdout, buffer.String(), "Case %d: %s\nOutput:\n%s", i, tc.name, buffer.String())
 		}
 
 		if tc.validate != nil {
