@@ -179,7 +179,7 @@ func (p *artifactoryPublisher) artifactorySetSHA256Checksum(cfg config.Artifacto
 		return errors.Wrapf(err, "failed to parse %s as URL", apiURLString)
 	}
 
-	jsonContent := fmt.Sprintf(`{"repoKey":"%s","Path":"%s"}`, cfg.Repository, filePath)
+	jsonContent := fmt.Sprintf(`{"repoKey":"%s","path":"%s"}`, cfg.Repository, filePath)
 	reader := strings.NewReader(jsonContent)
 
 	header := http.Header{}
