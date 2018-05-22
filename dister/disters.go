@@ -64,11 +64,14 @@ func AssetDisterCreators(assetPaths ...string) ([]Creator, []distgo.ConfigUpgrad
 		disterNameToAssets[disterName] = append(disterNameToAssets[disterName], currAssetPath)
 		disterCreators = append(disterCreators, NewCreator(disterName,
 			func(cfgYML []byte) (distgo.Dister, error) {
-				currDister.cfgYML = string(cfgYML)
-				if err := currDister.VerifyConfig(); err != nil {
+				newDister := assetDister{
+					assetPath: currAssetPath,
+					cfgYML:    string(cfgYML),
+				}
+				if err := newDister.VerifyConfig(); err != nil {
 					return nil, err
 				}
-				return &currDister, nil
+				return &newDister, nil
 			}))
 		configUpgraders = append(configUpgraders, &assetConfigUpgrader{
 			typeName:  disterName,

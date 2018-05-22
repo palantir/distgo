@@ -64,11 +64,14 @@ func AssetDockerBuilderCreators(assetPaths ...string) ([]Creator, []distgo.Confi
 		dockerBuilderNameToAssets[dockerBuilderName] = append(dockerBuilderNameToAssets[dockerBuilderName], currAssetPath)
 		dockerBuilderCreators = append(dockerBuilderCreators, NewCreator(dockerBuilderName,
 			func(cfgYML []byte) (distgo.DockerBuilder, error) {
-				currDockerBuilder.cfgYML = string(cfgYML)
-				if err := currDockerBuilder.VerifyConfig(); err != nil {
+				newDockerBuilder := assetDockerBuilder{
+					assetPath: currAssetPath,
+					cfgYML:    string(cfgYML),
+				}
+				if err := newDockerBuilder.VerifyConfig(); err != nil {
 					return nil, err
 				}
-				return &currDockerBuilder, nil
+				return &newDockerBuilder, nil
 			}))
 		configUpgraders = append(configUpgraders, &assetConfigUpgrader{
 			typeName:  dockerBuilderName,
