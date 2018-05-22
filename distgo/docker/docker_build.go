@@ -217,10 +217,7 @@ func runSingleDockerBuild(
 
 	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running Docker build for configuration %s of product %s...", dockerID, productID), dryRun)
 	// run the Docker build task
-	if err := dockerBuilderParam.DockerBuilder.RunDockerBuild(dockerID, productTaskOutputInfo, verbose, dryRun, stdout); err != nil {
-		return err
-	}
-	return nil
+	return dockerBuilderParam.DockerBuilder.RunDockerBuild(dockerID, productTaskOutputInfo, verbose, dryRun, stdout)
 }
 
 func inputBuildArtifactTemplateFunction(dockerID distgo.DockerID, pathToContextDir string, buildArtifactPaths map[distgo.ProductID]map[osarch.OSArch]string) distgo.TemplateFunction {

@@ -108,10 +108,7 @@ func newRunDockerBuildCmd(creatorFn CreatorFunction) *cobra.Command {
 			if err := json.Unmarshal([]byte(productTaskOutputInfoFlagVal), &productTaskOutputInfo); err != nil {
 				return errors.Wrapf(err, "failed to unmarshal JSON %s", productTaskOutputInfoFlagVal)
 			}
-			if err := dockerBuilder.RunDockerBuild(distgo.DockerID(dockerIDFlagVal), productTaskOutputInfo, verboseFlagVal, dryRunFlagVal, cmd.OutOrStdout()); err != nil {
-				return err
-			}
-			return nil
+			return dockerBuilder.RunDockerBuild(distgo.DockerID(dockerIDFlagVal), productTaskOutputInfo, verboseFlagVal, dryRunFlagVal, cmd.OutOrStdout())
 		},
 	}
 	runDockerBuildCmd.Flags().StringVar(&configYMLFlagVal, commonCmdConfigYMLFlagName, "", "YML of DockerBuilder configuration")

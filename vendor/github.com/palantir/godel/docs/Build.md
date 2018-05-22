@@ -21,8 +21,8 @@ Start by running `./godelw build` in the project to observe the default behavior
 
 ```
 ➜ ./godelw build
-Building echgo2 for linux-amd64 at /go/src/github.com/nmiyake/echgo2/out/build/echgo2/unspecified/linux-amd64/echgo2
-Finished building echgo2 for linux-amd64 (0.222s)
+Building echgo2 for linux-amd64 at out/build/echgo2/unspecified/linux-amd64/echgo2
+Finished building echgo2 for linux-amd64 (0.204s)
 ```
 
 The default build settings builds all `main` packages for the executing platform. As stated by the output, this command
@@ -42,7 +42,7 @@ in git, so run the following to add `/out/` to the `.gitignore` file and commit 
 ➜ echo '/out/' >> .gitignore
 ➜ git add .gitignore
 ➜ git commit -m "Update .gitignore to ignore out directory"
-[master ed91bb6] Update .gitignore to ignore out directory
+[master a91b9a1] Update .gitignore to ignore out directory
  1 file changed, 1 insertion(+)
 ```
 
@@ -87,10 +87,10 @@ Run `./godelw build` with the updated configuration:
 
 ```
 ➜ ./godelw build
-Building echgo2 for linux-amd64 at /go/src/github.com/nmiyake/echgo2/out/build/echgo2/unspecified/linux-amd64/echgo2
-Building echgo2 for darwin-amd64 at /go/src/github.com/nmiyake/echgo2/out/build/echgo2/unspecified/darwin-amd64/echgo2
-Finished building echgo2 for linux-amd64 (0.080s)
-Finished building echgo2 for darwin-amd64 (2.587s)
+Building echgo2 for darwin-amd64 at out/build/echgo2/unspecified/darwin-amd64/echgo2
+Building echgo2 for linux-amd64 at out/build/echgo2/unspecified/linux-amd64/echgo2
+Finished building echgo2 for linux-amd64 (0.106s)
+Finished building echgo2 for darwin-amd64 (2.930s)
 ```
 
 As indicated by the output, the product has now been built for both `darwin-amd64` and `linux-amd64`.
@@ -165,10 +165,10 @@ Run `./godelw build` and invoke the build executable to see that the version var
 
 ```
 ➜ ./godelw build
-Building echgo2 for darwin-amd64 at /go/src/github.com/nmiyake/echgo2/out/build/echgo2/unspecified/darwin-amd64/echgo2
-Building echgo2 for linux-amd64 at /go/src/github.com/nmiyake/echgo2/out/build/echgo2/unspecified/linux-amd64/echgo2
-Finished building echgo2 for linux-amd64 (0.285s)
-Finished building echgo2 for darwin-amd64 (0.453s)
+Building echgo2 for darwin-amd64 at out/build/echgo2/unspecified/darwin-amd64/echgo2
+Building echgo2 for linux-amd64 at out/build/echgo2/unspecified/linux-amd64/echgo2
+Finished building echgo2 for linux-amd64 (0.278s)
+Finished building echgo2 for darwin-amd64 (0.425s)
 ➜ ./out/build/echgo2/unspecified/linux-amd64/echgo2 -version
 echgo2 version: unspecified
 ```
@@ -182,7 +182,7 @@ Commit the files that were modified and tag a release:
 ```
 ➜ git add main.go godel/config/dist-plugin.yml
 ➜ git commit -m "Add version variable and define build configuration"
-[master d3f8b0d] Add version variable and define build configuration
+[master 56c8f63] Add version variable and define build configuration
  2 files changed, 20 insertions(+), 2 deletions(-)
 ➜ git tag 0.0.1
 ```
@@ -191,10 +191,10 @@ Now that the repository is tagged, run `./godelw build` and run version on the e
 
 ```
 ➜ ./godelw build
-Building echgo2 for darwin-amd64 at /go/src/github.com/nmiyake/echgo2/out/build/echgo2/0.0.1/darwin-amd64/echgo2
-Building echgo2 for linux-amd64 at /go/src/github.com/nmiyake/echgo2/out/build/echgo2/0.0.1/linux-amd64/echgo2
-Finished building echgo2 for linux-amd64 (0.223s)
-Finished building echgo2 for darwin-amd64 (0.262s)
+Building echgo2 for darwin-amd64 at out/build/echgo2/0.0.1/darwin-amd64/echgo2
+Building echgo2 for linux-amd64 at out/build/echgo2/0.0.1/linux-amd64/echgo2
+Finished building echgo2 for linux-amd64 (0.248s)
+Finished building echgo2 for darwin-amd64 (0.253s)
 ➜ ./out/build/echgo2/0.0.1/linux-amd64/echgo2 -version
 echgo2 version: 0.0.1
 ```
@@ -227,10 +227,10 @@ specify that we want to build only `echgo2` by running the following:
 
 ```
 ➜ ./godelw build echgo2
-Building echgo2 for darwin-amd64 at /go/src/github.com/nmiyake/echgo2/out/build/echgo2/0.0.1/darwin-amd64/echgo2
-Building echgo2 for linux-amd64 at /go/src/github.com/nmiyake/echgo2/out/build/echgo2/0.0.1/linux-amd64/echgo2
-Finished building echgo2 for linux-amd64 (0.090s)
-Finished building echgo2 for darwin-amd64 (0.095s)
+Building echgo2 for darwin-amd64 at out/build/echgo2/0.0.1/darwin-amd64/echgo2
+Building echgo2 for linux-amd64 at out/build/echgo2/0.0.1/linux-amd64/echgo2
+Finished building echgo2 for linux-amd64 (0.094s)
+Finished building echgo2 for darwin-amd64 (0.098s)
 ```
 
 ### Specify build environment variables
@@ -275,10 +275,10 @@ performing them:
 
 ```
 ➜ ./godelw build --dry-run
-[DRY RUN] Building echgo2 for darwin-amd64 at /go/src/github.com/nmiyake/echgo2/out/build/echgo2/0.0.1/darwin-amd64/echgo2
-[DRY RUN] Run: /usr/local/go/bin/go build -i -o /go/src/github.com/nmiyake/echgo2/out/build/echgo2/0.0.1/darwin-amd64/echgo2 -ldflags -X main.version=0.0.1 ./.
-[DRY RUN] Finished building echgo2 for darwin-amd64 (0.000s)
-[DRY RUN] Building echgo2 for linux-amd64 at /go/src/github.com/nmiyake/echgo2/out/build/echgo2/0.0.1/linux-amd64/echgo2
-[DRY RUN] Run: /usr/local/go/bin/go build -i -o /go/src/github.com/nmiyake/echgo2/out/build/echgo2/0.0.1/linux-amd64/echgo2 -ldflags -X main.version=0.0.1 ./.
+[DRY RUN] Building echgo2 for darwin-amd64 at out/build/echgo2/0.0.1/darwin-amd64/echgo2
+[DRY RUN] Building echgo2 for linux-amd64 at out/build/echgo2/0.0.1/linux-amd64/echgo2
+[DRY RUN] Run: /usr/local/go/bin/go build -o /go/src/github.com/nmiyake/echgo2/out/build/echgo2/0.0.1/linux-amd64/echgo2 -ldflags -X main.version=0.0.1 ./. with additional environment variables [GOOS=linux GOARCH=amd64]
 [DRY RUN] Finished building echgo2 for linux-amd64 (0.000s)
+[DRY RUN] Run: /usr/local/go/bin/go build -o /go/src/github.com/nmiyake/echgo2/out/build/echgo2/0.0.1/darwin-amd64/echgo2 -ldflags -X main.version=0.0.1 ./. with additional environment variables [GOOS=darwin GOARCH=amd64]
+[DRY RUN] Finished building echgo2 for darwin-amd64 (0.001s)
 ```

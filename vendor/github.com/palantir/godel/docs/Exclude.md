@@ -13,6 +13,7 @@ Tutorial start state
 * Project is tagged as 0.0.1
 * `godel/config/dist-plugin.yml` is configured to create distributions for `echgo`
 * Project is tagged as 0.0.2
+* `dockerctx` directory exists and `godel/config/dist-plugin.yml` is configured to build Docker images for the product
 * Go files have license headers
 * `godel/config/godel.yml` is configured to add the go-generate plugin
 * `godel/config/generate-plugin.yml` is configured to generate string function
@@ -32,7 +33,7 @@ plugins:
     - "https://palantir.bintray.com/releases/{{GroupPath}}/{{Product}}/{{Version}}/{{Product}}-{{Version}}-{{OS}}-{{Arch}}.tgz"
   plugins:
     - locator:
-        id: "com.palantir.go-generate:generate-plugin:1.0.0-rc2"
+        id: "com.palantir.godel-generate-plugin:generate-plugin:1.0.0"
 exclude:
   names:
     - "\\..+"
@@ -56,7 +57,7 @@ update the configuration:
     - "https://palantir.bintray.com/releases/{{GroupPath}}/{{Product}}/{{Version}}/{{Product}}-{{Version}}-{{OS}}-{{Arch}}.tgz"
   plugins:
     - locator:
-        id: "com.palantir.go-generate:generate-plugin:1.0.0-rc2"
+        id: "com.palantir.godel-generate-plugin:generate-plugin:1.0.0"
 exclude:
   names:
     - "\\\\..+"
@@ -79,7 +80,7 @@ Check in the changes:
 ```
 ➜ git add godel/config/godel.yml
 ➜ git commit -m "Update exclude configuration in godel.yml"
-[master 60994d2] Update exclude configuration in godel.yml
+[master 4b5e624] Update exclude configuration in godel.yml
  1 file changed, 1 insertion(+), 1 deletion(-)
 ```
 
@@ -94,6 +95,7 @@ Tutorial end state
 * Project is tagged as 0.0.1
 * `godel/config/dist-plugin.yml` is configured to create distributions for `echgo`
 * Project is tagged as 0.0.2
+* `dockerctx` directory exists and `godel/config/dist-plugin.yml` is configured to build Docker images for the product
 * Go files have license headers
 * `godel/config/godel.yml` is configured to add the go-generate plugin
 * `godel/config/generate-plugin.yml` is configured to generate string function

@@ -66,6 +66,10 @@ func (c *LocatorWithResolverConfig) ToParam() (artifactresolver.LocatorWithResol
 // than a LocatorConfig.
 type ConfigProviderLocatorWithResolverConfig v0.ConfigProviderLocatorWithResolverConfig
 
+func ToConfigProviderLocatorWithResolverConfig(in ConfigProviderLocatorWithResolverConfig) v0.ConfigProviderLocatorWithResolverConfig {
+	return v0.ConfigProviderLocatorWithResolverConfig(in)
+}
+
 // ToParam converts the configuration into a LocatorWithResolverParam. Any checksums that exist are put in a map where
 // the key is the current OS/Arch.
 func (c *ConfigProviderLocatorWithResolverConfig) ToParam() (artifactresolver.LocatorWithResolverParam, error) {
@@ -120,6 +124,10 @@ var configProviderOSArch = osarch.Current()
 // ConfigProviderLocatorConfig is the configuration for a locator for a configuration provider. It differs from a
 // LocatorConfig in that only a single checksum can be specified.
 type ConfigProviderLocatorConfig v0.ConfigProviderLocatorConfig
+
+func ToConfigProviderLocatorConfig(in ConfigProviderLocatorConfig) v0.ConfigProviderLocatorConfig {
+	return v0.ConfigProviderLocatorConfig(in)
+}
 
 // ToLocatorConfig translates the ConfigProviderLocatorConfig into a LocatorConfig where the checksum (if any exists) is
 // keyed as the current OS/Arch.

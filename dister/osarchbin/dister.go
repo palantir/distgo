@@ -102,10 +102,7 @@ func (d *Dister) GenerateDistArtifacts(distID distgo.DistID, productTaskOutputIn
 		}
 		artifactToInputPaths[artifactPath] = outputPathsForOSArchs[currOSArch.String()]
 	}
-	if err := createTgz(outputArtifactPaths, artifactToInputPaths); err != nil {
-		return err
-	}
-	return nil
+	return createTgz(outputArtifactPaths, artifactToInputPaths)
 }
 
 func createTgz(dstArtifactPaths []string, dstToContentPaths map[string][]string) error {
