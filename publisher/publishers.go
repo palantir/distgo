@@ -52,6 +52,7 @@ func AssetPublisherCreators(assetPaths ...string) ([]Creator, []distgo.ConfigUpg
 	var configUpgraders []distgo.ConfigUpgrader
 	publisherNameToAssets := make(map[string][]string)
 	for _, currAssetPath := range assetPaths {
+		currAssetPath := currAssetPath
 		publisher := assetPublisher{
 			assetPath: currAssetPath,
 		}
