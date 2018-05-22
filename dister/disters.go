@@ -54,6 +54,7 @@ func AssetDisterCreators(assetPaths ...string) ([]Creator, []distgo.ConfigUpgrad
 	var configUpgraders []distgo.ConfigUpgrader
 	disterNameToAssets := make(map[string][]string)
 	for _, currAssetPath := range assetPaths {
+		currAssetPath := currAssetPath
 		currDister := assetDister{
 			assetPath: currAssetPath,
 		}
