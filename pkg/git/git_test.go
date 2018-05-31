@@ -28,7 +28,7 @@ import (
 	"github.com/palantir/distgo/pkg/git"
 )
 
-func TestProjectInfo(t *testing.T) {
+func TestProjectVersion(t *testing.T) {
 	tmp, cleanup, err := dirs.TempDir("", "")
 	defer cleanup()
 	require.NoError(t, err)
@@ -62,6 +62,14 @@ func TestProjectInfo(t *testing.T) {
 			gitOperations: func(gitDir string) {
 				gittest.CreateGitTag(t, gitDir, "0.0.1")
 			},
+			want: "^" + regexp.QuoteMeta("0.0.1") + "$",
+		},
+		{
+			gitOperations: func(gitDir string) {
+				gittest.CreateGitTag(t, gitDir, "1.0.1")
+				gittest.CreateGitTag(t, gitDir, "0.0.1")
+			},
+			// if same commit has multiple tags, matches based on order returned by git
 			want: "^" + regexp.QuoteMeta("0.0.1") + "$",
 		},
 		{
@@ -142,6 +150,68 @@ func TestProjectInfo(t *testing.T) {
 		currCase.gitOperations(currTmp)
 
 		got, err := git.ProjectVersion(currTmp)
+		require.NoError(t, err)
+
+		assert.Regexp(t, currCase.want, got, "Case %d", i)
+	}
+}
+
+func TestProjectVersionWithPrefix(t *testing.T) {
+	tmp, cleanup, err := dirs.TempDir("", "")
+	defer cleanup()
+	require.NoError(t, err)
+
+	for i, currCase := range []struct {
+		gitOperations func(gitDir string)
+		tagPrefix     string
+		want          string
+	}{
+		{
+			gitOperations: func(gitDir string) {},
+			want:          "^unspecified$",
+		},
+		{
+			gitOperations: func(gitDir string) {
+				gittest.CreateGitTag(t, gitDir, "@org/product-1@0.0.1")
+				gittest.CreateGitTag(t, gitDir, "@org/product-2@0.0.2")
+			},
+			tagPrefix: "@org/product-2@",
+			want:      "^" + regexp.QuoteMeta("@org/product-2@0.0.2") + "$",
+		},
+		{
+			gitOperations: func(gitDir string) {
+				gittest.CreateGitTag(t, gitDir, "@org/product-1@0.0.1")
+				gittest.CommitRandomFile(t, gitDir, "first modification")
+
+				gittest.CommitRandomFile(t, gitDir, "second modification")
+				gittest.CreateGitTag(t, gitDir, "@org/product-2@0.0.2")
+
+				gittest.CommitRandomFile(t, gitDir, "third modification")
+			},
+			tagPrefix: "@org/product-1@",
+			want:      "^" + regexp.QuoteMeta("@org/product-1@0.0.1-3-g") + "[a-f0-9]{7}$",
+		},
+		{
+			gitOperations: func(gitDir string) {
+				gittest.CreateGitTag(t, gitDir, "@org/product-1@0.0.1")
+				gittest.CommitRandomFile(t, gitDir, "first modification")
+
+				gittest.CommitRandomFile(t, gitDir, "second modification")
+				gittest.CreateGitTag(t, gitDir, "@org/product-2@0.0.2")
+
+				gittest.CommitRandomFile(t, gitDir, "third modification")
+			},
+			tagPrefix: "@org/product-2@",
+			want:      "^" + regexp.QuoteMeta("@org/product-2@0.0.2-1-g") + "[a-f0-9]{7}$",
+		},
+	} {
+		currTmp, err := ioutil.TempDir(tmp, "")
+		require.NoError(t, err)
+
+		gittest.InitGitDir(t, currTmp)
+		currCase.gitOperations(currTmp)
+
+		got, err := git.ProjectVersionWithPrefix(currTmp, currCase.tagPrefix)
 		require.NoError(t, err)
 
 		assert.Regexp(t, currCase.want, got, "Case %d", i)
