@@ -284,25 +284,29 @@ func TestBuildOnlySpecifiedOSArchs(t *testing.T) {
 }
 
 func TestBuildErrorMessage(t *testing.T) {
-	tmp, cleanup, err := dirs.TempDir(".", "")
+	tmpDir, cleanup, err := dirs.TempDir(".", "")
+	require.NoError(t, err)
 	defer cleanup()
+	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+*/
+`), 0644)
 	require.NoError(t, err)
 
-	mainFilePath := path.Join(tmp, "foo/main.go")
+	mainFilePath := path.Join(tmpDir, "foo/main.go")
 	err = os.MkdirAll(path.Dir(mainFilePath), 0755)
 	require.NoError(t, err)
 	err = ioutil.WriteFile(mainFilePath, []byte(`package main; asdfa`), 0644)
 	require.NoError(t, err)
 
 	projectInfo := distgo.ProjectInfo{
-		ProjectDir: tmp,
+		ProjectDir: tmpDir,
 	}
 	productParam := createBuildProductParam(func(param *distgo.ProductParam) {
 		param.Build.MainPkg = "./foo"
 	})
 
 	want := fmt.Sprintf(`(?s)^go build failed: build command \[.+go build -i -o out/build/testProduct/%v/testProduct ./foo\] run in directory %s with additional environment variables \[GOOS=.+ GOARCH=.+\] failed with output:.+foo/main.go:1:15: syntax error: non-declaration statement outside function body$`,
-		osarch.Current(), tmp)
+		osarch.Current(), tmpDir)
 
 	buf := &bytes.Buffer{}
 	err = build.Run(projectInfo, []distgo.ProductParam{productParam}, build.Options{

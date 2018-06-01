@@ -36,7 +36,11 @@ func TestRun(t *testing.T) {
 	require.NoError(t, err)
 
 	tmpDir, cleanup, err := dirs.TempDir(".", "")
+	require.NoError(t, err)
 	defer cleanup()
+	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+*/
+`), 0644)
 	require.NoError(t, err)
 
 	wd, err := os.Getwd()

@@ -201,7 +201,11 @@ func TestBuildArtifacts(t *testing.T) {
 
 func TestBuildArtifactsRequiresBuild(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir(".", "")
+	require.NoError(t, err)
 	defer cleanup()
+	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+*/
+`), 0644)
 	require.NoError(t, err)
 
 	tmpDir, err = filepath.Abs(tmpDir)
