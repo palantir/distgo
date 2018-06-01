@@ -31,7 +31,11 @@ import (
 
 func TestAllFiles(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir(".", "")
+	require.NoError(t, err)
 	defer cleanup()
+	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+*/
+`), 0644)
 	require.NoError(t, err)
 
 	for i, currCase := range []struct {
@@ -166,7 +170,11 @@ func TestAllFiles(t *testing.T) {
 
 func TestNewerThanFileIsNewer(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir(".", "")
+	require.NoError(t, err)
 	defer cleanup()
+	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+*/
+`), 0644)
 	require.NoError(t, err)
 
 	tmpFile, err := ioutil.TempFile(tmpDir, "")
@@ -192,7 +200,11 @@ func TestNewerThanFileIsNewer(t *testing.T) {
 
 func TestNewerThanFileIsNotNewer(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir(".", "")
+	require.NoError(t, err)
 	defer cleanup()
+	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+*/
+`), 0644)
 	require.NoError(t, err)
 
 	err = ioutil.WriteFile(path.Join(tmpDir, "main.go"), []byte(`package main; import "fmt"; func main() {}`), 0644)
