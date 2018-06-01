@@ -26,7 +26,7 @@ import (
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/godel/framework/pluginapitester"
-	"github.com/palantir/godel/pkg/products"
+	"github.com/palantir/godel/pkg/products/v2/products"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -183,8 +183,12 @@ func TestRunWithStdin(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
-	tmpDir, cleanup, err := dirs.TempDir(wd, "")
+	tmpDir, cleanup, err := dirs.TempDir(".", "")
+	require.NoError(t, err)
 	defer cleanup()
+	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+*/
+`), 0644)
 	require.NoError(t, err)
 
 	projectDir, err := ioutil.TempDir(tmpDir, "")

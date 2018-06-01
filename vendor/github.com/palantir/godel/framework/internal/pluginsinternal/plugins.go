@@ -110,7 +110,7 @@ func ResolveAndVerify(
 			}
 
 			if err := artifactresolver.CopySingleFileTGZContent(pluginFile, tgzFile); err != nil {
-				return err
+				return errors.Wrapf(err, "failed to copy file out of TGZ from %s to %s", tgzDstPath, currDstPath)
 			}
 			return nil
 		}(); err != nil {
@@ -137,4 +137,20 @@ func SortLocators(locs []artifactresolver.Locator) {
 	sort.Slice(locs, func(i, j int) bool {
 		return locs[i].String() < locs[j].String()
 	})
+}
+
+func Uniquify(in []string) []string {
+	if in == nil {
+		return nil
+	}
+	var out []string
+	seen := make(map[string]struct{})
+	for _, curr := range in {
+		if _, ok := seen[curr]; ok {
+			continue
+		}
+		out = append(out, curr)
+		seen[curr] = struct{}{}
+	}
+	return out
 }

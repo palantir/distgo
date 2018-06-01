@@ -21,7 +21,7 @@ import (
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/godel/framework/pluginapitester"
 	"github.com/palantir/godel/pkg/osarch"
-	"github.com/palantir/godel/pkg/products"
+	"github.com/palantir/godel/pkg/products/v2/products"
 	"github.com/stretchr/testify/require"
 
 	"github.com/palantir/distgo/publisher/publishertester"

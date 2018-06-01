@@ -50,10 +50,7 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 	if err != nil {
 		return err
 	}
-	if err := Run(projectInfo, productParams, buildOpts, stdout); err != nil {
-		return err
-	}
-	return nil
+	return Run(projectInfo, productParams, buildOpts, stdout)
 }
 
 // Run builds the executables for the products specified by productParams using the options specified in buildOpts. If

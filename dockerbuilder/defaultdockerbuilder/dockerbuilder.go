@@ -54,8 +54,5 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 	args = append(args, contextDirPath)
 
 	cmd := exec.Command("docker", args...)
-	if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
-		return err
-	}
-	return nil
+	return distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout)
 }

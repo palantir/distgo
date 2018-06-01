@@ -111,10 +111,7 @@ func newRunPublishCmd(publisher distgo.Publisher) *cobra.Command {
 			if err := json.Unmarshal([]byte(flagValsFlagVal), &flagVals); err != nil {
 				return errors.Wrapf(err, "failed to unmarshal JSON %s", flagValsFlagVal)
 			}
-			if err := publisher.RunPublish(productTaskOutputInfo, []byte(configYMLFlagVal), flagVals, dryRunFlagVal, cmd.OutOrStdout()); err != nil {
-				return err
-			}
-			return nil
+			return publisher.RunPublish(productTaskOutputInfo, []byte(configYMLFlagVal), flagVals, dryRunFlagVal, cmd.OutOrStdout())
 		},
 	}
 	runDistCmd.Flags().StringVar(&productTaskOutputInfoFlagVal, runPublishCmdProductTaskOutputInfoFlagName, "", "JSON representation of distgo.ProductTaskOutputInfo")

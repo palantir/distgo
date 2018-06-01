@@ -141,10 +141,7 @@ func (b *BasicConnectionInfo) SetValuesFromFlags(flagVals map[distgo.PublisherFl
 	if err := SetConfigValue(flagVals, ConnectionInfoUsernameFlag, &b.Username); err != nil {
 		return err
 	}
-	if err := SetConfigValue(flagVals, ConnectionInfoPasswordFlag, &b.Password); err != nil {
-		return err
-	}
-	return nil
+	return SetConfigValue(flagVals, ConnectionInfoPasswordFlag, &b.Password)
 }
 
 func (b *BasicConnectionInfo) UploadDistArtifacts(productTaskOutputInfo distgo.ProductTaskOutputInfo, baseURL string, artifactExists ArtifactExistsFunc, dryRun bool, stdout io.Writer) (artifactPaths []string, uploadedURLs []string, rErr error) {

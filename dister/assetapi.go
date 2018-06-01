@@ -183,10 +183,7 @@ func newGenerateDistArtifactsCmd(creatorFn CreatorFunction) *cobra.Command {
 			if err := json.Unmarshal([]byte(productTaskOutputInfoFlagVal), &productTaskOutputInfo); err != nil {
 				return errors.Wrapf(err, "failed to unmarshal JSON %s", productTaskOutputInfoFlagVal)
 			}
-			if err := dister.GenerateDistArtifacts(distgo.DistID(distIDFlagVal), productTaskOutputInfo, []byte(distResultFlagVal)); err != nil {
-				return err
-			}
-			return nil
+			return dister.GenerateDistArtifacts(distgo.DistID(distIDFlagVal), productTaskOutputInfo, []byte(distResultFlagVal))
 		},
 	}
 	generateDistArtifactsCmd.Flags().StringVar(&configYMLFlagVal, commonCmdConfigYMLFlagName, "", "YML of dister configuration")

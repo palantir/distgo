@@ -28,10 +28,7 @@ var productsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if err := printproducts.Run(projectParam, cmd.OutOrStdout()); err != nil {
-			return err
-		}
-		return nil
+		return printproducts.Run(projectParam, cmd.OutOrStdout())
 	},
 }
 

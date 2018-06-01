@@ -14,12 +14,13 @@ Tutorial start state
 * Project is tagged as 0.0.1
 * `godel/config/dist-plugin.yml` is configured to create distributions for `echgo`
 * Project is tagged as 0.0.2
+* `dockerctx` directory exists and `godel/config/dist-plugin.yml` is configured to build Docker images for the product
 * Go files have license headers
 
 Add the `go generate` plugin
 ----------------------------
 The [go-generate](https://github.com/palantir/go-generate) tool provides a gödel plugin that allows `go generate` tasks
-to be defined, run and verified. The plugin identifier is "com.palantir.go-generate:go-generate-plugin:1.0.0", and it
+to be defined, run and verified. The plugin identifier is "com.palantir.godel-generate-plugin:generate-plugin:1.0.0", and it
 is available on Bintray.
 
 Add the plugin definition to `godel/config/godel.yml`:
@@ -30,7 +31,7 @@ Add the plugin definition to `godel/config/godel.yml`:
     - "https://palantir.bintray.com/releases/{{GroupPath}}/{{Product}}/{{Version}}/{{Product}}-{{Version}}-{{OS}}-{{Arch}}.tgz"
   plugins:
     - locator:
-        id: "com.palantir.go-generate:generate-plugin:1.0.0-rc2"
+        id: "com.palantir.godel-generate-plugin:generate-plugin:1.0.0"
 exclude:
   names:
     - "\\\\..+"
@@ -44,8 +45,8 @@ the plugin:
 
 ```
 ➜ ./godelw
-Getting package from https://palantir.bintray.com/releases/com/palantir/go-generate/generate-plugin/1.0.0-rc2/generate-plugin-1.0.0-rc2-linux-amd64.tgz...
- 3.27 MiB / 3.27 MiB  100.00% 2s
+Getting package from https://palantir.bintray.com/releases/com/palantir/godel-generate-plugin/generate-plugin/1.0.0/generate-plugin-1.0.0-linux-amd64.tgz...
+ 0 B / 3.29 MiB    0.00% 510.80 KiB / 3.29 MiB   15.17% 1s 1.10 MiB / 3.29 MiB   33.35% 1.82 MiB / 3.29 MiB   55.31% 2.58 MiB / 3.29 MiB   78.46% 3.27 MiB / 3.29 MiB   99.36% 3.29 MiB / 3.29 MiB  100.00% 1s
 Usage:
   godel [command]
 
@@ -448,7 +449,7 @@ exclude block of `godel/config/godel.yml` to reflect this and specify that the f
     - "https://palantir.bintray.com/releases/{{GroupPath}}/{{Product}}/{{Version}}/{{Product}}-{{Version}}-{{OS}}-{{Arch}}.tgz"
   plugins:
     - locator:
-        id: "com.palantir.go-generate:generate-plugin:1.0.0-rc2"
+        id: "com.palantir.godel-generate-plugin:generate-plugin:1.0.0"
 exclude:
   names:
     - "\\\\..+"
@@ -465,7 +466,7 @@ We can now commit the changes:
 ```
 ➜ git add echo godel main.go
 ➜ git commit -m "Add support for echo types"
-[master b0f25e5] Add support for echo types
+[master 41b9dd7] Add support for echo types
  6 files changed, 78 insertions(+), 4 deletions(-)
  create mode 100644 echo/type_string.go
  create mode 100644 godel/config/generate-plugin.yml
@@ -598,10 +599,10 @@ Run the `check` command to verify that the project is still valid:
 
 ```
 ➜ ./godelw check
-[compiles]      Running compiles...
-[extimport]     Running extimport...
 [deadcode]      Running deadcode...
+[compiles]      Running compiles...
 [errcheck]      Running errcheck...
+[extimport]     Running extimport...
 [extimport]     Finished extimport
 [golint]        Running golint...
 [golint]        Finished golint
@@ -615,11 +616,11 @@ Run the `check` command to verify that the project is still valid:
 [novendor]      golang.org/x/tools
 [novendor]      Finished novendor
 [outparamcheck] Running outparamcheck...
-[compiles]      Finished compiles
+[deadcode]      Finished deadcode
 [unconvert]     Running unconvert...
 [errcheck]      Finished errcheck
 [varcheck]      Running varcheck...
-[deadcode]      Finished deadcode
+[compiles]      Finished compiles
 [outparamcheck] Finished outparamcheck
 [unconvert]     Finished unconvert
 [varcheck]      Finished varcheck
@@ -656,7 +657,7 @@ Commit these changes by running the following:
 ```
 ➜ git add echo generator godel
 ➜ git commit -m "Update generator code"
-[master c0a849e] Update generator code
+[master f5138ef] Update generator code
  8 files changed, 702 insertions(+), 4 deletions(-)
  create mode 100644 generator/generate.go
  create mode 100644 generator/vendor/golang.org/x/tools/cmd/stringer/importer18.go
@@ -681,6 +682,7 @@ Tutorial end state
 * Project is tagged as 0.0.1
 * `godel/config/dist-plugin.yml` is configured to create distributions for `echgo`
 * Project is tagged as 0.0.2
+* `dockerctx` directory exists and `godel/config/dist-plugin.yml` is configured to build Docker images for the product
 * Go files have license headers
 * `godel/config/godel.yml` is configured to add the go-generate plugin
 * `godel/config/generate-plugin.yml` is configured to generate string function

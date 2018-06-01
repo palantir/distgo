@@ -22,7 +22,7 @@ import (
 	"github.com/mholt/archiver"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/godel/framework/pluginapitester"
-	"github.com/palantir/godel/pkg/products"
+	"github.com/palantir/godel/pkg/products/v2/products"
 	"github.com/palantir/pkg/specdir"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

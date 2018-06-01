@@ -26,16 +26,12 @@
   version = "15.0.0"
 
 [[constraint]]
-  name = "github.com/nmiyake/archiver"
-  version = "1.1.1"
-
-[[constraint]]
   branch = "develop"
   name = "github.com/nmiyake/pkg"
 
 [[constraint]]
   name = "github.com/palantir/distgo"
-  version = "1.0.0-rc2"
+  version = "1.2.0"
 
 [[constraint]]
   branch = "master"
@@ -47,7 +43,7 @@
 
 [[constraint]]
   name = "github.com/spf13/cobra"
-  version = "0.0.1"
+  version = "0.0.2"
 
 [[constraint]]
   name = "github.com/spf13/pflag"
@@ -68,3 +64,7 @@
 [[constraint]]
   name = "gopkg.in/yaml.v2"
   version = "2.1.1"
+
+[prune]
+  go-tests = true
+  unused-packages = true
