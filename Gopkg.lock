@@ -16,7 +16,7 @@
     "bzip2/internal/sais",
     "internal",
     "internal/errors",
-    "internal/prefix"
+    "internal/prefix",
   ]
   revision = "cc9eb1d7ad760af14e8f918698f745e80377af4f"
 
@@ -68,7 +68,7 @@
   packages = [
     "dirs",
     "errorstringer",
-    "gofiles"
+    "gofiles",
   ]
   revision = "b64318170fdef93b4462420e0badef8050dbb7ec"
 
@@ -77,6 +77,75 @@
   name = "github.com/nwaples/rardecode"
   packages = ["."]
   revision = "e06696f847aeda6f39a8f0b7cdff193b7690aef6"
+
+[[projects]]
+  name = "github.com/palantir/distgo"
+  packages = [
+    "assetapi",
+    "cmd",
+    "dister",
+    "dister/bin",
+    "dister/bin/config",
+    "dister/bin/config/internal/v0",
+    "dister/disterfactory",
+    "dister/distertester",
+    "dister/manual",
+    "dister/manual/config",
+    "dister/manual/config/internal/legacy",
+    "dister/manual/config/internal/v0",
+    "dister/osarchbin",
+    "dister/osarchbin/config",
+    "dister/osarchbin/config/internal/legacy",
+    "dister/osarchbin/config/internal/v0",
+    "distgo",
+    "distgo/artifacts",
+    "distgo/build",
+    "distgo/clean",
+    "distgo/config",
+    "distgo/config/internal/legacy",
+    "distgo/config/internal/v0",
+    "distgo/dist",
+    "distgo/docker",
+    "distgo/printproducts",
+    "distgo/projectversion",
+    "distgo/publish",
+    "distgo/run",
+    "distgo/testfuncs",
+    "dockerbuilder",
+    "dockerbuilder/defaultdockerbuilder",
+    "dockerbuilder/defaultdockerbuilder/config",
+    "dockerbuilder/defaultdockerbuilder/config/internal/v0",
+    "dockerbuilder/dockerbuilderfactory",
+    "dockerbuilder/dockerbuildertester",
+    "pkg/git",
+    "pkg/imports",
+    "projectversioner",
+    "projectversioner/git",
+    "projectversioner/git/config",
+    "projectversioner/git/config/internal/v0",
+    "projectversioner/projectversionerfactory",
+    "projectversioner/projectversiontester",
+    "projectversioner/script",
+    "projectversioner/script/config",
+    "projectversioner/script/config/internal/v0",
+    "publisher",
+    "publisher/artifactory",
+    "publisher/artifactory/config",
+    "publisher/artifactory/config/internal/v0",
+    "publisher/bintray",
+    "publisher/bintray/config",
+    "publisher/bintray/config/internal/v0",
+    "publisher/github",
+    "publisher/github/config",
+    "publisher/github/config/internal/v0",
+    "publisher/mavenlocal",
+    "publisher/mavenlocal/config",
+    "publisher/mavenlocal/config/internal/v0",
+    "publisher/publisherfactory",
+    "publisher/publishertester",
+  ]
+  revision = "d8e8af74e780d0af5f80d52825af1d70a04542d1"
+  version = "v1.4.1"
 
 [[projects]]
   branch = "master"
@@ -105,8 +174,8 @@
     "framework/verifyorder",
     "godelgetter",
     "pkg/osarch",
-    "pkg/products",
-    "pkg/versionedconfig"
+    "pkg/products/v2/products",
+    "pkg/versionedconfig",
   ]
   revision = "6ef6fc2811e260af0641aae25a45881217b3cf3d"
 
@@ -118,7 +187,7 @@
     "gittest",
     "matcher",
     "pkgpath",
-    "specdir"
+    "specdir",
   ]
   revision = "23395ebeee5df1083443a6261e5f674a76af91b6"
 
@@ -150,7 +219,7 @@
   name = "github.com/stretchr/testify"
   packages = [
     "assert",
-    "require"
+    "require",
   ]
   revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
   version = "v1.2.1"
@@ -167,7 +236,7 @@
     ".",
     "internal/hash",
     "internal/xlog",
-    "lzma"
+    "lzma",
   ]
   revision = "0c6b41e72360850ca4f98dc341fd999726ea007f"
   version = "v0.5.4"
@@ -177,7 +246,7 @@
   name = "golang.org/x/net"
   packages = [
     "context",
-    "context/ctxhttp"
+    "context/ctxhttp",
   ]
   revision = "d25186b37f34ebdbbea8f488ef055638dfab272d"
 
@@ -186,7 +255,7 @@
   name = "golang.org/x/oauth2"
   packages = [
     ".",
-    "internal"
+    "internal",
   ]
   revision = "2f32c3ac0fa4fb807a0fcefb0b6f2468a0d99bd0"
 
@@ -205,7 +274,7 @@
     "internal/log",
     "internal/remote_api",
     "internal/urlfetch",
-    "urlfetch"
+    "urlfetch",
   ]
   revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
   version = "v1.0.0"
@@ -225,6 +294,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "432267b5c1b66fb32787480cce74fa27bc64752bc73c1e8415540ccac3ae59a5"
+  inputs-digest = "5d3def5305c5ae9effc3f23093d44825abd3517e68cc2659dcd8348e29ace71b"
   solver-name = "gps-cdcl"
   solver-version = 1
