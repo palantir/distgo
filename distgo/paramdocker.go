@@ -127,6 +127,7 @@ type DockerBuilderParam struct {
 	// parameters can be used in the template:
 	//   * {{Product}}: the name of the product
 	//   * {{Version}}: the version of the project
+	//   * {{Repository}}: the Docker repository for the operation
 	//   * {{InputBuildArtifact(productID, osArch string) (string, error)}}: the path to the build artifact for the specified input product
 	//   * {{InputDistArtifacts(productID, distID string) ([]string, error)}}: the paths to the dist artifacts for the specified input product
 	//   * {{Tags(productID, dockerID string) ([]string, error)}}: the tags for the specified Docker image
