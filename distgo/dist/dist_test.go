@@ -26,6 +26,7 @@ import (
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/godel/pkg/osarch"
 	"github.com/palantir/pkg/gittest"
+	"github.com/palantir/pkg/matcher"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -262,6 +263,119 @@ func main() {}
 				bytes, err = ioutil.ReadFile(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "bar-dist-dir.txt"))
 				assert.NoError(t, err, "Case %d: %s", caseNum, name)
 				assert.Equal(t, fmt.Sprintf("%s\n", path.Join(projectDir, "out", "dist", "bar", "0.1.0", "os-arch-bin")), string(bytes), "Case %d: %s", caseNum, name)
+			},
+		},
+		{
+			"input-dir files and directories copied",
+			distgoconfig.ProjectConfig{
+				ProductDefaults: *distgoconfig.ToProductConfig(&distgoconfig.ProductConfig{
+					Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+						Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+							osarchbin.TypeName: {
+								Type:   defaultDisterCfg.Type,
+								Config: defaultDisterCfg.Config,
+								InputDir: distgoconfig.ToInputDirConfig(&distgoconfig.InputDirConfig{
+									Path: "input-dir",
+								}),
+							},
+						}),
+					}),
+				}),
+			},
+			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+				inputFile := path.Join(projectDir, "input-dir", "bar.txt")
+				err = os.MkdirAll(path.Dir(inputFile), 0755)
+				require.NoError(t, err)
+				err = ioutil.WriteFile(inputFile, []byte("bar\n"), 0644)
+				require.NoError(t, err)
+
+				inputFile = path.Join(projectDir, "input-dir", "foo-dir", "foo.txt")
+				err := os.MkdirAll(path.Dir(inputFile), 0755)
+				require.NoError(t, err)
+				err = ioutil.WriteFile(inputFile, []byte("foo\n"), 0644)
+				require.NoError(t, err)
+
+				gittest.CommitAllFiles(t, projectDir, "Commit input directory")
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			"",
+			func(caseNum int, name, projectDir string) {
+				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "bar.txt"))
+				require.NoError(t, err)
+				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
+
+				info, err = os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "foo-dir", "foo.txt"))
+				require.NoError(t, err)
+				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
+			},
+		},
+		{
+			"input-dir excludes work",
+			distgoconfig.ProjectConfig{
+				ProductDefaults: *distgoconfig.ToProductConfig(&distgoconfig.ProductConfig{
+					Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+						Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+							osarchbin.TypeName: {
+								Type:   defaultDisterCfg.Type,
+								Config: defaultDisterCfg.Config,
+								InputDir: distgoconfig.ToInputDirConfig(&distgoconfig.InputDirConfig{
+									Path: "input-dir",
+									Exclude: matcher.NamesPathsCfg{
+										Names: []string{`\.gitkeep`},
+										Paths: []string{"bar/foo"},
+									},
+								}),
+							},
+						}),
+					}),
+				}),
+			},
+			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+				inputDir := path.Join(projectDir, "input-dir")
+				err = os.MkdirAll(path.Dir(inputDir), 0755)
+				require.NoError(t, err)
+
+				_, err = gofiles.Write(inputDir, []gofiles.GoFileSpec{
+					{
+						RelPath: "foo/.gitkeep",
+					},
+					{
+						RelPath: "foo/bar/bar.txt",
+					},
+					{
+						RelPath: "foo/bar/foo/foo.txt",
+					},
+					{
+						RelPath: "bar/foo/foo.txt",
+					},
+					{
+						RelPath: "bar/baz/.gitkeep",
+					},
+				})
+				require.NoError(t, err)
+
+				gittest.CommitAllFiles(t, projectDir, "Commit input directory")
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			"",
+			func(caseNum int, name, projectDir string) {
+				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "foo", ".gitkeep"))
+				assert.True(t, os.IsNotExist(err), "Case %d: %s", caseNum, name)
+
+				info, err = os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "foo", "bar", "bar.txt"))
+				require.NoError(t, err)
+				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
+
+				info, err = os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "foo", "bar", "foo", "foo.txt"))
+				require.NoError(t, err)
+				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
+
+				info, err = os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "bar", "baz", ".gitkeep"))
+				assert.True(t, os.IsNotExist(err), "Case %d: %s", caseNum, name)
+
+				info, err = os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "bar", "baz"))
+				require.NoError(t, err)
+				assert.True(t, info.IsDir(), "Case %d: %s", caseNum, name)
 			},
 		},
 	} {

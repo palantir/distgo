@@ -17,6 +17,7 @@ package config
 import (
 	"path"
 
+	"github.com/palantir/pkg/matcher"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
@@ -65,11 +66,30 @@ func (cfg *DisterConfig) ToParam(defaultCfg DisterConfig, scriptIncludes string,
 		return distgo.DisterParam{}, err
 	}
 
+	inputDirCfg := getConfigValue((*InputDirConfig)(cfg.InputDir), (*InputDirConfig)(defaultCfg.InputDir), InputDirConfig{}).(InputDirConfig)
 	return distgo.DisterParam{
 		NameTemplate: getConfigStringValue(cfg.NameTemplate, defaultCfg.NameTemplate, "{{Product}}-{{Version}}"),
+		InputDir:     inputDirCfg.ToParam(),
 		Script:       distgo.CreateScriptContent(getConfigStringValue(cfg.Script, defaultCfg.Script, ""), scriptIncludes),
 		Dister:       dister,
 	}, nil
+}
+
+type InputDirConfig v0.InputDirConfig
+
+func ToInputDirConfig(in *InputDirConfig) *v0.InputDirConfig {
+	return (*v0.InputDirConfig)(in)
+}
+
+func (cfg *InputDirConfig) ToParam() distgo.InputDirParam {
+	var excludeMatcher matcher.Matcher
+	if !cfg.Exclude.Empty() {
+		excludeMatcher = cfg.Exclude.Matcher()
+	}
+	return distgo.InputDirParam{
+		Path:    cfg.Path,
+		Exclude: excludeMatcher,
+	}
 }
 
 func newDister(disterType string, cfgYML yaml.MapSlice, disterFactory distgo.DisterFactory) (distgo.Dister, error) {

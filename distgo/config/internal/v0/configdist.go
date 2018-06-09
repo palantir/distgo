@@ -15,6 +15,7 @@
 package v0
 
 import (
+	"github.com/palantir/pkg/matcher"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
@@ -50,12 +51,54 @@ type DisterConfig struct {
 	// If a value is not specified, "{{Product}}-{{Version}}" is used as the default value.
 	NameTemplate *string `yaml:"name-template,omitempty"`
 
+	// InputDir specifies an input directory whose contents will be copied to the dist work directory before the
+	// distribution operation is run. Symlinks are not followed. Also supports specifying names or paths that should be
+	// skipped.
+	InputDir *InputDirConfig `yaml:"input-dir,omitempty"`
+
 	// Script is the content of a script that is written to file a file and run after the initial distribution
 	// process but before the artifact generation process. The content of this value is written to a file and executed
 	// with the project directory as the working directory. The script process inherits the environment variables of the
 	// Go process and also has dist-related environment variables. Refer to the documentation for the
 	// distgo.DistScriptEnvVariables function for the extra environment variables.
 	Script *string `yaml:"script,omitempty"`
+}
+
+type InputDirConfig struct {
+	Path    string                `yaml:"path,omitempty"`
+	Exclude matcher.NamesPathsCfg `yaml:"exclude,omitempty"`
+}
+
+func (cfg InputDirConfig) MarshalYAML() (interface{}, error) {
+	if cfg.Exclude.Empty() {
+		// if exclude configuration is empty, marshal as string (shorthand form)
+		return cfg, nil
+	}
+	// otherwise, marshal full form
+	type InputDirConfigAlias InputDirConfig
+	var cfgVal InputDirConfigAlias
+	cfgVal = InputDirConfigAlias(cfg)
+	return cfgVal, nil
+}
+
+func (cfg *InputDirConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// if configuration is specified as string only, consider as just a path
+	var pathVal string
+	if err := unmarshal(&pathVal); err == nil && pathVal != "" {
+		*cfg = InputDirConfig{
+			Path: pathVal,
+		}
+		return nil
+	}
+
+	// otherwise, unmarshal as full configuration
+	type InputDirConfigAlias InputDirConfig
+	var cfgVal InputDirConfigAlias
+	if err := unmarshal(&cfgVal); err != nil {
+		return err
+	}
+	*cfg = InputDirConfig(cfgVal)
+	return nil
 }
 
 type DistersConfig map[distgo.DistID]DisterConfig

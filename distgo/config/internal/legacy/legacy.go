@@ -663,10 +663,14 @@ func upgradeLegacyConfig(
 			}
 			// InputDir
 			if legacyDist.InputDir != "" {
-				if upgradedDisterCfg.Script == nil {
-					upgradedDisterCfg.Script = stringPtr("")
+				upgradedDisterCfg.InputDir = &v0.InputDirConfig{
+					Path: legacyDist.InputDir,
+					Exclude: matcher.NamesPathsCfg{
+						Names: []string{
+							".gitkeep",
+						},
+					},
 				}
-				upgradedDisterCfg.Script = stringPtr(appendToScript(*upgradedDisterCfg.Script, inputDirScriptContent(legacyDist.InputDir)))
 			}
 			// InputProducts
 			if len(legacyDist.InputProducts) > 0 {
@@ -855,13 +859,6 @@ func appendToScript(script, append string) string {
 		script += "\n"
 	}
 	return script
-}
-
-func inputDirScriptContent(inputDir string) string {
-	return `### START: auto-generated back-compat code for "input-dir" behavior ###
-` + fmt.Sprintf(`cp -r "$PROJECT_DIR"/%s/. "$DIST_WORK_DIR"
-find "$DIST_WORK_DIR" -type f -name .gitkeep -exec rm '{}' \;`, inputDir) + `
-### END: auto-generated back-compat code for "input-dir" behavior ###`
 }
 
 func binDistInitShScript() string {

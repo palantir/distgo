@@ -15,9 +15,9 @@
 package distgo
 
 import (
-	"regexp"
 	"sort"
 
+	"github.com/palantir/pkg/matcher"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -76,6 +76,9 @@ type DisterParam struct {
 	//   * {{Version}}: the version of the project
 	NameTemplate string
 
+	// InputDir specifies the configuration for copying files from an input directory.
+	InputDir InputDirParam
+
 	// Script is the content of a script that is written to file a file and run after the initial distribution
 	// process but before the artifact generation process. The contents of this value are written to a file and executed
 	// with the project directory as the working directory. The script process inherits the environment variables of the
@@ -83,16 +86,13 @@ type DisterParam struct {
 	// distgo.DistScriptEnvVariables function for the extra environment variables.
 	Script string
 
-	// InputDir specifies the configuration for copying files from an input directory.
-	InputDir InputDirParam
-
 	// Dister is the Dister that performs the dist operation for this parameter.
 	Dister Dister
 }
 
 type InputDirParam struct {
-	Path   string
-	Ignore []*regexp.Regexp
+	Path    string
+	Exclude matcher.Matcher
 }
 
 type DistOutputInfo struct {

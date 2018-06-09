@@ -70,6 +70,7 @@ products:
       output-dir: dist
       disters:
         type: sls
+        input-dir: input-product
         config:
           manifest-template-file: resources/input/manifest.yml
           product-type: service.v1
@@ -127,6 +128,9 @@ echo "main.year=$YEAR"
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								"sls": {
 									Type: stringPtr("sls"),
+									InputDir: distgoconfig.ToInputDirConfig(&distgoconfig.InputDirConfig{
+										Path: "input-product",
+									}),
 									Config: &yaml.MapSlice{
 										{
 											Key:   "manifest-template-file",
