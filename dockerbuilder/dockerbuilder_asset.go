@@ -15,7 +15,9 @@
 package dockerbuilder
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os/exec"
 	"strconv"
@@ -67,8 +69,15 @@ func (d *assetDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productTas
 		"--"+runDockerBuildCmdDryRunFlagName, strconv.FormatBool(dryRun),
 	)
 	runDockerBuildCmd.Stdout = stdout
+
+	stderrBuf := &bytes.Buffer{}
+	runDockerBuildCmd.Stderr = stderrBuf
 	if err := runDockerBuildCmd.Run(); err != nil {
-		return errors.Wrapf(err, "command %v failed", runDockerBuildCmd.Args)
+		errOutput := stderrBuf.String()
+		if errOutput == "" {
+			errOutput = fmt.Sprintf("failed to run Docker builder %s", d.assetPath)
+		}
+		return errors.Wrapf(err, strings.TrimSpace(strings.TrimPrefix(errOutput, "Error: ")))
 	}
 	return nil
 }
