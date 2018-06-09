@@ -65,8 +65,8 @@ func (d *assetDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productTas
 		"--"+commonCmdConfigYMLFlagName, d.cfgYML,
 		"--"+runDockerBuildCmdDockerIDFlagName, string(dockerID),
 		"--"+runDockerBuildCmdProductTaskOutputInfoFlagName, string(productTaskOutputInfoJSON),
-		"--"+runDockerBuildCmdVerboseFlagName, strconv.FormatBool(verbose),
-		"--"+runDockerBuildCmdDryRunFlagName, strconv.FormatBool(dryRun),
+		"--"+runDockerBuildCmdVerboseFlagName+"="+strconv.FormatBool(verbose),
+		"--"+runDockerBuildCmdDryRunFlagName+"="+strconv.FormatBool(dryRun),
 	)
 	runDockerBuildCmd.Stdout = stdout
 
