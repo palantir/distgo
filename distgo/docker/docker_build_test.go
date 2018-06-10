@@ -220,6 +220,87 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 				assert.Equal(t, originalDockerfileContent, string(bytes))
 			},
 		},
+		{
+			"Dockerfile skips rendering template variables when rendering is disabled",
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
+					"foo": {
+						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
+							MainPkg: stringPtr("./foo"),
+						}),
+						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
+									Type: stringPtr(osarchbin.TypeName),
+								}),
+							}),
+						}),
+						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
+							Repository: stringPtr("registry-host:5000"),
+							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
+								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
+									Type: stringPtr(printDockerfileDockerBuilderTypeName),
+									DisableTemplateRendering: boolPtr(true),
+									ContextDir:               stringPtr("docker-context-dir"),
+									InputProductsDir:         stringPtr("input-products"),
+									InputBuilds: &[]distgo.ProductBuildID{
+										"foo",
+									},
+									InputDists: &[]distgo.ProductDistID{
+										"foo",
+									},
+									TagTemplates: &[]string{
+										"{{Repository}}/foo:latest",
+									},
+								}),
+							}),
+						}),
+					},
+				}),
+			},
+			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+				contextDir := path.Join(projectDir, "docker-context-dir")
+				err := os.Mkdir(contextDir, 0755)
+				require.NoError(t, err)
+
+				dockerfile := path.Join(contextDir, "Dockerfile")
+				err = ioutil.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+RUN echo 'Product: {{Product}}'
+RUN echo 'Version: {{Version}}'
+RUN echo 'Repository: {{Repository}}'
+RUN echo 'InputBuildArtifact for foo: {{InputBuildArtifact "foo" %q}}'
+RUN echo 'InputDistArtifacts for foo: {{InputDistArtifacts "foo" "os-arch-bin"}}'
+RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
+`, osarch.Current().String())), 0644)
+
+				require.NoError(t, err)
+				gittest.CommitAllFiles(t, projectDir, "Commit files")
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			"",
+			fmt.Sprintf(`Running Docker build for configuration print-dockerfile of product foo...
+FROM alpine:3.5
+RUN echo 'Product: {{Product}}'
+RUN echo 'Version: {{Version}}'
+RUN echo 'Repository: {{Repository}}'
+RUN echo 'InputBuildArtifact for foo: {{InputBuildArtifact "foo" %q}}'
+RUN echo 'InputDistArtifacts for foo: {{InputDistArtifacts "foo" "os-arch-bin"}}'
+RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
+`, osarch.Current().String()),
+			func(caseNum int, name, projectDir string) {
+				bytes, err := ioutil.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
+				require.NoError(t, err)
+				originalDockerfileContent := fmt.Sprintf(`FROM alpine:3.5
+RUN echo 'Product: {{Product}}'
+RUN echo 'Version: {{Version}}'
+RUN echo 'Repository: {{Repository}}'
+RUN echo 'InputBuildArtifact for foo: {{InputBuildArtifact "foo" %q}}'
+RUN echo 'InputDistArtifacts for foo: {{InputDistArtifacts "foo" "os-arch-bin"}}'
+RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
+`, osarch.Current().String())
+				assert.Equal(t, originalDockerfileContent, string(bytes))
+			},
+		},
 	} {
 		projectDir, err := ioutil.TempDir(tmp, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
@@ -276,5 +357,9 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 }
 
 func stringPtr(in string) *string {
+	return &in
+}
+
+func boolPtr(in bool) *bool {
 	return &in
 }

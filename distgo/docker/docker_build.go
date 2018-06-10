@@ -158,16 +158,19 @@ func runSingleDockerBuild(
 	if err != nil {
 		return errors.Wrapf(err, "failed to read Dockerfile %s", dockerBuilderParam.DockerfilePath)
 	}
-	renderedDockerfile, err := distgo.RenderTemplate(string(originalDockerfileBytes), nil,
-		distgo.ProductTemplateFunction(productID),
-		distgo.VersionTemplateFunction(projectInfo.Version),
-		distgo.RepositoryTemplateFunction(productTaskOutputInfo.Product.DockerOutputInfos.Repository),
-		inputBuildArtifactTemplateFunction(dockerID, pathToContextDir, buildArtifactPaths),
-		inputDistArtifactsTemplateFunction(dockerID, pathToContextDir, distArtifactPaths),
-		tagsTemplateFunction(productTaskOutputInfo),
-	)
-	if err != nil {
-		return err
+
+	renderedDockerfile := string(originalDockerfileBytes)
+	if !dockerBuilderParam.DisableTemplateRendering {
+		if renderedDockerfile, err = distgo.RenderTemplate(string(originalDockerfileBytes), nil,
+			distgo.ProductTemplateFunction(productID),
+			distgo.VersionTemplateFunction(projectInfo.Version),
+			distgo.RepositoryTemplateFunction(productTaskOutputInfo.Product.DockerOutputInfos.Repository),
+			inputBuildArtifactTemplateFunction(dockerID, pathToContextDir, buildArtifactPaths),
+			inputDistArtifactsTemplateFunction(dockerID, pathToContextDir, distArtifactPaths),
+			tagsTemplateFunction(productTaskOutputInfo),
+		); err != nil {
+			return err
+		}
 	}
 
 	if !dryRun {

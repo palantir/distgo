@@ -121,13 +121,14 @@ func (cfg *DockerBuilderConfig) ToParam(defaultCfg DockerBuilderConfig, dockerBu
 	}
 
 	return distgo.DockerBuilderParam{
-		DockerBuilder:    dockerBuilder,
-		DockerfilePath:   getConfigStringValue(cfg.DockerfilePath, defaultCfg.DockerfilePath, "Dockerfile"),
-		ContextDir:       contextDir,
-		InputProductsDir: getConfigStringValue(cfg.InputProductsDir, defaultCfg.InputProductsDir, ""),
-		InputBuilds:      getConfigValue(cfg.InputBuilds, defaultCfg.InputBuilds, nil).([]distgo.ProductBuildID),
-		InputDists:       getConfigValue(cfg.InputDists, defaultCfg.InputDists, nil).([]distgo.ProductDistID),
-		TagTemplates:     tagTemplates,
+		DockerBuilder:            dockerBuilder,
+		DockerfilePath:           getConfigStringValue(cfg.DockerfilePath, defaultCfg.DockerfilePath, "Dockerfile"),
+		DisableTemplateRendering: getConfigValue(cfg.DisableTemplateRendering, defaultCfg.DisableTemplateRendering, false).(bool),
+		ContextDir:               contextDir,
+		InputProductsDir:         getConfigStringValue(cfg.InputProductsDir, defaultCfg.InputProductsDir, ""),
+		InputBuilds:              getConfigValue(cfg.InputBuilds, defaultCfg.InputBuilds, nil).([]distgo.ProductBuildID),
+		InputDists:               getConfigValue(cfg.InputDists, defaultCfg.InputDists, nil).([]distgo.ProductDistID),
+		TagTemplates:             tagTemplates,
 	}, nil
 }
 
