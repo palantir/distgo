@@ -45,7 +45,13 @@ type DockerBuilderConfig struct {
 	//   * {{InputDistArtifacts(productID, distID string) ([]string, error)}}: the paths to the dist artifacts for the specified input product
 	//   * {{Tags(productID, dockerID string) ([]string, error)}}: the tags for the specified Docker image
 	DockerfilePath *string `yaml:"dockerfile-path,omitempty"`
-	ContextDir     *string `yaml:"context-dir,omitempty"`
+	// DisableTemplateRendering disables rendering the Go templates in the Dockerfile when set to true. This should only
+	// be set to true if the Dockerfile does not use the Docker task templating and contains other Go templating -- in
+	// this case, disabling rendering removes the need for the extra level of indirection usually necessary to render Go
+	// templates using Go templates.
+	DisableTemplateRendering *bool `yaml:"disable-template-rendering,omitempty"`
+	// ContextDir is the Docker context directory for building the Docker image.
+	ContextDir *string `yaml:"context-dir,omitempty"`
 	// InputProductsDir is the directory in the context dir in which input products are written.
 	InputProductsDir *string `yaml:"input-products-dir,omitempty"`
 	// InputBuilds specifies the products whose build outputs should be made available to the Docker build task. The

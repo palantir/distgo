@@ -133,6 +133,12 @@ type DockerBuilderParam struct {
 	//   * {{Tags(productID, dockerID string) ([]string, error)}}: the tags for the specified Docker image
 	DockerfilePath string
 
+	// DisableTemplateRendering disables rendering the Go templates in the Dockerfile when set to true. This should only
+	// be set to true if the Dockerfile does not use the Docker task templating and contains other Go templating -- in
+	// this case, disabling rendering removes the need for the extra level of indirection usually necessary to render Go
+	// templates using Go templates.
+	DisableTemplateRendering bool
+
 	// ContextDir is the Docker context directory for building the Docker image.
 	ContextDir string
 
