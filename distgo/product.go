@@ -247,8 +247,16 @@ func ProductDockerDistArtifactPaths(projectInfo ProjectInfo, productOutputInfo P
 			}
 			productDistArtifacts := ProductDistArtifactPaths(projectInfo, productOutputInfo)
 			for distID := range valMap {
-				for _, origArtifactPath := range productDistArtifacts[distID] {
+				var distOutputPathOverrides []string
+				if distToPathsMap, ok := dockerOutputInfo.InputDistsOutputPaths[productID]; ok {
+					distOutputPathOverrides = distToPathsMap[distID]
+				}
+				for i, origArtifactPath := range productDistArtifacts[distID] {
 					artifactPath := path.Join(pathToInputProductsDir, string(productID), "dist", string(distID), path.Base(origArtifactPath))
+					// if override exists for this path, use the override
+					if i < len(distOutputPathOverrides) {
+						artifactPath = path.Join(projectInfo.ProjectDir, dockerOutputInfo.ContextDir, distOutputPathOverrides[i])
+					}
 					out[dockerID][productID][distID] = append(out[dockerID][productID][distID], artifactPath)
 				}
 			}

@@ -777,6 +777,15 @@ func upgradeLegacyConfig(
 							if !inputDistIDPresent {
 								*upgradedDockerBuilderConfig.InputDists = append(*upgradedDockerBuilderConfig.InputDists, inputDistID)
 							}
+							if currLegacyDockerDep.TargetFile != "" {
+								if upgradedDockerBuilderConfig.InputDistsOutputPaths == nil {
+									upgradedDockerBuilderConfig.InputDistsOutputPaths = &map[distgo.ProductDistID][]string{}
+								}
+								m := *upgradedDockerBuilderConfig.InputDistsOutputPaths
+								m[inputDistID] = []string{
+									currLegacyDockerDep.TargetFile,
+								}
+							}
 						default:
 							return nil, errors.Errorf("product %q has a Docker image configuration that declares a Docker dependency of type %q, which is not supported", k, dockerDepType)
 						}

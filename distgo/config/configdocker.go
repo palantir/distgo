@@ -128,6 +128,7 @@ func (cfg *DockerBuilderConfig) ToParam(defaultCfg DockerBuilderConfig, dockerBu
 		InputProductsDir:         getConfigStringValue(cfg.InputProductsDir, defaultCfg.InputProductsDir, ""),
 		InputBuilds:              getConfigValue(cfg.InputBuilds, defaultCfg.InputBuilds, nil).([]distgo.ProductBuildID),
 		InputDists:               getConfigValue(cfg.InputDists, defaultCfg.InputDists, nil).([]distgo.ProductDistID),
+		InputDistsOutputPaths:    getConfigValue(cfg.InputDistsOutputPaths, defaultCfg.InputDistsOutputPaths, nil).(map[distgo.ProductDistID][]string),
 		TagTemplates:             tagTemplates,
 	}, nil
 }

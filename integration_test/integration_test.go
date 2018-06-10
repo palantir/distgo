@@ -432,6 +432,9 @@ group-id: com.palantir.group
           context-dir: foo/dist/docker
           input-dists:
           - foo.bin
+          input-dist-output-paths:
+            foo.bin:
+            - foo-latest.tgz
           tag-templates:
           - '{{Repository}}test/foo:snapshot'
         docker-image-1:
@@ -439,6 +442,9 @@ group-id: com.palantir.group
           context-dir: other/foo/dist/docker
           input-dists:
           - foo.bin
+          input-dist-output-paths:
+            foo.bin:
+            - foo-latest.tgz
           tag-templates:
           - '{{Repository}}test/foo-other:snapshot'
     dependencies:
