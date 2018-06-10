@@ -82,16 +82,24 @@ func disterRequiresDist(distID distgo.DistID, productTaskOutputInfo distgo.Produ
 		}
 	}
 
+	// if the newest build artifact is more recent than the oldest dist, consider dist out-of-date
+	if newestBuildArtifactForDist := newestArtifactModTime(buildArtifactPaths(productTaskOutputInfo.Project, productTaskOutputInfo.Product)); newestBuildArtifactForDist != nil && newestBuildArtifactForDist.Truncate(time.Second).After(oldestDistTime.Truncate(time.Second)) {
+		return true
+	}
+
 	// if the configuration modification time was not provided or was modified more recently than the oldest dist
 	// artifact, consider it out-of-date. Truncate times to second granularity for purposes of comparison. If mod time
-	// and artifact generation time are the same,
+	// and artifact generation time are the same, consider out-of-date and run.
 	if configModTime == nil || !configModTime.Truncate(time.Second).Before(oldestDistTime.Truncate(time.Second)) {
 		return true
 	}
 
 	// if any dependent artifact (build or dist) is newer than the oldest dist artifact, consider dist artifact out-of-date
 	for _, depProductOutputInfo := range productTaskOutputInfo.Deps {
-		newestDependencyTime := newestDistArtifactModTime(productTaskOutputInfo.Project, distID, depProductOutputInfo)
+		newestDependencyTime := newestArtifactModTime(append(
+			buildArtifactPaths(productTaskOutputInfo.Project, depProductOutputInfo),
+			distArtifactPaths(productTaskOutputInfo.Project, distID, depProductOutputInfo)...,
+		))
 		if newestDependencyTime != nil && newestDependencyTime.After(oldestDistTime) {
 			return true
 		}
@@ -99,7 +107,29 @@ func disterRequiresDist(distID distgo.DistID, productTaskOutputInfo distgo.Produ
 	return false
 }
 
-func newestDistArtifactModTime(projectInfo distgo.ProjectInfo, distID distgo.DistID, productInfo distgo.ProductOutputInfo) *time.Time {
+func buildArtifactPaths(projectInfo distgo.ProjectInfo, productInfo distgo.ProductOutputInfo) []string {
+	if productInfo.BuildOutputInfo == nil {
+		return nil
+	}
+	var artifacts []string
+	for _, v := range distgo.ProductBuildArtifactPaths(projectInfo, productInfo) {
+		artifacts = append(artifacts, v)
+	}
+	return artifacts
+}
+
+func distArtifactPaths(projectInfo distgo.ProjectInfo, distID distgo.DistID, productInfo distgo.ProductOutputInfo) []string {
+	if productInfo.DistOutputInfos == nil {
+		return nil
+	}
+	var artifacts []string
+	for _, v := range distgo.ProductDistWorkDirsAndArtifactPaths(projectInfo, productInfo)[distID] {
+		artifacts = append(artifacts, v)
+	}
+	return artifacts
+}
+
+func newestArtifactModTime(artifacts []string) *time.Time {
 	var newestModTime *time.Time
 	newestModTimeFn := func(currPath string) {
 		fi, err := os.Stat(currPath)
@@ -110,15 +140,8 @@ func newestDistArtifactModTime(projectInfo distgo.ProjectInfo, distID distgo.Dis
 			newestModTime = &fiModTime
 		}
 	}
-	if productInfo.BuildOutputInfo != nil {
-		for _, v := range distgo.ProductBuildArtifactPaths(projectInfo, productInfo) {
-			newestModTimeFn(v)
-		}
-	}
-	if productInfo.DistOutputInfos != nil {
-		for _, v := range distgo.ProductDistWorkDirsAndArtifactPaths(projectInfo, productInfo)[distID] {
-			newestModTimeFn(v)
-		}
+	for _, v := range artifacts {
+		newestModTimeFn(v)
 	}
 	return newestModTime
 }
