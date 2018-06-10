@@ -17,13 +17,17 @@ package dist
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/palantir/pkg/matcher"
 	"github.com/pkg/errors"
+	"github.com/termie/go-shutil"
 
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/build"
@@ -118,8 +122,8 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, dryRu
 
 	for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
 		// create empty output directory
+		distWorkDir := distWorkDirs[currDistID]
 		if !dryRun {
-			distWorkDir := distWorkDirs[currDistID]
 			// remove output directory if it already exists
 			if err := os.RemoveAll(distWorkDir); err != nil {
 				return errors.Wrapf(err, "failed to remove dist output directory %s", distWorkDir)
@@ -132,21 +136,83 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, dryRu
 
 		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Creating distribution for %s at %v", productParam.ID, strings.Join(outputArtifactDisplayPaths(distgo.ProductDistArtifactPaths(projectInfo, productOutputInfo)[currDistID]), ", ")), dryRun)
 		if !dryRun {
+			currDistParam := productParam.Dist.DistParams[currDistID]
+
+			// copy input dir contents
+			if currDistParam.InputDir.Path != "" {
+				if err := copyInputDir(path.Join(projectInfo.ProjectDir, currDistParam.InputDir.Path), currDistParam.InputDir.Exclude, distWorkDir); err != nil {
+					return errors.Wrapf(err, "failed to copy input directory")
+				}
+			}
+
 			// run dist task
-			runDistOutput, err := productParam.Dist.DistParams[currDistID].Dister.RunDist(currDistID, productTaskOutputInfo)
+			runDistOutput, err := currDistParam.Dister.RunDist(currDistID, productTaskOutputInfo)
 			if err != nil {
 				return err
 			}
 			// execute dist script
-			if err := distgo.WriteAndExecuteScript(projectInfo, productParam.Dist.DistParams[currDistID].Script, distgo.DistScriptEnvVariables(currDistID, productTaskOutputInfo), stdout); err != nil {
+			if err := distgo.WriteAndExecuteScript(projectInfo, currDistParam.Script, distgo.DistScriptEnvVariables(currDistID, productTaskOutputInfo), stdout); err != nil {
 				return errors.Wrapf(err, "failed to execute dist script")
 			}
 			// generate dist artifacts
-			if err := productParam.Dist.DistParams[currDistID].Dister.GenerateDistArtifacts(currDistID, productTaskOutputInfo, runDistOutput); err != nil {
+			if err := currDistParam.Dister.GenerateDistArtifacts(currDistID, productTaskOutputInfo, runDistOutput); err != nil {
 				return err
 			}
 		}
 		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Finished creating %s distribution for %s", currDistID, productParam.ID), dryRun)
+	}
+	return nil
+}
+
+func copyInputDir(inputDir string, exclude matcher.Matcher, dstDir string) error {
+	inputDirFiles, err := ioutil.ReadDir(inputDir)
+	if err != nil {
+		return errors.Wrapf(err, "failed to list files in input directory %s", inputDir)
+	}
+
+	if _, err := os.Stat(dstDir); err != nil {
+		return errors.Wrapf(err, "failed to stat destination directory %s", dstDir)
+	}
+
+	for _, topLevelInputFile := range inputDirFiles {
+		topLevelFileName := topLevelInputFile.Name()
+		srcPath := path.Join(inputDir, topLevelFileName)
+		dstPath := path.Join(dstDir, topLevelFileName)
+
+		// copy file
+		if !topLevelInputFile.IsDir() {
+			if exclude != nil && exclude.Match(topLevelFileName) {
+				continue
+			}
+			if _, err := shutil.Copy(srcPath, dstPath, false); err != nil {
+				return errors.Wrapf(err, "failed to copy file %s", topLevelFileName)
+			}
+			continue
+		}
+
+		// copy directory recursively
+		if err := shutil.CopyTree(srcPath, dstPath, &shutil.CopyTreeOptions{
+			CopyFunction: shutil.Copy,
+			Ignore: func(dir string, files []os.FileInfo) []string {
+				if exclude == nil {
+					return nil
+				}
+				var ignoredNames []string
+				for _, f := range files {
+					// exclude matcher matches against relative paths: make the current path relative to the input directory
+					relPathFromRoot, err := filepath.Rel(inputDir, path.Join(dir, f.Name()))
+					if err != nil {
+						relPathFromRoot = path.Join(dir, f.Name())
+					}
+					if exclude.Match(relPathFromRoot) {
+						ignoredNames = append(ignoredNames, f.Name())
+					}
+				}
+				return ignoredNames
+			},
+		}); err != nil {
+			return errors.Wrapf(err, "failed to copy directory %s", topLevelFileName)
+		}
 	}
 	return nil
 }

@@ -363,12 +363,13 @@ group-id: com.palantir.group
       disters:
         bin:
           type: bin
+          input-dir:
+            path: bar/dist/bar
+            exclude:
+              names:
+              - .gitkeep
           script: |
             #!/bin/bash
-            ### START: auto-generated back-compat code for "input-dir" behavior ###
-            cp -r "$PROJECT_DIR"/bar/dist/bar/. "$DIST_WORK_DIR"
-            find "$DIST_WORK_DIR" -type f -name .gitkeep -exec rm '{}' \;
-            ### END: auto-generated back-compat code for "input-dir" behavior ###
             ### START: auto-generated back-compat code for "IS_SNAPSHOT" variable ###
             IS_SNAPSHOT=0
             if [[ $VERSION =~ .+g[-+.]?[a-fA-F0-9]{3,}$ ]]; then IS_SNAPSHOT=1; fi
@@ -413,12 +414,13 @@ group-id: com.palantir.group
       disters:
         bin:
           type: bin
+          input-dir:
+            path: foo/dist/input
+            exclude:
+              names:
+              - .gitkeep
           script: |
             #!/bin/bash
-            ### START: auto-generated back-compat code for "input-dir" behavior ###
-            cp -r "$PROJECT_DIR"/foo/dist/input/. "$DIST_WORK_DIR"
-            find "$DIST_WORK_DIR" -type f -name .gitkeep -exec rm '{}' \;
-            ### END: auto-generated back-compat code for "input-dir" behavior ###
             # move bin directory into service directory
             mkdir $DIST_WORK_DIR/service
             mv $DIST_WORK_DIR/bin $DIST_WORK_DIR/service/bin
@@ -542,7 +544,13 @@ products:
     dist:
       output-dir: dist
       disters:
-        type: bin
+        primary:
+          type: bin
+          input-dir:
+            path: foo/input
+            exclude:
+              names:
+              - .gitkeep
     publish:
       group-id: com.test.foo
       info:
@@ -586,7 +594,13 @@ products:
     dist:
       output-dir: dist
       disters:
-        type: bin
+        primary:
+          type: bin
+          input-dir:
+            path: foo/input
+            exclude:
+              names:
+              - .gitkeep
     publish:
       group-id: com.test.foo
       info:
@@ -601,6 +615,32 @@ exclude:
     - ".*test"
   paths:
     - "vendor"
+`,
+				},
+			},
+			{
+				Name: "valid v0 configuration with string input-dir not modified",
+				ConfigFiles: map[string]string{
+					"godel/config/dist-plugin.yml": `
+products:
+  # comment
+  test:
+    dist:
+      disters:
+        type: bin
+        input-dir: bar/input
+`,
+				},
+				WantOutput: ``,
+				WantFiles: map[string]string{
+					"godel/config/dist-plugin.yml": `
+products:
+  # comment
+  test:
+    dist:
+      disters:
+        type: bin
+        input-dir: bar/input
 `,
 				},
 			},
