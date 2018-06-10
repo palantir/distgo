@@ -62,6 +62,19 @@ type DockerBuilderConfig struct {
 	// specified dists will be hard-linked into the context directory. The referenced products must be this product
 	// or one of its declared dependencies.
 	InputDists *[]distgo.ProductDistID `yaml:"input-dists,omitempty"`
+	// InputDistsOutputPaths is an optional parameter that allows the paths of the input dists to be a specific
+	// hard-coded location. The default behavior of InputDists places the dist outputs in a subdirectory of
+	// InputProductsDir and relies on using the {{InputDistArtifacts}} template function to render their locations.
+	// The InputDistsOutputPaths can be used to specify hard-coded paths for the dist outputs relative to the context
+	// directory instead. Every key in InputDistsOutputPaths must identify a specific dist that is specified in
+	// InputDists, even if the specification in InputDists is done at a product level. For example, if InputDists
+	// specifies product "foo" and "foo" has "bar" and "baz" defined as dist types, then the only valid keys for
+	// InputDistsOutputPaths are "foo.bar" and "foo.baz". The values are the locations that the distribution artifacts
+	// should be placed, where each slice index must map to a dist artifact output index. If an output path is specified
+	// for a distribution artifact, that path becomes the canonical one for that artifact for this Docker task -- the
+	// artifact is placed only in that location, and that location is returned by the {{InputDistArtifacts}} template
+	// function.
+	InputDistsOutputPaths *map[distgo.ProductDistID][]string `yaml:"input-dist-output-paths,omitempty"`
 	// TagTemplates specifies the templates that should be used to render the tag(s) for the Docker image. If multiple
 	// values are specified, the image will be tagged with all of them.
 	TagTemplates *[]string `yaml:"tag-templates,omitempty"`

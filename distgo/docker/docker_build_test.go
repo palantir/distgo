@@ -141,6 +141,62 @@ func TestDockerBuild(t *testing.T) {
 			},
 		},
 		{
+			"dist output artifacts uses override path if specified",
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
+					"foo": {
+						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
+							MainPkg: stringPtr("./foo"),
+						}),
+						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
+									Type: stringPtr(osarchbin.TypeName),
+								}),
+							}),
+						}),
+						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
+							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
+								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
+									Type:       stringPtr(printDockerfileDockerBuilderTypeName),
+									ContextDir: stringPtr("docker-context-dir"),
+									InputDists: &[]distgo.ProductDistID{
+										"foo",
+									},
+									InputDistsOutputPaths: &map[distgo.ProductDistID][]string{
+										"foo.os-arch-bin": {
+											"docker/dist-latest.tgz",
+										},
+									},
+									TagTemplates: &[]string{
+										"foo:latest",
+									},
+								}),
+							}),
+						}),
+					},
+				}),
+			},
+			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+				contextDir := path.Join(projectDir, "docker-context-dir")
+				err := os.Mkdir(contextDir, 0755)
+				require.NoError(t, err)
+				dockerfile := path.Join(contextDir, "Dockerfile")
+				err = ioutil.WriteFile(dockerfile, []byte(testDockerfile), 0644)
+				require.NoError(t, err)
+				gittest.CommitAllFiles(t, projectDir, "Commit files")
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			"",
+			"",
+			func(caseNum int, name, projectDir string) {
+				_, err := os.Stat(path.Join(projectDir, "docker-context-dir", "foo", "build", osarch.Current().String(), "foo"))
+				require.NoError(t, err)
+				_, err = os.Stat(path.Join(projectDir, "docker-context-dir", "docker", "dist-latest.tgz"))
+				require.NoError(t, err)
+			},
+		},
+		{
 			"Dockerfile renders template variables",
 			distgoconfig.ProjectConfig{
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{

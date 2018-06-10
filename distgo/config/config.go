@@ -166,6 +166,24 @@ func (cfg *ProjectConfig) ToParam(
 					expandedProductDistIDs = append(expandedProductDistIDs, distgo.NewProductDistID(productParam.ID, distID))
 				}
 			}
+
+			// verify that the keys in InputDistsOutputPaths are valid
+			uniqueInputDists := make(map[distgo.ProductDistID]struct{})
+			for _, id := range expandedProductDistIDs {
+				uniqueInputDists[id] = struct{}{}
+			}
+			var invalidInputDistsOutputPathsKeys []string
+			for id := range dockerBuilderParam.InputDistsOutputPaths {
+				if _, ok := uniqueInputDists[id]; ok {
+					continue
+				}
+				invalidInputDistsOutputPathsKeys = append(invalidInputDistsOutputPathsKeys, string(id))
+			}
+			if len(invalidInputDistsOutputPathsKeys) > 0 {
+				sort.Strings(invalidInputDistsOutputPathsKeys)
+				return distgo.ProjectParam{}, errors.Errorf("invalid InputDistsOutputPaths ProductDistIDs %v for DockerBuilderParam %q for product %q -- valid values are %v", invalidInputDistsOutputPathsKeys, dockerID, productID, expandedProductDistIDs)
+			}
+
 			// assign updated slice to DockerBuilderParam and update in DockerBuilderParams map so that update is persistent
 			dockerBuilderParam.InputDists = expandedProductDistIDs
 			productParam.Docker.DockerBuilderParams[dockerID] = dockerBuilderParam
