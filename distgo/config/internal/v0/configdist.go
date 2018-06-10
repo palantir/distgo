@@ -56,10 +56,10 @@ type DisterConfig struct {
 	// skipped.
 	InputDir *InputDirConfig `yaml:"input-dir,omitempty"`
 
-	// Script is the content of a script that is written to file a file and run after the initial distribution
-	// process but before the artifact generation process. The content of this value is written to a file and executed
-	// with the project directory as the working directory. The script process inherits the environment variables of the
-	// Go process and also has dist-related environment variables. Refer to the documentation for the
+	// Script is the content of a script that is written to a file and run after the initial distribution process but
+	// before the artifact generation process. The content of this value is written to a file and executed with the
+	// project directory as the working directory. The script process inherits the environment variables of the Go
+	// process and also has dist-related environment variables. Refer to the documentation for the
 	// distgo.DistScriptEnvVariables function for the extra environment variables.
 	Script *string `yaml:"script,omitempty"`
 }
