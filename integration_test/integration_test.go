@@ -367,7 +367,7 @@ group-id: com.palantir.group
             path: bar/dist/bar
             exclude:
               names:
-              - .gitkeep
+              - \.gitkeep
           script: |
             #!/bin/bash
             ### START: auto-generated back-compat code for "IS_SNAPSHOT" variable ###
@@ -418,7 +418,7 @@ group-id: com.palantir.group
             path: foo/dist/input
             exclude:
               names:
-              - .gitkeep
+              - \.gitkeep
           script: |
             #!/bin/bash
             # move bin directory into service directory
