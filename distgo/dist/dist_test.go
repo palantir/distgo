@@ -63,25 +63,24 @@ func TestDist(t *testing.T) {
 		name            string
 		projectCfg      distgoconfig.ProjectConfig
 		preDistAction   func(projectDir string, projectCfg distgoconfig.ProjectConfig)
+		productDistIDs  []distgo.ProductDistID
 		wantErrorRegexp string
 		validate        func(caseNum int, name, projectDir string)
 	}{
 		{
-			"default dist is os-arch-bin",
-			distgoconfig.ProjectConfig{},
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			name: "default dist is os-arch-bin",
+			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			"",
-			func(caseNum int, name, projectDir string) {
+			validate: func(caseNum int, name, projectDir string) {
 				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", fmt.Sprintf("foo-0.1.0-%s.tgz", osarch.Current().String())))
 				require.NoError(t, err)
 				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
 			},
 		},
 		{
-			"runs custom dist script",
-			distgoconfig.ProjectConfig{
+			name: "runs custom dist script",
+			projectCfg: distgoconfig.ProjectConfig{
 				ProductDefaults: *distgoconfig.ToProductConfig(&distgoconfig.ProductConfig{
 					Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 						Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -95,19 +94,18 @@ touch $DIST_DIR/test-file.txt`),
 					}),
 				}),
 			},
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			"",
-			func(caseNum int, name, projectDir string) {
+			validate: func(caseNum int, name, projectDir string) {
 				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "test-file.txt"))
 				require.NoError(t, err)
 				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
 			},
 		},
 		{
-			"custom dist script inherits process environment variables",
-			distgoconfig.ProjectConfig{
+			name: "custom dist script inherits process environment variables",
+			projectCfg: distgoconfig.ProjectConfig{
 				ProductDefaults: *distgoconfig.ToProductConfig(&distgoconfig.ProductConfig{
 					Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 						Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -121,13 +119,12 @@ touch $DIST_DIR/$DIST_TEST_KEY.txt`),
 					}),
 				}),
 			},
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 				err := os.Setenv("DIST_TEST_KEY", "distTestVal")
 				require.NoError(t, err)
 			},
-			"",
-			func(caseNum int, name, projectDir string) {
+			validate: func(caseNum int, name, projectDir string) {
 				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "distTestVal.txt"))
 				require.NoError(t, err)
 				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
@@ -136,8 +133,8 @@ touch $DIST_DIR/$DIST_TEST_KEY.txt`),
 			},
 		},
 		{
-			"custom dist script uses script includes",
-			distgoconfig.ProjectConfig{
+			name: "custom dist script uses script includes",
+			projectCfg: distgoconfig.ProjectConfig{
 				ScriptIncludes: `touch $DIST_DIR/foo.txt
 helper_func() {
 	touch $DIST_DIR/baz.txt
@@ -156,11 +153,10 @@ helper_func`),
 					}),
 				}),
 			},
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			"",
-			func(caseNum int, name, projectDir string) {
+			validate: func(caseNum int, name, projectDir string) {
 				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo.txt"))
 				require.NoError(t, err)
 				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
@@ -175,25 +171,24 @@ helper_func`),
 			},
 		},
 		{
-			"script includes not executed if custom script not specified",
-			distgoconfig.ProjectConfig{
+			name: "script includes not executed if custom script not specified",
+			projectCfg: distgoconfig.ProjectConfig{
 				ScriptIncludes: `touch $DIST_DIR/foo.txt
 helper_func() {
 	touch $DIST_DIR/baz.txt
 }`,
 			},
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			"",
-			func(caseNum int, name, projectDir string) {
+			validate: func(caseNum int, name, projectDir string) {
 				_, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "foo.txt"))
 				assert.True(t, os.IsNotExist(err), "Case %d: %s", caseNum, name)
 			},
 		},
 		{
-			"dependent products and dists are available",
-			distgoconfig.ProjectConfig{
+			name: "dependent products and dists are available",
+			projectCfg: distgoconfig.ProjectConfig{
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
@@ -232,7 +227,7 @@ echo $DEP_PRODUCT_ID_0_DIST_ID_0_DIST_ARTIFACT_0 > $DIST_DIR/bar-dist-artifacts.
 					},
 				}),
 			},
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "bar/main.go",
@@ -246,8 +241,7 @@ func main() {}
 				gittest.CommitAllFiles(t, projectDir, "Add bar")
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			"",
-			func(caseNum int, name, projectDir string) {
+			validate: func(caseNum int, name, projectDir string) {
 				bytes, err := ioutil.ReadFile(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "dep-product-ids.txt"))
 				assert.NoError(t, err, "Case %d: %s", caseNum, name)
 				assert.Equal(t, "1 bar\n", string(bytes), "Case %d: %s", caseNum, name)
@@ -266,8 +260,70 @@ func main() {}
 			},
 		},
 		{
-			"input-dir files and directories copied",
-			distgoconfig.ProjectConfig{
+			name: "dependent products and are filtered properly",
+			projectCfg: distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
+					"product-1": {
+						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
+							MainPkg: stringPtr("foo"),
+						}),
+						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+								"dister-1-1": {
+									Type:   defaultDisterCfg.Type,
+									Config: defaultDisterCfg.Config,
+								},
+								"dister-1-2": {
+									Type:   defaultDisterCfg.Type,
+									Config: defaultDisterCfg.Config,
+								},
+							}),
+						}),
+						Dependencies: &[]distgo.ProductID{
+							"product-2",
+						},
+					},
+					"product-2": {
+						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
+							MainPkg: stringPtr("foo"),
+						}),
+						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+								"dister-2-1": {
+									Type:   defaultDisterCfg.Type,
+									Config: defaultDisterCfg.Config,
+								},
+								"dister-2-2": {
+									Type:   defaultDisterCfg.Type,
+									Config: defaultDisterCfg.Config,
+								},
+							}),
+						}),
+					},
+				}),
+			},
+			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			productDistIDs: []distgo.ProductDistID{
+				"product-1.dister-1-1",
+				"product-2.dister-2-1",
+			},
+			validate: func(caseNum int, name, projectDir string) {
+				_, err := os.Stat(path.Join(projectDir, "out", "dist", "product-1", "0.1.0", "dister-1-1", fmt.Sprintf("product-1-0.1.0-%v.tgz", osarch.Current())))
+				assert.NoError(t, err, "Case %d: %s", caseNum, name)
+				_, err = os.Stat(path.Join(projectDir, "out", "dist", "product-1", "0.1.0", "dister-1-2", fmt.Sprintf("product-1-0.1.0-%v.tgz", osarch.Current())))
+				assert.True(t, os.IsNotExist(err), "Case %d: %s", caseNum, name)
+
+				_, err = os.Stat(path.Join(projectDir, "out", "dist", "product-2", "0.1.0", "dister-2-1", fmt.Sprintf("product-2-0.1.0-%v.tgz", osarch.Current())))
+				assert.NoError(t, err, "Case %d: %s", caseNum, name)
+				_, err = os.Stat(path.Join(projectDir, "out", "dist", "product-2", "0.1.0", "dister-2-2", fmt.Sprintf("product-2-0.1.0-%v.tgz", osarch.Current())))
+				assert.NoError(t, err, "Case %d: %s", caseNum, name)
+			},
+		},
+		{
+			name: "input-dir files and directories copied",
+			projectCfg: distgoconfig.ProjectConfig{
 				ProductDefaults: *distgoconfig.ToProductConfig(&distgoconfig.ProductConfig{
 					Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 						Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -282,7 +338,7 @@ func main() {}
 					}),
 				}),
 			},
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				inputFile := path.Join(projectDir, "input-dir", "bar.txt")
 				err = os.MkdirAll(path.Dir(inputFile), 0755)
 				require.NoError(t, err)
@@ -298,8 +354,7 @@ func main() {}
 				gittest.CommitAllFiles(t, projectDir, "Commit input directory")
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			"",
-			func(caseNum int, name, projectDir string) {
+			validate: func(caseNum int, name, projectDir string) {
 				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "bar.txt"))
 				require.NoError(t, err)
 				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
@@ -310,8 +365,8 @@ func main() {}
 			},
 		},
 		{
-			"input-dir excludes work",
-			distgoconfig.ProjectConfig{
+			name: "input-dir excludes work",
+			projectCfg: distgoconfig.ProjectConfig{
 				ProductDefaults: *distgoconfig.ToProductConfig(&distgoconfig.ProductConfig{
 					Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 						Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -330,7 +385,7 @@ func main() {}
 					}),
 				}),
 			},
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				inputDir := path.Join(projectDir, "input-dir")
 				err = os.MkdirAll(path.Dir(inputDir), 0755)
 				require.NoError(t, err)
@@ -357,8 +412,7 @@ func main() {}
 				gittest.CommitAllFiles(t, projectDir, "Commit input directory")
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			"",
-			func(caseNum int, name, projectDir string) {
+			validate: func(caseNum int, name, projectDir string) {
 				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "foo", ".gitkeep"))
 				assert.True(t, os.IsNotExist(err), "Case %d: %s", caseNum, name)
 
@@ -397,7 +451,7 @@ func main() {}
 		projectInfo, err := projectParam.ProjectInfo(projectDir)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		err = dist.Products(projectInfo, projectParam, nil, nil, false, ioutil.Discard)
+		err = dist.Products(projectInfo, projectParam, nil, tc.productDistIDs, false, ioutil.Discard)
 		if tc.wantErrorRegexp == "" {
 			require.NoError(t, err, "Case %d: %s", i, tc.name)
 		} else {

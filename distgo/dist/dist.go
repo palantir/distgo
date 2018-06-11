@@ -34,6 +34,17 @@ import (
 )
 
 func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDistIDs []distgo.ProductDistID, dryRun bool, stdout io.Writer) error {
+	// pre-filter step: expand productDistIDs to include all dependent products
+	var allDepProductDistIDs []distgo.ProductDistID
+	for _, currDistID := range productDistIDs {
+		productID, _ := currDistID.Parse()
+		productParam := projectParam.Products[productID]
+		for _, depProductID := range productParam.AllDependenciesSortedIDs() {
+			allDepProductDistIDs = append(allDepProductDistIDs, distgo.ProductDistID(depProductID))
+		}
+	}
+	productDistIDs = append(productDistIDs, allDepProductDistIDs...)
+
 	productParams, err := distgo.ProductParamsForDistProductArgs(projectParam.Products, productDistIDs...)
 	if err != nil {
 		return err
