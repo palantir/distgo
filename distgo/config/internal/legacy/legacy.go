@@ -667,7 +667,7 @@ func upgradeLegacyConfig(
 					Path: legacyDist.InputDir,
 					Exclude: matcher.NamesPathsCfg{
 						Names: []string{
-							".gitkeep",
+							`\.gitkeep`,
 						},
 					},
 				}
