@@ -320,28 +320,41 @@ func ProductParamsForDistProductArgs(inputProducts map[ProductID]ProductParam, p
 	return toSortedProductParams(filteredProducts), nil
 }
 
-// ProductDockerID identifies a product or a specific Docker builder for a product. A ProductDockerID is one of the
-// following:
-//   * {{ProductID}} (e.g. "foo"), which specifies that all Docker images for the product should be built
-//   * {{ProductID}}.{{DockerID}} (e.g. "foo.prod-docker"), which specifies that the specified DockerID for the
-//     specified product should be built
+// ProductDockerID identifies a product, a specific Docker builder for a product, or a specific Docker tag for a
+// specific Docker builder for a product. A ProductDockerID is one of the following:
+//   * {{ProductID}} (e.g. "foo"), which identifies all Docker images and its tags for the product
+//   * {{ProductID}}.{{DockerID}} (e.g. "foo.prod-docker"), which specifies all of the tags for the specified DockerID
+//     for the specified product
+//   * {{ProductID}}.{{DockerID}}.{{DockerTagID}} (e.g. "foo.prod-docker.release"), which specifies a specific tag for
+//     the specified DockerID for the specified product
 type ProductDockerID string
 
-func (id ProductDockerID) Parse() (ProductID, DockerID) {
-	currProductID := ProductID(id)
+func (id ProductDockerID) Parse() (ProductID, DockerID, DockerTagID) {
+	productID := ProductID(id)
 	var dockerID DockerID
+	var tagID DockerTagID
 	if dotIdx := strings.Index(string(id), "."); dotIdx != -1 {
-		currProductID = ProductID(id[:dotIdx])
-		dockerID = DockerID(id[dotIdx+1:])
+		productID = ProductID(id[:dotIdx])
+
+		rest := string(id[dotIdx+1:])
+		dockerID = DockerID(rest)
+		if secondDotIdx := strings.Index(rest, "."); secondDotIdx != -1 {
+			dockerID = DockerID(rest[:secondDotIdx])
+			tagID = DockerTagID(rest[secondDotIdx+1:])
+		}
 	}
-	return currProductID, dockerID
+	return productID, dockerID, tagID
 }
 
-func NewProductDockerID(productID ProductID, dockerID DockerID) ProductDockerID {
-	if dockerID == "" {
-		return ProductDockerID(productID)
+func NewProductDockerID(productID ProductID, dockerID DockerID, dockerTagID DockerTagID) ProductDockerID {
+	idStr := string(productID)
+	if dockerID != "" {
+		idStr += "." + string(dockerID)
+		if dockerTagID != "" {
+			idStr += "." + string(dockerTagID)
+		}
 	}
-	return ProductDockerID(fmt.Sprintf("%s.%s", productID, dockerID))
+	return ProductDockerID(idStr)
 }
 
 func ToProductDockerIDs(in []string) []ProductDockerID {
@@ -354,10 +367,10 @@ func ToProductDockerIDs(in []string) []ProductDockerID {
 
 // ProductParamsForDockerProductArgs returns the ProductParams from the provided inputProducts for the specified
 // productDockerIDs. The ProductParam values in the returned slice will reflect the items specified by the DockerIDs.
-// For example, if the project defines a product "foo" with DockerBuilderParams "docker-prod" and "docker-dev" and the
-// productDockerID is "foo.docker-prod", the returned ProductParam will only contain "docker-prod" in the Docker
-// configuration. Returns an error if any of the productDockerID values cannot be resolved to a configuration in the
-// provided project.
+// For example, if the project defines a product "foo" with DockerBuilderParams "docker-prod" and "docker-dev" and both
+// of them have tags named "snapshot" and "release" and the productDockerID is "foo.docker-prod.release", the returned
+// ProductParam will only contain "docker-prod" with the tag "release" in the Docker configuration. Returns an error if
+// any of the productDockerID values cannot be resolved to a configuration in the provided project.
 func ProductParamsForDockerProductArgs(inputProducts map[ProductID]ProductParam, productDockerIDs ...ProductDockerID) ([]ProductParam, error) {
 	if len(inputProducts) == 0 {
 		return nil, errors.Errorf("project does not contain any products")
@@ -367,72 +380,115 @@ func ProductParamsForDockerProductArgs(inputProducts map[ProductID]ProductParam,
 		return toSortedProductParams(inputProducts), nil
 	}
 
-	productIDToDockerIDs := make(map[ProductID][]DockerID)
-	for _, currProductDockerID := range productDockerIDs {
-		currProductID, dockerID := currProductDockerID.Parse()
-		productIDToDockerIDs[currProductID] = append(productIDToDockerIDs[currProductID], dockerID)
-	}
 	validIDs := make(map[string]struct{})
 	for productID, productParam := range inputProducts {
 		validIDs[string(productID)] = struct{}{}
 		if productParam.Docker == nil {
 			continue
 		}
-		for dockerID := range (*productParam.Docker).DockerBuilderParams {
+		for dockerID, param := range (*productParam.Docker).DockerBuilderParams {
 			validIDs[fmt.Sprintf("%s.%s", productID, dockerID)] = struct{}{}
+			for dockerTagID := range param.TagTemplates {
+				validIDs[fmt.Sprintf("%s.%s.%s", productID, dockerID, dockerTagID)] = struct{}{}
+			}
 		}
 	}
 	validIDsSorted := stringSetToSortedSlice(validIDs)
 
 	var invalidIDs []string
-	for productID, dockerIDs := range productIDToDockerIDs {
-		for _, currDockerID := range dockerIDs {
-			currCombinedID := string(productID)
-			if currDockerID != "" {
-				currCombinedID = fmt.Sprintf("%s.%s", productID, currDockerID)
-			}
-			if _, ok := validIDs[currCombinedID]; ok {
-				continue
-			}
-			invalidIDs = append(invalidIDs, currCombinedID)
+	for _, providedProductDockerID := range productDockerIDs {
+		if _, ok := validIDs[string(providedProductDockerID)]; ok {
+			continue
 		}
+		invalidIDs = append(invalidIDs, string(providedProductDockerID))
 	}
 	sort.Strings(invalidIDs)
 	if len(invalidIDs) > 0 {
 		return nil, errors.Errorf("Docker product(s) %v not valid -- valid values are %v", invalidIDs, validIDsSorted)
 	}
 
-	// all IDs are valid. For any ID that has "" as a value, expand to all Docker images.
-	for productID, dockerIDs := range productIDToDockerIDs {
-		allVals := false
-		for _, currDockerID := range dockerIDs {
-			if currDockerID == "" {
-				allVals = true
-				break
-			}
+	productIDToDockerIDToTags := make(map[ProductID]map[DockerID]map[DockerTagID]struct{})
+	for _, currProductDockerID := range productDockerIDs {
+		currProductID, dockerID, dockerTagID := currProductDockerID.Parse()
+
+		// get DockerID map (even if DockerID is empty, this will add entry for ProductID with an empty map as the value)
+		currDockerIDMap := productIDToDockerIDToTags[currProductID]
+		if currDockerIDMap == nil {
+			currDockerIDMap = make(map[DockerID]map[DockerTagID]struct{})
+			productIDToDockerIDToTags[currProductID] = currDockerIDMap
 		}
-		if !allVals || inputProducts[productID].Docker == nil {
+		if dockerID == "" {
 			continue
 		}
-		var allDockerIDs []DockerID
-		for k := range (*inputProducts[productID].Docker).DockerBuilderParams {
-			allDockerIDs = append(allDockerIDs, k)
+
+		// get DockerTagID map (even if DockerTagID is empty, this will add entry for DockerID with an empty map as the value)
+		currDockerTagMap := currDockerIDMap[dockerID]
+		if currDockerTagMap == nil {
+			currDockerTagMap = make(map[DockerTagID]struct{})
+			currDockerIDMap[dockerID] = currDockerTagMap
 		}
-		sort.Sort(ByDockerID(allDockerIDs))
-		productIDToDockerIDs[productID] = allDockerIDs
+		if dockerTagID == "" {
+			continue
+		}
+
+		currDockerTagMap[dockerTagID] = struct{}{}
+	}
+
+	// all IDs are valid: expand any IDs that do not specify an exact Docker tag
+	for productID, dockerIDsMap := range productIDToDockerIDToTags {
+		// if no Docker configuration exists for products, no expansion to be done
+		if inputProducts[productID].Docker == nil {
+			continue
+		}
+
+		// only product is specified: add all Docker tags for it
+		if len(dockerIDsMap) == 0 {
+			newDockerIDsMap := make(map[DockerID]map[DockerTagID]struct{})
+			for currDockerID, currDockerParam := range inputProducts[productID].Docker.DockerBuilderParams {
+				tagsMap := make(map[DockerTagID]struct{})
+				for currTagID := range currDockerParam.TagTemplates {
+					tagsMap[currTagID] = struct{}{}
+				}
+				newDockerIDsMap[currDockerID] = tagsMap
+			}
+			productIDToDockerIDToTags[productID] = newDockerIDsMap
+			continue
+		}
+
+		for currDockerID, tagIDsMap := range dockerIDsMap {
+			if len(tagIDsMap) != 0 {
+				// tags are specified: nothing to do
+				continue
+			}
+
+			// no tags specified for current image: expand to all tags
+			newTagIDsMap := make(map[DockerTagID]struct{})
+			for currTagID := range inputProducts[productID].Docker.DockerBuilderParams[currDockerID].TagTemplates {
+				newTagIDsMap[currTagID] = struct{}{}
+			}
+			dockerIDsMap[currDockerID] = newTagIDsMap
+		}
 	}
 
 	filteredProducts := make(map[ProductID]ProductParam)
-	for productID, dockerIDs := range productIDToDockerIDs {
+	for productID, dockerIDsMap := range productIDToDockerIDToTags {
 		currProductParam := inputProducts[productID]
 		if currProductParam.Docker == nil {
 			continue
 		}
 		var newDockerBuilders map[DockerID]DockerBuilderParam
-		if len(dockerIDs) > 0 {
+		if len(dockerIDsMap) > 0 {
 			newDockerBuilders = make(map[DockerID]DockerBuilderParam)
-			for _, currDockerID := range dockerIDs {
-				newDockerBuilders[currDockerID] = (*currProductParam.Docker).DockerBuilderParams[currDockerID]
+			for currDockerID, dockerTagsMap := range dockerIDsMap {
+				currBuilderParam := (*currProductParam.Docker).DockerBuilderParams[currDockerID]
+				for currTag := range currBuilderParam.TagTemplates {
+					if _, ok := dockerTagsMap[currTag]; ok {
+						continue
+					}
+					// if current tag is not in the dockerTagsMap (the filter), remove it
+					delete(currBuilderParam.TagTemplates, currTag)
+				}
+				newDockerBuilders[currDockerID] = currBuilderParam
 			}
 		}
 

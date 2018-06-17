@@ -357,6 +357,126 @@ func TestDistArtifacts(t *testing.T) {
 	}
 }
 
+func TestPrintDockerArtifacts(t *testing.T) {
+	tmpDir, cleanup, err := dirs.TempDir("", "")
+	defer cleanup()
+	require.NoError(t, err)
+
+	cfg := distgoconfig.ProjectConfig{
+		Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
+			"foo": {
+				Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
+					Repository: stringPtr("repo"),
+					DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
+						"docker-builder-1": distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
+							Type:       stringPtr(defaultdockerbuilder.TypeName),
+							ContextDir: stringPtr("dockerContextDir"),
+							TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+								"latest":  "{{Repository}}/foo-db-1:latest",
+								"release": "{{Repository}}/foo-db-1:release",
+							}),
+						}),
+						"docker-builder-2": distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
+							Type:       stringPtr(defaultdockerbuilder.TypeName),
+							ContextDir: stringPtr("dockerContextDir-2"),
+							TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+								"latest": "{{Repository}}/foo-db-2:latest",
+							}),
+						}),
+					}),
+				}),
+			},
+			"bar": {
+				Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
+					Repository: stringPtr("repo"),
+					DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
+						"docker-builder-1": distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
+							Type:       stringPtr(defaultdockerbuilder.TypeName),
+							ContextDir: stringPtr("dockerContextDir"),
+							TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+								"latest":  "{{Repository}}/bar-db-1:latest",
+								"release": "{{Repository}}/bar-db-1:release",
+							}),
+						}),
+					}),
+				}),
+			},
+			"baz": {},
+		}),
+	}
+
+	projectDir, err := ioutil.TempDir(tmpDir, "")
+	require.NoError(t, err)
+	gittest.InitGitDir(t, projectDir)
+	gittest.CreateGitTag(t, projectDir, "0.1.0")
+
+	projectVersionerFactory, err := projectversionerfactory.New(nil, nil)
+	require.NoError(t, err)
+	disterFactory, err := disterfactory.New(nil, nil)
+	require.NoError(t, err)
+	defaultDisterCfg, err := disterfactory.DefaultConfig()
+	require.NoError(t, err)
+	dockerBuilderFactory, err := dockerbuilderfactory.New(nil, nil)
+	require.NoError(t, err)
+	publisherFactory, err := publisherfactory.New(nil, nil)
+	require.NoError(t, err)
+
+	projectParam, err := cfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
+	require.NoError(t, err)
+
+	projectInfo, err := projectParam.ProjectInfo(projectDir)
+	require.NoError(t, err)
+
+	for i, tc := range []struct {
+		name             string
+		productDockerIDs []distgo.ProductDockerID
+		want             string
+	}{
+		{
+			"prints all docker artifacts",
+			nil,
+			`repo/bar-db-1:latest
+repo/bar-db-1:release
+repo/foo-db-1:latest
+repo/foo-db-1:release
+repo/foo-db-2:latest
+`,
+		},
+		{
+			"prints docker artifacts for specified product",
+			[]distgo.ProductDockerID{
+				"foo",
+			},
+			`repo/foo-db-1:latest
+repo/foo-db-1:release
+repo/foo-db-2:latest
+`,
+		},
+		{
+			"prints docker artifacts for specified docker image",
+			[]distgo.ProductDockerID{
+				"foo.docker-builder-1",
+			},
+			`repo/foo-db-1:latest
+repo/foo-db-1:release
+`,
+		},
+		{
+			"prints docker artifacts for specified tag",
+			[]distgo.ProductDockerID{
+				"foo.docker-builder-1.latest",
+			},
+			`repo/foo-db-1:latest
+`,
+		},
+	} {
+		buf := &bytes.Buffer{}
+		err := artifacts.PrintDockerArtifacts(projectInfo, projectParam, tc.productDockerIDs, buf)
+		require.NoError(t, err, "Case %d: %s", i, tc.name)
+		assert.Equal(t, tc.want, buf.String(), "Case %d: %s\nGot:\n%s", i, tc.name, buf.String())
+	}
+}
+
 func TestDockerArtifacts(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir("", "")
 	defer cleanup()
@@ -378,9 +498,9 @@ func TestDockerArtifacts(t *testing.T) {
 								defaultdockerbuilder.TypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
 									Type:       stringPtr(defaultdockerbuilder.TypeName),
 									ContextDir: stringPtr("dockerContextDir"),
-									TagTemplates: &[]string{
-										"{{Repository}}/foo:latest",
-									},
+									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+										"latest": "{{Repository}}/foo:latest",
+									}),
 								}),
 							}),
 						}),

@@ -15,6 +15,8 @@
 package v0
 
 import (
+	"strconv"
+
 	"gopkg.in/yaml.v2"
 
 	"github.com/palantir/distgo/distgo"
@@ -77,5 +79,36 @@ type DockerBuilderConfig struct {
 	InputDistsOutputPaths *map[distgo.ProductDistID][]string `yaml:"input-dist-output-paths,omitempty"`
 	// TagTemplates specifies the templates that should be used to render the tag(s) for the Docker image. If multiple
 	// values are specified, the image will be tagged with all of them.
-	TagTemplates *[]string `yaml:"tag-templates,omitempty"`
+	TagTemplates *TagTemplatesMap `yaml:"tag-templates,omitempty"`
+}
+
+type TagTemplatesMap map[distgo.DockerTagID]string
+
+func (t *TagTemplatesMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var strVal string
+	if err := unmarshal(&strVal); err == nil && strVal != "" {
+		// value is specified as single string: unmarshal with default key
+		*t = TagTemplatesMap{
+			"default": strVal,
+		}
+		return nil
+	}
+
+	var strSliceVal []string
+	if err := unmarshal(&strSliceVal); err == nil && len(strSliceVal) > 0 {
+		// value is specified as string array: unmarshal with keys as string representation of index
+		*t = make(TagTemplatesMap, len(strSliceVal))
+		for i, val := range strSliceVal {
+			(*t)[distgo.DockerTagID(strconv.Itoa(i))] = val
+		}
+		return nil
+	}
+
+	type TagTemplatesMapAlias TagTemplatesMap
+	var val TagTemplatesMapAlias
+	if err := unmarshal(&val); err != nil {
+		return err
+	}
+	*t = TagTemplatesMap(val)
+	return nil
 }

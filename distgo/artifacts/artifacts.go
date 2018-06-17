@@ -135,6 +135,9 @@ func Docker(projectInfo distgo.ProjectInfo, productParams []distgo.ProductParam)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to compute output info for %s", currProductParam.ID)
 		}
+		if currOutputInfo.Product.DockerOutputInfos == nil {
+			continue
+		}
 		currDockerOutputInfos := currOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos
 		var dockerIDs []distgo.DockerID
 		for k := range currDockerOutputInfos {

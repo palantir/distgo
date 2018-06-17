@@ -112,9 +112,9 @@ func TestDockerBuild(t *testing.T) {
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: &[]string{
-										"foo:latest",
-									},
+									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+										"default": "foo:latest",
+									}),
 								}),
 							}),
 						}),
@@ -168,9 +168,9 @@ func TestDockerBuild(t *testing.T) {
 											"docker/dist-latest.tgz",
 										},
 									},
-									TagTemplates: &[]string{
-										"foo:latest",
-									},
+									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+										"default": "foo:latest",
+									}),
 								}),
 							}),
 						}),
@@ -224,9 +224,9 @@ func TestDockerBuild(t *testing.T) {
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: &[]string{
-										"{{Repository}}/foo:latest",
-									},
+									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+										"default": "{{Repository}}/foo:latest",
+									}),
 								}),
 							}),
 						}),
@@ -305,9 +305,9 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: &[]string{
-										"{{Repository}}/foo:latest",
-									},
+									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+										"default": "{{Repository}}/foo:latest",
+									}),
 								}),
 							}),
 						}),
