@@ -78,9 +78,9 @@ func TestDockerPublish(t *testing.T) {
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: &[]string{
-										"foo:latest",
-									},
+									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+										"default": "foo:latest",
+									}),
 								}),
 							}),
 						}),
@@ -129,10 +129,10 @@ func TestDockerPublish(t *testing.T) {
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: &[]string{
-										"foo:latest",
-										"foo:{{Version}}",
-									},
+									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+										"latest":    "foo:latest",
+										"versioned": "foo:{{Version}}",
+									}),
 								}),
 							}),
 						}),
@@ -182,10 +182,10 @@ func TestDockerPublish(t *testing.T) {
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: &[]string{
-										"foo:latest",
-										"foo:{{Version}}",
-									},
+									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+										"latest":    "foo:latest",
+										"versioned": "foo:{{Version}}",
+									}),
 								}),
 							}),
 						}),
@@ -199,9 +199,9 @@ func TestDockerPublish(t *testing.T) {
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
 									Type:       stringPtr(printDockerfileDockerBuilderTypeName),
 									ContextDir: stringPtr("docker-context-dir"),
-									TagTemplates: &[]string{
-										"bar:latest",
-									},
+									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+										"default": "bar:latest",
+									}),
 								}),
 							}),
 						}),

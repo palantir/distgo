@@ -449,7 +449,7 @@ products:
             - test-2.linux-amd64
             - test-3.darwin-amd64
           tag-templates:
-            - foo:latest
+            latest: foo:latest
     dependencies:
       - test-2
   test-2:
@@ -486,8 +486,8 @@ products:
 										"test-2.linux-amd64",
 										"test-3.darwin-amd64",
 									},
-									TagTemplates: []string{
-										"foo:latest",
+									TagTemplates: map[distgo.DockerTagID]string{
+										"latest": "foo:latest",
 									},
 								},
 							},
@@ -587,7 +587,7 @@ products:
             - test-2.bar
             - test-3.os-arch-bin
           tag-templates:
-            - foo:latest
+            latest: foo:latest
     dependencies:
       - test-2
   test-2:
@@ -619,8 +619,8 @@ products:
 										"test-2.foo",
 										"test-3.os-arch-bin",
 									},
-									TagTemplates: []string{
-										"foo:latest",
+									TagTemplates: map[distgo.DockerTagID]string{
+										"latest": "foo:latest",
 									},
 								},
 							},

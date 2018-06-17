@@ -436,7 +436,7 @@ group-id: com.palantir.group
             foo.bin:
             - foo-latest.tgz
           tag-templates:
-          - '{{Repository}}test/foo:snapshot'
+            default: '{{Repository}}test/foo:snapshot'
         docker-image-1:
           type: default
           context-dir: other/foo/dist/docker
@@ -446,7 +446,7 @@ group-id: com.palantir.group
             foo.bin:
             - foo-latest.tgz
           tag-templates:
-          - '{{Repository}}test/foo-other:snapshot'
+            default: '{{Repository}}test/foo-other:snapshot'
     dependencies:
     - bar
 product-defaults:
@@ -518,7 +518,7 @@ products:
           type: default
           context-dir: foo-docker
           tag-templates:
-          - '{{Repository}}repo/foo:{{Version}}'
+            default: '{{Repository}}repo/foo:{{Version}}'
 `,
 				},
 			},

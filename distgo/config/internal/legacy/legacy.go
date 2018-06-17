@@ -747,8 +747,8 @@ func upgradeLegacyConfig(
 				} else {
 					tagVal += "{{Version}}"
 				}
-				upgradedDockerBuilderConfig.TagTemplates = &[]string{
-					tagVal,
+				upgradedDockerBuilderConfig.TagTemplates = &v0.TagTemplatesMap{
+					"default": tagVal,
 				}
 
 				// ContextDir

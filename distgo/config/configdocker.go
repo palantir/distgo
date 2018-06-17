@@ -115,7 +115,7 @@ func (cfg *DockerBuilderConfig) ToParam(defaultCfg DockerBuilderConfig, dockerBu
 	if contextDir == "" {
 		return distgo.DockerBuilderParam{}, errors.Errorf("context-dir must be non-empty")
 	}
-	tagTemplates := getConfigValue(cfg.TagTemplates, defaultCfg.TagTemplates, nil).([]string)
+	tagTemplates := getConfigValue(cfg.TagTemplates, defaultCfg.TagTemplates, nil).(v0.TagTemplatesMap)
 	if len(tagTemplates) == 0 {
 		return distgo.DockerBuilderParam{}, errors.Errorf("tag-templates must be non-empty")
 	}
@@ -145,4 +145,10 @@ func newDockerBuilder(dockerBuilderType string, cfgYML yaml.MapSlice, dockerBuil
 		return nil, errors.Wrapf(err, "failed to marshal configuration")
 	}
 	return dockerBuilderFactory.NewDockerBuilder(dockerBuilderType, cfgYMLBytes)
+}
+
+type TagTemplatesMap v0.TagTemplatesMap
+
+func ToTagTemplatesMap(in *TagTemplatesMap) *v0.TagTemplatesMap {
+	return (*v0.TagTemplatesMap)(in)
 }
