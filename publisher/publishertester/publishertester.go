@@ -62,6 +62,21 @@ func RunAssetPublishTest(t *testing.T,
 	publishTypeName string,
 	testCases []TestCase,
 ) {
+	var assetProviders []pluginapitester.AssetProvider
+	if assetProvider != nil {
+		assetProviders = append(assetProviders, assetProvider)
+	}
+	RunAssetPublishTestWithAssets(t, pluginProvider, assetProviders, publishTypeName, testCases)
+}
+
+// RunAssetPublishTestWithAssets tests the "publish" operation using the provided assets. Uses the provided plugin
+// provider and asset providers to resolve the plugin and asset and invokes the "publish" command.
+func RunAssetPublishTestWithAssets(t *testing.T,
+	pluginProvider pluginapitester.PluginProvider,
+	assetProviders []pluginapitester.AssetProvider,
+	publishTypeName string,
+	testCases []TestCase,
+) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
@@ -116,11 +131,6 @@ func RunAssetPublishTest(t *testing.T,
 				require.NoError(t, err)
 			}()
 
-			var assetProviders []pluginapitester.AssetProvider
-			if assetProvider != nil {
-				assetProviders = append(assetProviders, assetProvider)
-			}
-
 			// dist artifacts are considered stale if the generation time of the oldest artifact matches the
 			// modification time of the configuration file (at second granularity). Wait until values are different to
 			// ensure that cache will be valid (will take at most 1 second).
@@ -164,7 +174,7 @@ func RunAssetPublishTest(t *testing.T,
 				require.NoError(t, err, "Case %d: %s\nOutput:\n%s", i, tc.Name, outputBuf.String())
 			}
 			if tc.WantOutput != nil {
-				assert.Equal(t, tc.WantOutput(projectDir), outputBuf.String(), "Case %d: %s", i, tc.Name)
+				assert.Equal(t, tc.WantOutput(projectDir), outputBuf.String(), "Case %d: %s\nOutput:\n%s", i, tc.Name, outputBuf.String())
 			}
 			if tc.Validate != nil {
 				tc.Validate(projectDir)
