@@ -118,6 +118,7 @@
     "gittest",
     "matcher",
     "pkgpath",
+    "signals",
     "specdir",
   ]
   revision = "23395ebeee5df1083443a6261e5f674a76af91b6"
@@ -225,6 +226,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7bb44c6c59db76f86a102aeca602193a02b346e3a3d57f37e3318ead85e5682c"
+  inputs-digest = "a6d7d45abf9019387510bce7998bd09f81c44728f82f03b948b88bbb8aa39c51"
   solver-name = "gps-cdcl"
   solver-version = 1
