@@ -17,7 +17,6 @@ package distgo
 import (
 	"fmt"
 	"path"
-	"sort"
 
 	"github.com/palantir/godel/pkg/osarch"
 	"github.com/pkg/errors"
@@ -177,7 +176,6 @@ func ProductDistArtifactPaths(projectInfo ProjectInfo, productOutputInfo Product
 		for _, currArtifactPath := range distOutputInfo.DistArtifactNames {
 			paths[distID] = append(paths[distID], path.Join(ProductDistOutputDir(projectInfo, productOutputInfo, distID), currArtifactPath))
 		}
-		sort.Strings(paths[distID])
 	}
 	return paths
 }
@@ -191,7 +189,6 @@ func ProductDistWorkDirsAndArtifactPaths(projectInfo ProjectInfo, productOutputI
 	}
 	for k, v := range ProductDistWorkDirs(projectInfo, productOutputInfo) {
 		paths[k] = append(paths[k], v)
-		sort.Strings(paths[k])
 	}
 	return paths
 }
