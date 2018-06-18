@@ -188,6 +188,7 @@ func (p *DockerBuilderParam) ToDockerBuilderOutputInfo(productID ProductID, vers
 		}
 		renderedTags = append(renderedTags, currRenderedTag)
 	}
+	sort.Strings(renderedTags)
 	var inputBuilds map[ProductID]map[OSArchID]struct{}
 	if len(p.InputBuilds) > 0 {
 		inputBuilds = make(map[ProductID]map[OSArchID]struct{})
