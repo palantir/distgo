@@ -84,7 +84,7 @@ jobs:
       - save_cache:
           key: dist-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ .Environment.CIRCLE_SHA1 }}-v1
           paths:
-            - dist
+            - out
   publish:
     <<: *darwin-linux-no-cgo
     steps:
