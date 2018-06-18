@@ -15,6 +15,7 @@
 package docker
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -26,6 +27,7 @@ import (
 	"time"
 
 	"github.com/palantir/godel/pkg/osarch"
+	"github.com/palantir/pkg/signals"
 	"github.com/pkg/errors"
 
 	"github.com/palantir/distgo/distgo"
@@ -180,10 +182,21 @@ func runSingleDockerBuild(
 			if err := ioutil.WriteFile(dockerfilePath, []byte(renderedDockerfile), 0644); err != nil {
 				return errors.Wrapf(err, "failed to write rendered Dockerfile")
 			}
+
+			cleanupCtx, cancel := signals.ContextWithShutdown(context.Background())
+			cleanupDone := make(chan struct{})
 			defer func() {
-				if err := ioutil.WriteFile(dockerfilePath, originalDockerfileBytes, 0644); err != nil && rErr == nil {
-					rErr = errors.Wrapf(err, "failed to restore original Dockerfile content")
+				cancel()
+				<-cleanupDone
+			}()
+			go func() {
+				select {
+				case <-cleanupCtx.Done():
+					if err := ioutil.WriteFile(dockerfilePath, originalDockerfileBytes, 0644); err != nil && rErr == nil {
+						rErr = errors.Wrapf(err, "failed to restore original Dockerfile content")
+					}
 				}
+				cleanupDone <- struct{}{}
 			}()
 		}
 
