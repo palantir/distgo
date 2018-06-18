@@ -152,8 +152,8 @@ func TestDockerPublish(t *testing.T) {
 			},
 			"",
 			`[DRY RUN] Running Docker push for configuration print-dockerfile of product foo...
-[DRY RUN] Run [docker push foo:latest]
 [DRY RUN] Run [docker push foo:0.1.0]
+[DRY RUN] Run [docker push foo:latest]
 `,
 		},
 		{
@@ -223,8 +223,8 @@ func TestDockerPublish(t *testing.T) {
 			},
 			"",
 			`[DRY RUN] Running Docker push for configuration print-dockerfile of product foo...
-[DRY RUN] Run [docker push foo:latest]
 [DRY RUN] Run [docker push foo:0.1.0]
+[DRY RUN] Run [docker push foo:latest]
 `,
 		},
 	} {
