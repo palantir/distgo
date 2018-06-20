@@ -31,6 +31,14 @@ func VersionTemplateFunction(version string) TemplateFunction {
 	return TemplateValueFunction("Version", version)
 }
 
+func GroupIDTemplateFunction(groupID string) TemplateFunction {
+	return TemplateValueFunction("GroupID", groupID)
+}
+
+func PackagingTemplateFunction(packaging string) TemplateFunction {
+	return TemplateValueFunction("Packaging", packaging)
+}
+
 func RepositoryTemplateFunction(repository string) TemplateFunction {
 	return TemplateValueFunction("Repository", repository)
 }
