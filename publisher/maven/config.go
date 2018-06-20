@@ -12,25 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v0
+package maven
 
-import (
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
-
-	"github.com/palantir/distgo/publisher/maven"
-)
-
-type Config struct {
-	maven.PublishConfig `yaml:",inline,omitempty"`
-	// BaseDir is the base directory to which the artifacts are published.
-	BaseDir string `yaml:"base-dir,omitempty"`
-}
-
-func UpgradeConfig(cfgBytes []byte) ([]byte, error) {
-	var cfg Config
-	if err := yaml.UnmarshalStrict(cfgBytes, &cfg); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal local publisher v0 configuration")
-	}
-	return cfgBytes, nil
+type PublishConfig struct {
+	NoPOM     bool   `yaml:"no-pom,omitempty"`
+	Packaging string `yaml:"packaging,omitempty"`
 }

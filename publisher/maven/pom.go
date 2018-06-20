@@ -32,20 +32,21 @@ const pomTemplate = `<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xs
 </project>
 `
 
-func POM(groupID string, outputInfo distgo.ProductTaskOutputInfo, distID distgo.DistID) (string, string, error) {
+func POM(groupID, packaging string, outputInfo distgo.ProductTaskOutputInfo) (string, string, error) {
 	pomName := fmt.Sprintf("%s-%s.pom", outputInfo.Product.ID, outputInfo.Project.Version)
-
-	var packaging string
-	if outputInfo.Product.DistOutputInfos != nil {
-		distInfo := outputInfo.Product.DistOutputInfos.DistInfos[distID]
-		packaging = distInfo.PackagingExtension
-	}
 
 	pomContent, err := renderPOM(outputInfo.Product.ID, outputInfo.Project.Version, groupID, packaging)
 	if err != nil {
 		return "", "", err
 	}
 	return pomName, pomContent, nil
+}
+
+func Packaging(distID distgo.DistID, outputInfo distgo.ProductTaskOutputInfo) string {
+	if outputInfo.Product.DistOutputInfos == nil {
+		return ""
+	}
+	return outputInfo.Product.DistOutputInfos.DistInfos[distID].PackagingExtension
 }
 
 func renderPOM(productID distgo.ProductID, version, groupID, packaging string) (string, error) {

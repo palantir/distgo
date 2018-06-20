@@ -12,26 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v0
+package maven
 
 import (
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
-
-	"github.com/palantir/distgo/publisher"
-	"github.com/palantir/distgo/publisher/maven"
+	"github.com/palantir/distgo/distgo"
 )
 
-type Config struct {
-	publisher.BasicConnectionInfo `yaml:",inline,omitempty"`
-	maven.PublishConfig           `yaml:",inline,omitempty"`
-	Repository                    string `yaml:"repository,omitempty"`
-}
-
-func UpgradeConfig(cfgBytes []byte) ([]byte, error) {
-	var cfg Config
-	if err := yaml.UnmarshalStrict(cfgBytes, &cfg); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal artifactory publisher v0 configuration")
+var (
+	NoPOMFlag = distgo.PublisherFlag{
+		Name:        "no-pom",
+		Description: "if true, does not generate and publish a POM",
+		Type:        distgo.BoolFlag,
 	}
-	return cfgBytes, nil
-}
+	PackagingFlag = distgo.PublisherFlag{
+		Name:        "packaging",
+		Description: "sets the packaging property for the POM (overrides value provided by the dister)",
+		Type:        distgo.StringFlag,
+	}
+)
