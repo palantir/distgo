@@ -52,15 +52,7 @@ func renderPOM(productID distgo.ProductID, version, groupID, packaging string) (
 	return distgo.RenderTemplate(pomTemplate, nil,
 		distgo.ProductTemplateFunction(productID),
 		distgo.VersionTemplateFunction(version),
-		groupIDTemplateFunction(groupID),
-		packagingTemplateFunction(packaging),
+		distgo.GroupIDTemplateFunction(groupID),
+		distgo.PackagingTemplateFunction(packaging),
 	)
-}
-
-func groupIDTemplateFunction(groupID string) distgo.TemplateFunction {
-	return distgo.TemplateValueFunction("GroupID", groupID)
-}
-
-func packagingTemplateFunction(packaging string) distgo.TemplateFunction {
-	return distgo.TemplateValueFunction("Packaging", packaging)
 }
