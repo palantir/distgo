@@ -16,6 +16,7 @@ package integration_test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -24,6 +25,7 @@ import (
 	"github.com/palantir/godel/framework/pluginapitester"
 	"github.com/palantir/godel/pkg/osarch"
 	"github.com/palantir/godel/pkg/products/v2/products"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/palantir/distgo/publisher/publishertester"
@@ -178,6 +180,105 @@ products:
 					return fmt.Sprintf(`[DRY RUN] Writing POM to out/publish/com/test/group/foo/1.0.0/foo-1.0.0.pom
 [DRY RUN] Copying artifact from out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to out/publish/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
 `, osarch.Current().String(), osarch.Current().String())
+				},
+			},
+			{
+				Name: "verify content of published POM",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+    dist:
+      disters:
+        type: os-arch-bin
+    publish:
+      group-id: com.test.group
+      info:
+        maven-local:
+          config:
+            base-dir: out/publish
+`,
+				},
+				Args: nil,
+				WantOutput: func(projectDir string) string {
+					return fmt.Sprintf(`Writing POM to out/publish/com/test/group/foo/1.0.0/foo-1.0.0.pom
+Copying artifact from out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to out/publish/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+`, osarch.Current().String(), osarch.Current().String())
+				},
+				Validate: func(projectDir string) {
+					pomFile := path.Join(projectDir, "out", "publish", "com", "test", "group", "foo", "1.0.0", "foo-1.0.0.pom")
+					bytes, err := ioutil.ReadFile(pomFile)
+					require.NoError(t, err)
+					want := `<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.test.group</groupId>
+  <artifactId>foo</artifactId>
+  <version>1.0.0</version>
+  <packaging>tgz</packaging>
+</project>
+`
+					assert.Equal(t, want, string(bytes))
+				},
+			},
+			{
+				Name: "verify content of published POM uses provided packaging type",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+    dist:
+      disters:
+        type: os-arch-bin
+    publish:
+      group-id: com.test.group
+      info:
+        maven-local:
+          config:
+            base-dir: out/publish
+            packaging: sls.tgz
+`,
+				},
+				Args: nil,
+				WantOutput: func(projectDir string) string {
+					return fmt.Sprintf(`Writing POM to out/publish/com/test/group/foo/1.0.0/foo-1.0.0.pom
+Copying artifact from out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to out/publish/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+`, osarch.Current().String(), osarch.Current().String())
+				},
+				Validate: func(projectDir string) {
+					pomFile := path.Join(projectDir, "out", "publish", "com", "test", "group", "foo", "1.0.0", "foo-1.0.0.pom")
+					bytes, err := ioutil.ReadFile(pomFile)
+					require.NoError(t, err)
+					want := `<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.test.group</groupId>
+  <artifactId>foo</artifactId>
+  <version>1.0.0</version>
+  <packaging>sls.tgz</packaging>
+</project>
+`
+					assert.Equal(t, want, string(bytes))
 				},
 			},
 			{
