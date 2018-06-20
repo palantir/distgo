@@ -203,6 +203,7 @@ func runSingleDockerBuild(
 				distgo.ProductTemplateFunction(productID),
 				distgo.VersionTemplateFunction(projectInfo.Version),
 				distgo.RepositoryTemplateFunction(productTaskOutputInfo.Product.DockerOutputInfos.Repository),
+				distgo.RepositoryLiteralTemplateFunction(productTaskOutputInfo.Product.DockerOutputInfos.Repository),
 				inputBuildArtifactTemplateFunction(dockerID, pathToContextDir, buildArtifactPaths),
 				inputDistArtifactsTemplateFunction(dockerID, pathToContextDir, distArtifactPaths),
 				tagsTemplateFunction(productTaskOutputInfo),
