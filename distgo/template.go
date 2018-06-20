@@ -16,6 +16,7 @@ package distgo
 
 import (
 	"bytes"
+	"strings"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -40,7 +41,15 @@ func PackagingTemplateFunction(packaging string) TemplateFunction {
 }
 
 func RepositoryTemplateFunction(repository string) TemplateFunction {
+	// if repository does not end in a '/', manually append it
+	if !strings.HasSuffix(repository, "/") {
+		repository += "/"
+	}
 	return TemplateValueFunction("Repository", repository)
+}
+
+func RepositoryLiteralTemplateFunction(repository string) TemplateFunction {
+	return TemplateValueFunction("RepositoryLiteral", repository)
 }
 
 func TemplateValueFunction(key string, val interface{}) TemplateFunction {

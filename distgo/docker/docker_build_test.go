@@ -225,7 +225,7 @@ func TestDockerBuild(t *testing.T) {
 										"foo",
 									},
 									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"default": "{{Repository}}/foo:latest",
+										"default": "{{Repository}}foo:latest",
 									}),
 								}),
 							}),
@@ -243,6 +243,7 @@ func TestDockerBuild(t *testing.T) {
 RUN echo 'Product: {{Product}}'
 RUN echo 'Version: {{Version}}'
 RUN echo 'Repository: {{Repository}}'
+RUN echo 'RepositoryLiteral: {{RepositoryLiteral}}'
 RUN echo 'InputBuildArtifact for foo: {{InputBuildArtifact "foo" %q}}'
 RUN echo 'InputDistArtifacts for foo: {{InputDistArtifacts "foo" "os-arch-bin"}}'
 RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
@@ -257,7 +258,8 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 FROM alpine:3.5
 RUN echo 'Product: foo'
 RUN echo 'Version: 0.1.0'
-RUN echo 'Repository: registry-host:5000'
+RUN echo 'Repository: registry-host:5000/'
+RUN echo 'RepositoryLiteral: registry-host:5000'
 RUN echo 'InputBuildArtifact for foo: input-products/foo/build/%s/foo'
 RUN echo 'InputDistArtifacts for foo: [input-products/foo/dist/os-arch-bin/foo-0.1.0-%s.tgz]'
 RUN echo 'Tags for foo: [registry-host:5000/foo:latest]'
@@ -269,6 +271,7 @@ RUN echo 'Tags for foo: [registry-host:5000/foo:latest]'
 RUN echo 'Product: {{Product}}'
 RUN echo 'Version: {{Version}}'
 RUN echo 'Repository: {{Repository}}'
+RUN echo 'RepositoryLiteral: {{RepositoryLiteral}}'
 RUN echo 'InputBuildArtifact for foo: {{InputBuildArtifact "foo" %q}}'
 RUN echo 'InputDistArtifacts for foo: {{InputDistArtifacts "foo" "os-arch-bin"}}'
 RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
@@ -306,7 +309,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 										"foo",
 									},
 									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"default": "{{Repository}}/foo:latest",
+										"default": "{{Repository}}foo:latest",
 									}),
 								}),
 							}),

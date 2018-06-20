@@ -372,15 +372,15 @@ func TestPrintDockerArtifacts(t *testing.T) {
 							Type:       stringPtr(defaultdockerbuilder.TypeName),
 							ContextDir: stringPtr("dockerContextDir"),
 							TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-								"latest":  "{{Repository}}/foo-db-1:latest",
-								"release": "{{Repository}}/foo-db-1:release",
+								"latest":  "{{Repository}}foo-db-1:latest",
+								"release": "{{Repository}}foo-db-1:release",
 							}),
 						}),
 						"docker-builder-2": distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
 							Type:       stringPtr(defaultdockerbuilder.TypeName),
 							ContextDir: stringPtr("dockerContextDir-2"),
 							TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-								"latest": "{{Repository}}/foo-db-2:latest",
+								"latest": "{{Repository}}foo-db-2:latest",
 							}),
 						}),
 					}),
@@ -394,8 +394,8 @@ func TestPrintDockerArtifacts(t *testing.T) {
 							Type:       stringPtr(defaultdockerbuilder.TypeName),
 							ContextDir: stringPtr("dockerContextDir"),
 							TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-								"latest":  "{{Repository}}/bar-db-1:latest",
-								"release": "{{Repository}}/bar-db-1:release",
+								"latest":  "{{Repository}}bar-db-1:latest",
+								"release": "{{Repository}}bar-db-1:release",
 							}),
 						}),
 					}),
@@ -499,7 +499,7 @@ func TestDockerArtifacts(t *testing.T) {
 									Type:       stringPtr(defaultdockerbuilder.TypeName),
 									ContextDir: stringPtr("dockerContextDir"),
 									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"latest": "{{Repository}}/foo:latest",
+										"latest": "{{Repository}}foo:latest",
 									}),
 								}),
 							}),
