@@ -740,6 +740,11 @@ func upgradeLegacyConfig(
 			for i, legacyDockerImage := range legacyProduct.DockerImages {
 				upgradedDockerBuilderConfig := v0.DockerBuilderConfig{}
 
+				// BuildArgsScript
+				if legacyDockerImage.BuildArgsScript != "" {
+					upgradedDockerBuilderConfig.Script = stringPtr(appendToScript("", legacyDockerImage.BuildArgsScript))
+				}
+
 				// Tag
 				tagVal := "{{Repository}}" + legacyDockerImage.Repository + ":"
 				if legacyDockerImage.Tag != "" {

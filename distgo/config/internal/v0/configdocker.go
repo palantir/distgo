@@ -35,6 +35,12 @@ type DockerBuildersConfig map[distgo.DockerID]DockerBuilderConfig
 type DockerBuilderConfig struct {
 	// Type is the type of the DockerBuilder. This field must be non-nil and non-empty and resolve to a valid DockerBuilder.
 	Type *string `yaml:"type,omitempty"`
+	// Script is the content of a script that is written to a file and run before the build task. This script is run
+	// before the Dockerfile is read and rendered. The content of this value is written to a file and executed with the
+	// project directory as the working directory. The script process inherits the environment variables of the Go
+	// process and also has Docker-related environment variables. Refer to the documentation for the
+	// distgo.DockerScriptEnvVariables function for the extra environment variables.
+	Script *string `yaml:"script,omitempty"`
 	// Config is the YAML configuration content for the DockerBuilder.
 	Config *yaml.MapSlice `yaml:"config,omitempty"`
 	// DockerfilePath is the path to the Dockerfile that is used to build the Docker image. The path is interpreted

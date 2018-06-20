@@ -131,6 +131,32 @@ func DistScriptEnvVariables(distID DistID, outputInfo ProductTaskOutputInfo) map
 	return m
 }
 
+// DockerScriptEnvVariables returns a map of environment variables for the script for the Docker builder with the
+// specified DockerID in the provided output configuration. The returned map contains the following environment
+// variables:
+//
+//   PROJECT_DIR: the root directory of project
+//   VERSION: the version of the project
+//   PRODUCT: the name of the product
+//   DOCKER_ID: the DockerID for the current distribution
+//
+// The following environment variables are defined if the Docker configuration for the product is non-nil:
+//   CONTEXT_DIR: the path to the context directory
+func DockerScriptEnvVariables(dockerID DockerID, outputInfo ProductTaskOutputInfo) map[string]string {
+	m := map[string]string{
+		"PROJECT_DIR": outputInfo.Project.ProjectDir,
+		"VERSION":     outputInfo.Project.Version,
+		"PRODUCT":     string(outputInfo.Product.ID),
+		"DOCKER_ID":   string(dockerID),
+	}
+
+	if outputInfo.Product.DockerOutputInfos != nil {
+		currInfo := outputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID]
+		m["CONTEXT_DIR"] = currInfo.ContextDir
+	}
+	return m
+}
+
 func addProductBuildEnvVariables(varMap map[string]string, prefix string, projectInfo ProjectInfo, productInfo ProductOutputInfo) {
 	if productInfo.BuildOutputInfo == nil {
 		return

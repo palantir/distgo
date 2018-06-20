@@ -131,6 +131,13 @@ type DockerBuilderParam struct {
 	// DockerBuilder is the builder used to build the Docker image.
 	DockerBuilder DockerBuilder
 
+	// Script is the content of a script that is written to a file and run before the build task. This script is run
+	// before the Dockerfile is read and rendered. The content of this value is written to a file and executed with the
+	// project directory as the working directory. The script process inherits the environment variables of the Go
+	// process and also has Docker-related environment variables. Refer to the documentation for the
+	// distgo.DockerScriptEnvVariables function for the extra environment variables.
+	Script string
+
 	// DockerfilePath is the path to the Dockerfile that is used to build the Docker image. The path is interpreted
 	// relative to ContextDir. The content of the Dockerfile supports using Go templates. The following template
 	// parameters can be used in the template:
