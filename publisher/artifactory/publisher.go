@@ -62,18 +62,13 @@ var (
 		Description: "repository that is the destination for the publish",
 		Type:        distgo.StringFlag,
 	}
-	artifactoryPublisherNoPOMFlag = distgo.PublisherFlag{
-		Name:        "no-pom",
-		Description: "if true, does not generate and publish a POM",
-		Type:        distgo.BoolFlag,
-	}
 )
 
 func (p *artifactoryPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	return append(publisher.BasicConnectionInfoFlags(),
 		artifactoryPublisherRepositoryFlag,
-		artifactoryPublisherNoPOMFlag,
 		publisher.GroupIDFlag,
+		maven.NoPOMFlag,
 	), nil
 }
 
@@ -97,7 +92,7 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 	if err := publisher.SetRequiredStringConfigValue(flagVals, artifactoryPublisherRepositoryFlag, &cfg.Repository); err != nil {
 		return nil, err
 	}
-	if err := publisher.SetConfigValue(flagVals, artifactoryPublisherNoPOMFlag, &cfg.NoPOM); err != nil {
+	if err := publisher.SetConfigValue(flagVals, maven.NoPOMFlag, &cfg.NoPOM); err != nil {
 		return nil, err
 	}
 
@@ -152,7 +147,7 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 
 	if !cfg.NoPOM {
 		for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
-			pomName, pomContent, err := maven.POM(groupID, productTaskOutputInfo, currDistID)
+			pomName, pomContent, err := maven.POM(groupID, maven.Packaging(currDistID, productTaskOutputInfo), productTaskOutputInfo)
 			if err != nil {
 				return nil, err
 			}
