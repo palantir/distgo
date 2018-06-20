@@ -44,6 +44,10 @@ func (d *Dister) Artifacts(renderedName string) ([]string, error) {
 	return []string{fmt.Sprintf("%s.tgz", renderedName)}, nil
 }
 
+func (d *Dister) PackagingExtension() (string, error) {
+	return "tgz", nil
+}
+
 func (d *Dister) RunDist(distID distgo.DistID, productTaskOutputInfo distgo.ProductTaskOutputInfo) ([]byte, error) {
 	for _, osArch := range productTaskOutputInfo.Product.BuildOutputInfo.OSArchs {
 		if err := verifyDistTargetSupported(osArch, productTaskOutputInfo); err != nil {

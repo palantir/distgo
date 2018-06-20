@@ -29,6 +29,7 @@ import (
 
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/publisher"
+	"github.com/palantir/distgo/publisher/maven"
 	"github.com/palantir/distgo/publisher/mavenlocal/config"
 )
 
@@ -87,23 +88,21 @@ func (p *mavenLocalPublisher) RunPublish(productTaskOutputInfo distgo.ProductTas
 		}
 	}
 
-	pomName, pomContent, err := productTaskOutputInfo.POM(groupID)
-	if err != nil {
-		return err
-	}
-
-	pomPath := path.Join(productPath, pomName)
-
-	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing POM to %s", pomPath), dryRun)
-	if !dryRun {
-		if err := ioutil.WriteFile(pomPath, []byte(pomContent), 0644); err != nil {
-			return errors.Wrapf(err, "failed to write POM")
-		}
-	}
-
 	// if error is non-nil, wd will be empty
 	wd, _ := os.Getwd()
 	for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
+		pomName, pomContent, err := maven.POM(groupID, productTaskOutputInfo, currDistID)
+		if err != nil {
+			return err
+		}
+		pomPath := path.Join(productPath, pomName)
+		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing POM to %s", pomPath), dryRun)
+		if !dryRun {
+			if err := ioutil.WriteFile(pomPath, []byte(pomContent), 0644); err != nil {
+				return errors.Wrapf(err, "failed to write POM")
+			}
+		}
+
 		for _, currArtifactPath := range productTaskOutputInfo.ProductDistArtifactPaths()[currDistID] {
 			if _, err := copyArtifact(currArtifactPath, productPath, wd, dryRun, stdout); err != nil {
 				return errors.Wrapf(err, "failed to copy artifact")

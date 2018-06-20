@@ -58,6 +58,21 @@ func (d *assetDister) Artifacts(renderedName string) ([]string, error) {
 	return artifactPaths, nil
 }
 
+func (d *assetDister) PackagingExtension() (string, error) {
+	packagingExtensionCmd := exec.Command(d.assetPath, packagingExtensionCmdName,
+		"--"+commonCmdConfigYMLFlagName, d.cfgYML,
+	)
+	outputBytes, err := runCommand(packagingExtensionCmd)
+	if err != nil {
+		return "", err
+	}
+	var packagingExtension string
+	if err := json.Unmarshal(outputBytes, &packagingExtension); err != nil {
+		return "", errors.Wrapf(err, "failed to unmarshal JSON")
+	}
+	return packagingExtension, nil
+}
+
 func (d *assetDister) VerifyConfig() error {
 	verifyConfigCmd := exec.Command(d.assetPath, verifyConfigCmdName,
 		"--"+commonCmdConfigYMLFlagName, d.cfgYML,

@@ -15,7 +15,6 @@
 package distgo
 
 import (
-	"fmt"
 	"path"
 
 	"github.com/palantir/godel/pkg/osarch"
@@ -98,15 +97,6 @@ func (p *ProductTaskOutputInfo) ProductDockerBuildArtifactPaths() map[DockerID]m
 
 func (p *ProductTaskOutputInfo) ProductDockerDistArtifactPaths() map[DockerID]map[ProductID]map[DistID][]string {
 	return ProductDockerDistArtifactPaths(p.Project, p.Product)
-}
-
-func (p *ProductTaskOutputInfo) POM(groupID string) (string, string, error) {
-	pomName := fmt.Sprintf("%s-%s.pom", p.Product.ID, p.Project.Version)
-	pomContent, err := generatePOMContent(p.Product.ID, p.Project.Version, groupID)
-	if err != nil {
-		return "", "", err
-	}
-	return pomName, pomContent, nil
 }
 
 func ExecutableName(productName, goos string) string {
