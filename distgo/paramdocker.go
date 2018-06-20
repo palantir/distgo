@@ -143,7 +143,7 @@ type DockerBuilderParam struct {
 	// parameters can be used in the template:
 	//   * {{Product}}: the name of the product
 	//   * {{Version}}: the version of the project
-	//   * {{Repository}}: the Docker repository. If the repository does not end in a '/', automatically appends '/'.
+	//   * {{Repository}}: the Docker repository. If the repository is non-empty and does not end in a '/', appends '/'.
 	//   * {{RepositoryLiteral}}: the Docker repository exactly as specified (does not append a trailing '/')
 	//   * {{InputBuildArtifact(productID, osArch string) (string, error)}}: the path to the build artifact for the specified input product
 	//   * {{InputDistArtifacts(productID, distID string) ([]string, error)}}: the paths to the dist artifacts for the specified input product
@@ -179,7 +179,7 @@ type DockerBuilderParam struct {
 	// The tag templates are rendered using Go templates. The following template parameters can be used in the template:
 	//   * {{Product}}: the name of the product
 	//   * {{Version}}: the version of the project
-	//   * {{Repository}}: the Docker repository. If the repository does not end in a '/', automatically appends '/'.
+	//   * {{Repository}}: the Docker repository. If the repository is non-empty and does not end in a '/', appends '/'.
 	//   * {{RepositoryLiteral}}: the Docker repository exactly as specified (does not append a trailing '/')
 	TagTemplates map[DockerTagID]string
 }

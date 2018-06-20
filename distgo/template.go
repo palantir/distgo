@@ -41,8 +41,8 @@ func PackagingTemplateFunction(packaging string) TemplateFunction {
 }
 
 func RepositoryTemplateFunction(repository string) TemplateFunction {
-	// if repository does not end in a '/', manually append it
-	if !strings.HasSuffix(repository, "/") {
+	// if repository is non-empty and does not end in a '/', manually append it
+	if repository != "" && !strings.HasSuffix(repository, "/") {
 		repository += "/"
 	}
 	return TemplateValueFunction("Repository", repository)
