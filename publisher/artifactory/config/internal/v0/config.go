@@ -24,6 +24,7 @@ import (
 type Config struct {
 	publisher.BasicConnectionInfo `yaml:",inline,omitempty"`
 	Repository                    string `yaml:"repository,omitempty"`
+	NoPOM                         bool   `yaml:"no-pom,omitempty"`
 }
 
 func UpgradeConfig(cfgBytes []byte) ([]byte, error) {

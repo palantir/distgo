@@ -22,6 +22,7 @@ import (
 type Config struct {
 	// BaseDir is the base directory to which the artifacts are published.
 	BaseDir string `yaml:"base-dir,omitempty"`
+	NoPOM   bool   `yaml:"no-pom,omitempty"`
 }
 
 func UpgradeConfig(cfgBytes []byte) ([]byte, error) {

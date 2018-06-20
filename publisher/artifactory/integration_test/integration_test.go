@@ -83,6 +83,44 @@ products:
 				},
 			},
 			{
+				Name: "skips POM publish based on configuration",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+    dist:
+      disters:
+        type: os-arch-bin
+    publish:
+      group-id: com.test.group
+      info:
+        artifactory:
+          config:
+            url: http://artifactory.domain.com
+            username: testUsername
+            password: testPassword
+            repository: testRepo
+            no-pom: true
+`,
+				},
+				Args: []string{
+					"--dry-run",
+				},
+				WantOutput: func(projectDir string) string {
+					return fmt.Sprintf(`[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+`, osarch.Current().String(), osarch.Current().String())
+				},
+			},
+			{
 				Name: "can use flags to specify values",
 				Specs: []gofiles.GoFileSpec{
 					{
@@ -116,6 +154,43 @@ products:
 				WantOutput: func(projectDir string) string {
 					return fmt.Sprintf(`[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
 [DRY RUN] Uploading to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0.pom
+`, osarch.Current().String(), osarch.Current().String())
+				},
+			},
+			{
+				Name: "can use flags to specify values including no-pom",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+    dist:
+      disters:
+        type: os-arch-bin
+    publish:
+      info:
+        artifactory:
+`,
+				},
+				Args: []string{
+					"--dry-run",
+					"--group-id", "com.test.group",
+					"--url", "http://artifactory.domain.com",
+					"--username", "testUsername",
+					"--password", "testPassword",
+					"--repository", "testRepo",
+					"--no-pom",
+				},
+				WantOutput: func(projectDir string) string {
+					return fmt.Sprintf(`[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://artifactory.domain.com/artifactory/testRepo/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
 `, osarch.Current().String(), osarch.Current().String())
 				},
 			},
