@@ -53,18 +53,13 @@ var (
 		Description: "base output directory for the local publish (if blank, defaults to ${HOME}/.m2/repository)",
 		Type:        distgo.StringFlag,
 	}
-	mavenLocalPublisherNoPOMFlag = distgo.PublisherFlag{
-		Name:        "no-pom",
-		Description: "if true, does not generate and publish a POM",
-		Type:        distgo.BoolFlag,
-	}
 )
 
 func (p *mavenLocalPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	return []distgo.PublisherFlag{
-		mavenLocalPublisherBaseDirFlag,
-		mavenLocalPublisherNoPOMFlag,
 		publisher.GroupIDFlag,
+		maven.NoPOMFlag,
+		mavenLocalPublisherBaseDirFlag,
 	}, nil
 }
 
@@ -80,7 +75,7 @@ func (p *mavenLocalPublisher) RunPublish(productTaskOutputInfo distgo.ProductTas
 	if err := publisher.SetConfigValue(flagVals, mavenLocalPublisherBaseDirFlag, &cfg.BaseDir); err != nil {
 		return err
 	}
-	if err := publisher.SetConfigValue(flagVals, mavenLocalPublisherNoPOMFlag, &cfg.NoPOM); err != nil {
+	if err := publisher.SetConfigValue(flagVals, maven.NoPOMFlag, &cfg.NoPOM); err != nil {
 		return err
 	}
 
@@ -101,7 +96,7 @@ func (p *mavenLocalPublisher) RunPublish(productTaskOutputInfo distgo.ProductTas
 	wd, _ := os.Getwd()
 	for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
 		if !cfg.NoPOM {
-			pomName, pomContent, err := maven.POM(groupID, productTaskOutputInfo, currDistID)
+			pomName, pomContent, err := maven.POM(groupID, maven.Packaging(currDistID, productTaskOutputInfo), productTaskOutputInfo)
 			if err != nil {
 				return err
 			}
