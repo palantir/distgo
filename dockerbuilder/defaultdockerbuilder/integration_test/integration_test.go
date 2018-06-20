@@ -100,6 +100,40 @@ func TestUpgradeConfig(t *testing.T) {
 		nil,
 		[]pluginapitester.UpgradeConfigTestCase{
 			{
+				Name: `legacy configuration is upgraded`,
+				ConfigFiles: map[string]string{
+					"godel/config/dist.yml": `
+products:
+  foo:
+    docker:
+      - repository: foo/foo
+        tag: snapshot
+        context-dir: ./build/docker
+        build-args-script: |
+          echo "--no-cache"
+`,
+				},
+				Legacy: true,
+				WantOutput: `Upgraded configuration for dist-plugin.yml
+`,
+				WantFiles: map[string]string{
+					"godel/config/dist-plugin.yml": `products:
+  foo:
+    build: {}
+    docker:
+      docker-builders:
+        docker-image-0:
+          type: default
+          script: |
+            #!/bin/bash
+            echo "--no-cache"
+          context-dir: ./build/docker
+          tag-templates:
+            default: '{{Repository}}foo/foo:snapshot'
+`,
+				},
+			},
+			{
 				Name: `valid v0 config works`,
 				ConfigFiles: map[string]string{
 					"godel/config/dist-plugin.yml": `

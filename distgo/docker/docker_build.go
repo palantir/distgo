@@ -154,52 +154,7 @@ func runSingleDockerBuild(
 	verbose, dryRun bool,
 	stdout io.Writer) (rErr error) {
 
-	pathToContextDir := path.Join(projectInfo.ProjectDir, dockerBuilderParam.ContextDir)
-	dockerfilePath := path.Join(pathToContextDir, dockerBuilderParam.DockerfilePath)
-	originalDockerfileBytes, err := ioutil.ReadFile(dockerfilePath)
-	if err != nil {
-		return errors.Wrapf(err, "failed to read Dockerfile %s", dockerBuilderParam.DockerfilePath)
-	}
-
-	renderedDockerfile := string(originalDockerfileBytes)
-	if !dockerBuilderParam.DisableTemplateRendering {
-		if renderedDockerfile, err = distgo.RenderTemplate(string(originalDockerfileBytes), nil,
-			distgo.ProductTemplateFunction(productID),
-			distgo.VersionTemplateFunction(projectInfo.Version),
-			distgo.RepositoryTemplateFunction(productTaskOutputInfo.Product.DockerOutputInfos.Repository),
-			inputBuildArtifactTemplateFunction(dockerID, pathToContextDir, buildArtifactPaths),
-			inputDistArtifactsTemplateFunction(dockerID, pathToContextDir, distArtifactPaths),
-			tagsTemplateFunction(productTaskOutputInfo),
-		); err != nil {
-			return err
-		}
-	}
-
 	if !dryRun {
-		if renderedDockerfile != string(originalDockerfileBytes) {
-			// Dockerfile contained templates and rendering them changes file: overwrite file with rendered version
-			// and restore afterwards
-			if err := ioutil.WriteFile(dockerfilePath, []byte(renderedDockerfile), 0644); err != nil {
-				return errors.Wrapf(err, "failed to write rendered Dockerfile")
-			}
-
-			cleanupCtx, cancel := signals.ContextWithShutdown(context.Background())
-			cleanupDone := make(chan struct{})
-			defer func() {
-				cancel()
-				<-cleanupDone
-			}()
-			go func() {
-				select {
-				case <-cleanupCtx.Done():
-					if err := ioutil.WriteFile(dockerfilePath, originalDockerfileBytes, 0644); err != nil && rErr == nil {
-						rErr = errors.Wrapf(err, "failed to restore original Dockerfile content")
-					}
-				}
-				cleanupDone <- struct{}{}
-			}()
-		}
-
 		// link build artifacts into context directory
 		for productID, valMap := range buildArtifactPaths {
 			currOutputInfo := productTaskOutputInfo.AllProductOutputInfosMap()[productID]
@@ -228,6 +183,55 @@ func runSingleDockerBuild(
 					}
 				}
 			}
+		}
+
+		// write and execute Docker script
+		if err := distgo.WriteAndExecuteScript(projectInfo, dockerBuilderParam.Script, distgo.DockerScriptEnvVariables(dockerID, productTaskOutputInfo), stdout); err != nil {
+			return errors.Wrapf(err, "failed to execute Docker script")
+		}
+
+		pathToContextDir := path.Join(projectInfo.ProjectDir, dockerBuilderParam.ContextDir)
+		dockerfilePath := path.Join(pathToContextDir, dockerBuilderParam.DockerfilePath)
+		originalDockerfileBytes, err := ioutil.ReadFile(dockerfilePath)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read Dockerfile %s", dockerBuilderParam.DockerfilePath)
+		}
+
+		renderedDockerfile := string(originalDockerfileBytes)
+		if !dockerBuilderParam.DisableTemplateRendering {
+			if renderedDockerfile, err = distgo.RenderTemplate(string(originalDockerfileBytes), nil,
+				distgo.ProductTemplateFunction(productID),
+				distgo.VersionTemplateFunction(projectInfo.Version),
+				distgo.RepositoryTemplateFunction(productTaskOutputInfo.Product.DockerOutputInfos.Repository),
+				inputBuildArtifactTemplateFunction(dockerID, pathToContextDir, buildArtifactPaths),
+				inputDistArtifactsTemplateFunction(dockerID, pathToContextDir, distArtifactPaths),
+				tagsTemplateFunction(productTaskOutputInfo),
+			); err != nil {
+				return err
+			}
+		}
+		if renderedDockerfile != string(originalDockerfileBytes) {
+			// Dockerfile contained templates and rendering them changes file: overwrite file with rendered version
+			// and restore afterwards
+			if err := ioutil.WriteFile(dockerfilePath, []byte(renderedDockerfile), 0644); err != nil {
+				return errors.Wrapf(err, "failed to write rendered Dockerfile")
+			}
+
+			cleanupCtx, cancel := signals.ContextWithShutdown(context.Background())
+			cleanupDone := make(chan struct{})
+			defer func() {
+				cancel()
+				<-cleanupDone
+			}()
+			go func() {
+				select {
+				case <-cleanupCtx.Done():
+					if err := ioutil.WriteFile(dockerfilePath, originalDockerfileBytes, 0644); err != nil && rErr == nil {
+						rErr = errors.Wrapf(err, "failed to restore original Dockerfile content")
+					}
+				}
+				cleanupDone <- struct{}{}
+			}()
 		}
 	}
 

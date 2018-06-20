@@ -81,7 +81,7 @@ func (cfg *ProductConfig) ToParam(productID distgo.ProductID, scriptIncludes str
 		if defaultCfg.Docker != nil {
 			defaultDockerCfg = DockerConfig(*defaultCfg.Docker)
 		}
-		dockerParamVar, err := (*DockerConfig)(cfg.Docker).ToParam(defaultDockerCfg, dockerBuilderFactory)
+		dockerParamVar, err := (*DockerConfig)(cfg.Docker).ToParam(scriptIncludes, defaultDockerCfg, dockerBuilderFactory)
 		if err != nil {
 			return distgo.ProductParam{}, err
 		}

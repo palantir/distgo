@@ -28,8 +28,8 @@ func ToDockerConfig(in *DockerConfig) *v0.DockerConfig {
 	return (*v0.DockerConfig)(in)
 }
 
-func (cfg *DockerConfig) ToParam(defaultCfg DockerConfig, dockerBuilderFactory distgo.DockerBuilderFactory) (distgo.DockerParam, error) {
-	dockerBuilderParams, err := (*DockerBuildersConfig)(cfg.DockerBuildersConfig).ToParam((*DockerBuildersConfig)(cfg.DockerBuildersConfig), dockerBuilderFactory)
+func (cfg *DockerConfig) ToParam(scriptIncludes string, defaultCfg DockerConfig, dockerBuilderFactory distgo.DockerBuilderFactory) (distgo.DockerParam, error) {
+	dockerBuilderParams, err := (*DockerBuildersConfig)(cfg.DockerBuildersConfig).ToParam(scriptIncludes, (*DockerBuildersConfig)(cfg.DockerBuildersConfig), dockerBuilderFactory)
 	if err != nil {
 		return distgo.DockerParam{}, err
 	}
@@ -45,7 +45,7 @@ func ToDockerBuildersConfig(in *DockerBuildersConfig) *v0.DockerBuildersConfig {
 	return (*v0.DockerBuildersConfig)(in)
 }
 
-func (cfgs *DockerBuildersConfig) ToParam(defaultCfg *DockerBuildersConfig, dockerBuilderFactory distgo.DockerBuilderFactory) (map[distgo.DockerID]distgo.DockerBuilderParam, error) {
+func (cfgs *DockerBuildersConfig) ToParam(scriptIncludes string, defaultCfg *DockerBuildersConfig, dockerBuilderFactory distgo.DockerBuilderFactory) (map[distgo.DockerID]distgo.DockerBuilderParam, error) {
 	// keys that exist either only in cfgs or only in defaultCfg
 	distinctCfgs := make(map[distgo.DockerID]DockerBuilderConfig)
 	// keys that appear in both cfgs and defaultCfg
@@ -77,7 +77,7 @@ func (cfgs *DockerBuildersConfig) ToParam(defaultCfg *DockerBuildersConfig, dock
 	dockerBuilderParamsMap := make(map[distgo.DockerID]distgo.DockerBuilderParam)
 	// generate parameters for all of the distinct elements
 	for dockerID, dockerBuilderCfg := range distinctCfgs {
-		currParam, err := dockerBuilderCfg.ToParam(DockerBuilderConfig{}, dockerBuilderFactory)
+		currParam, err := dockerBuilderCfg.ToParam(scriptIncludes, DockerBuilderConfig{}, dockerBuilderFactory)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to generate parameter for Docker configuration %s", dockerID)
 		}
@@ -86,7 +86,7 @@ func (cfgs *DockerBuildersConfig) ToParam(defaultCfg *DockerBuildersConfig, dock
 	// merge keys that appear in both maps
 	for dockerID := range commonCfgIDs {
 		currCfg := (*cfgs)[dockerID]
-		currParam, err := (*DockerBuilderConfig)(&currCfg).ToParam(DockerBuilderConfig((*defaultCfg)[dockerID]), dockerBuilderFactory)
+		currParam, err := (*DockerBuilderConfig)(&currCfg).ToParam(scriptIncludes, DockerBuilderConfig((*defaultCfg)[dockerID]), dockerBuilderFactory)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to generate parameter for dist configuration %s", dockerID)
 		}
@@ -101,7 +101,7 @@ func ToDockerBuilderConfig(in DockerBuilderConfig) v0.DockerBuilderConfig {
 	return (v0.DockerBuilderConfig)(in)
 }
 
-func (cfg *DockerBuilderConfig) ToParam(defaultCfg DockerBuilderConfig, dockerBuilderFactory distgo.DockerBuilderFactory) (distgo.DockerBuilderParam, error) {
+func (cfg *DockerBuilderConfig) ToParam(scriptIncludes string, defaultCfg DockerBuilderConfig, dockerBuilderFactory distgo.DockerBuilderFactory) (distgo.DockerBuilderParam, error) {
 	dockerBuilderType := getConfigStringValue(cfg.Type, defaultCfg.Type, "")
 	if dockerBuilderType == "" {
 		return distgo.DockerBuilderParam{}, errors.Errorf("type must be non-empty")
@@ -122,6 +122,7 @@ func (cfg *DockerBuilderConfig) ToParam(defaultCfg DockerBuilderConfig, dockerBu
 
 	return distgo.DockerBuilderParam{
 		DockerBuilder:            dockerBuilder,
+		Script:                   distgo.CreateScriptContent(getConfigStringValue(cfg.Script, defaultCfg.Script, ""), scriptIncludes),
 		DockerfilePath:           getConfigStringValue(cfg.DockerfilePath, defaultCfg.DockerfilePath, "Dockerfile"),
 		DisableTemplateRendering: getConfigValue(cfg.DisableTemplateRendering, defaultCfg.DisableTemplateRendering, false).(bool),
 		ContextDir:               contextDir,
