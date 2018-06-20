@@ -54,6 +54,10 @@ func (d *Dister) Artifacts(renderedName string) ([]string, error) {
 	return outPaths, nil
 }
 
+func (d *Dister) PackagingExtension() (string, error) {
+	return "tgz", nil
+}
+
 func (d *Dister) osArchFromArtifactPath(distID distgo.DistID, artifactPath string, productTaskOutputInfo distgo.ProductTaskOutputInfo) (osarch.OSArch, error) {
 	for _, osArch := range d.OSArchs {
 		if strings.HasSuffix(artifactPath, fmt.Sprintf("%s-%s.tgz", productTaskOutputInfo.Product.DistOutputInfos.DistInfos[distID].DistNameTemplateRendered, osArch.String())) {

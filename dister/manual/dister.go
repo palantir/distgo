@@ -40,6 +40,10 @@ func (d *Dister) Artifacts(renderedNameTemplate string) ([]string, error) {
 	return []string{outputFileName}, nil
 }
 
+func (d *Dister) PackagingExtension() (string, error) {
+	return d.Extension, nil
+}
+
 func (d *Dister) RunDist(distID distgo.DistID, productTaskOutputInfo distgo.ProductTaskOutputInfo) ([]byte, error) {
 	// manual dister does not perform any actions (all actions are preformed by script)
 	return nil, nil

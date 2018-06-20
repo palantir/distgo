@@ -31,10 +31,6 @@ func VersionTemplateFunction(version string) TemplateFunction {
 	return TemplateValueFunction("Version", version)
 }
 
-func GroupIDTemplateFunction(groupID string) TemplateFunction {
-	return TemplateValueFunction("GroupID", groupID)
-}
-
 func RepositoryTemplateFunction(repository string) TemplateFunction {
 	return TemplateValueFunction("Repository", repository)
 }

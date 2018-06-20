@@ -98,6 +98,7 @@ type InputDirParam struct {
 type DistOutputInfo struct {
 	DistNameTemplateRendered string   `json:"distNameTemplateRendered"`
 	DistArtifactNames        []string `json:"distArtifactNames"`
+	PackagingExtension       string   `json:"packagingExtension"`
 }
 
 func (p *DisterParam) ToDistOutputInfo(productID ProductID, version string) (DistOutputInfo, error) {
@@ -109,9 +110,14 @@ func (p *DisterParam) ToDistOutputInfo(productID ProductID, version string) (Dis
 	if err != nil {
 		return DistOutputInfo{}, errors.Wrapf(err, "failed to determine artifact names")
 	}
+	packagingExtension, err := p.Dister.PackagingExtension()
+	if err != nil {
+		return DistOutputInfo{}, errors.Wrapf(err, "failed to determine artifact extensions")
+	}
 	return DistOutputInfo{
 		DistNameTemplateRendered: renderedName,
 		DistArtifactNames:        artifactNames,
+		PackagingExtension:       packagingExtension,
 	}, nil
 }
 

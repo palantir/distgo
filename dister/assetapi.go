@@ -37,6 +37,7 @@ func AssetRootCmd(creator Creator, upgradeConfigFn pluginapi.UpgradeConfigFn, sh
 	rootCmd.AddCommand(newVerifyConfigCmd(creatorFn))
 	rootCmd.AddCommand(assetapi.NewAssetTypeCmd(assetapi.Dister))
 	rootCmd.AddCommand(newArtifactPathsCmd(creatorFn))
+	rootCmd.AddCommand(newPackagingExtensionCmd(creatorFn))
 	rootCmd.AddCommand(newRunDistCmd(creatorFn))
 	rootCmd.AddCommand(newGenerateDistArtifactsCmd(creatorFn))
 	rootCmd.AddCommand(pluginapi.CobraUpgradeConfigCmd(upgradeConfigFn))
@@ -116,6 +117,39 @@ func newArtifactPathsCmd(creatorFn CreatorFunction) *cobra.Command {
 	artifactsCmd.Flags().StringVar(&renderedNameFlagVal, artifactPathsCmdRenderedNameFlagName, "", "rendered name of the product")
 	mustMarkFlagsRequired(artifactsCmd, commonCmdConfigYMLFlagName, artifactPathsCmdRenderedNameFlagName)
 	return artifactsCmd
+}
+
+const (
+	packagingExtensionCmdName = "packaging-extension"
+)
+
+func newPackagingExtensionCmd(creatorFn CreatorFunction) *cobra.Command {
+	var (
+		configYMLFlagVal string
+	)
+	packagingExtensionCmd := &cobra.Command{
+		Use:   packagingExtensionCmdName,
+		Short: "Prints the packaging extension for the dister",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			dister, err := creatorFn([]byte(configYMLFlagVal))
+			if err != nil {
+				return err
+			}
+			packagingExtension, err := dister.PackagingExtension()
+			if err != nil {
+				return err
+			}
+			outputJSON, err := json.Marshal(packagingExtension)
+			if err != nil {
+				return errors.Wrapf(err, "failed to marshal output as JSON")
+			}
+			cmd.Print(string(outputJSON))
+			return nil
+		},
+	}
+	packagingExtensionCmd.Flags().StringVar(&configYMLFlagVal, commonCmdConfigYMLFlagName, "", "YML of dister configuration")
+	mustMarkFlagsRequired(packagingExtensionCmd, commonCmdConfigYMLFlagName)
+	return packagingExtensionCmd
 }
 
 const (
