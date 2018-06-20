@@ -16,6 +16,7 @@ package dister
 
 import (
 	"encoding/json"
+	"fmt"
 	"os/exec"
 	"strings"
 
@@ -64,6 +65,9 @@ func (d *assetDister) PackagingExtension() (string, error) {
 	)
 	outputBytes, err := runCommand(packagingExtensionCmd)
 	if err != nil {
+		if strings.Contains(err.Error(), fmt.Sprintf(`unknown command %q`, packagingExtensionCmdName)) {
+			return "", nil
+		}
 		return "", err
 	}
 	var packagingExtension string
