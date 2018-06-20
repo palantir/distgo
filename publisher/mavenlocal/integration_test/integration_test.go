@@ -79,6 +79,73 @@ products:
 				},
 			},
 			{
+				Name: "skips POM publish based on flag",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+    dist:
+      disters:
+        type: os-arch-bin
+    publish:
+      group-id: com.test.group
+`,
+				},
+				Args: []string{
+					"--dry-run",
+					"--no-pom",
+				},
+				WantOutput: func(projectDir string) string {
+					baseDir := path.Join(os.Getenv("HOME"), ".m2", "repository")
+					return fmt.Sprintf(`[DRY RUN] Copying artifact from out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to %s/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+`, osarch.Current().String(), baseDir, osarch.Current().String())
+				},
+			},
+			{
+				Name: "skips POM publish based on configuration",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+    dist:
+      disters:
+        type: os-arch-bin
+    publish:
+      group-id: com.test.group
+      info:
+        maven-local:
+          config:
+            no-pom: true
+`,
+				},
+				Args: []string{
+					"--dry-run",
+				},
+				WantOutput: func(projectDir string) string {
+					baseDir := path.Join(os.Getenv("HOME"), ".m2", "repository")
+					return fmt.Sprintf(`[DRY RUN] Copying artifact from out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to %s/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+`, osarch.Current().String(), baseDir, osarch.Current().String())
+				},
+			},
+			{
 				Name: "publishes artifact and POM to local directory",
 				Specs: []gofiles.GoFileSpec{
 					{

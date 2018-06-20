@@ -62,11 +62,17 @@ var (
 		Description: "repository that is the destination for the publish",
 		Type:        distgo.StringFlag,
 	}
+	artifactoryPublisherNoPOMFlag = distgo.PublisherFlag{
+		Name:        "no-pom",
+		Description: "if true, does not generate and publish a POM",
+		Type:        distgo.BoolFlag,
+	}
 )
 
 func (p *artifactoryPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	return append(publisher.BasicConnectionInfoFlags(),
 		artifactoryPublisherRepositoryFlag,
+		artifactoryPublisherNoPOMFlag,
 		publisher.GroupIDFlag,
 	), nil
 }
@@ -89,6 +95,9 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 		return nil, err
 	}
 	if err := publisher.SetRequiredStringConfigValue(flagVals, artifactoryPublisherRepositoryFlag, &cfg.Repository); err != nil {
+		return nil, err
+	}
+	if err := publisher.SetConfigValue(flagVals, artifactoryPublisherNoPOMFlag, &cfg.NoPOM); err != nil {
 		return nil, err
 	}
 
@@ -141,15 +150,17 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 		artifactNames = append(artifactNames, path.Base(currArtifactPath))
 	}
 
-	for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
-		pomName, pomContent, err := maven.POM(groupID, productTaskOutputInfo, currDistID)
-		if err != nil {
-			return nil, err
-		}
-		artifactNames = append(artifactNames, pomName)
-		// do not include POM in uploadedURLs
-		if _, err := cfg.UploadFile(publisher.NewFileInfoFromBytes([]byte(pomContent)), baseURL, pomName, artifactExists, dryRun, stdout); err != nil {
-			return nil, err
+	if !cfg.NoPOM {
+		for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
+			pomName, pomContent, err := maven.POM(groupID, productTaskOutputInfo, currDistID)
+			if err != nil {
+				return nil, err
+			}
+			artifactNames = append(artifactNames, pomName)
+			// do not include POM in uploadedURLs
+			if _, err := cfg.UploadFile(publisher.NewFileInfoFromBytes([]byte(pomContent)), baseURL, pomName, artifactExists, dryRun, stdout); err != nil {
+				return nil, err
+			}
 		}
 	}
 
