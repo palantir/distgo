@@ -23,12 +23,13 @@ import (
 	"github.com/palantir/distgo/distgo"
 )
 
-func PushProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productDockerIDs []distgo.ProductDockerID, dryRun bool, stdout io.Writer) error {
+func PushProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productDockerIDs []distgo.ProductDockerID, tagKeys []string, dryRun bool, stdout io.Writer) error {
 	// determine products that match specified productDockerIDs
 	productParams, err := distgo.ProductParamsForDockerProductArgs(projectParam.Products, productDockerIDs...)
 	if err != nil {
 		return err
 	}
+	productParams = distgo.ProductParamsForDockerTagKeys(productParams, tagKeys)
 
 	// run push only for specified products
 	for _, currParam := range productParams {

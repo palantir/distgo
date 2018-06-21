@@ -87,6 +87,53 @@ products:
 `, projectDir, projectDir)
 				},
 			},
+			{
+				Name: "filters Docker tags based on flag",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+					{
+						RelPath: "testContextDir/Dockerfile",
+						Src: `FROM alpine:3.5
+RUN echo 'Product: \{\{Product\}\}'
+RUN echo 'Version: \{\{Version\}\}'
+RUN echo 'Repository: \{\{Repository\}\}'
+`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+    dist:
+      disters:
+        type: os-arch-bin
+    docker:
+      docker-builders:
+        tester:
+          type: default
+          context-dir: testContextDir
+          tag-templates:
+            release: tester-tag:{{Version}}
+            snapshot: tester-tag:snapshot
+`,
+				},
+				Args: []string{
+					"build",
+					"--dry-run",
+					"--tags=release",
+				},
+				WantOutput: func(projectDir string) string {
+					return fmt.Sprintf(`[DRY RUN] Running Docker build for configuration tester of product foo...
+[DRY RUN] Run [docker build --file %s/testContextDir/Dockerfile -t tester-tag:1.0.0 %s/testContextDir]
+`, projectDir, projectDir)
+				},
+			},
 		},
 	)
 }

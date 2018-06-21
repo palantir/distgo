@@ -162,7 +162,7 @@ func RunAssetDockerBuilderTest(t *testing.T,
 				require.NoError(t, err, "Case %d: %s\nOutput:\n%s", i, tc.Name, outputBuf.String())
 			}
 			if tc.WantOutput != nil {
-				assert.Equal(t, tc.WantOutput(projectDir), outputBuf.String(), "Case %d: %s", i, tc.Name)
+				assert.Equal(t, tc.WantOutput(projectDir), outputBuf.String(), "Case %d: %s\nOutput:\n%s", i, tc.Name, outputBuf.String())
 			}
 			if tc.Validate != nil {
 				tc.Validate(projectDir)

@@ -35,12 +35,13 @@ import (
 	"github.com/palantir/distgo/distgo/dist"
 )
 
-func BuildProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDockerIDs []distgo.ProductDockerID, verbose, dryRun bool, stdout io.Writer) error {
+func BuildProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDockerIDs []distgo.ProductDockerID, tagKeys []string, verbose, dryRun bool, stdout io.Writer) error {
 	// determine products that match specified productDockerIDs
 	productParams, err := distgo.ProductParamsForDockerProductArgs(projectParam.Products, productDockerIDs...)
 	if err != nil {
 		return err
 	}
+	productParams = distgo.ProductParamsForDockerTagKeys(productParams, tagKeys)
 
 	// run build for products that require build artifact generation (not sufficient to just run dist because product
 	// may declare build output but not dist output)
