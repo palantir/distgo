@@ -37,7 +37,7 @@ var (
 			if dockerBuildRepositoryFlagVal != "" {
 				docker.SetDockerRepository(projectParam, dockerBuildRepositoryFlagVal)
 			}
-			return docker.BuildProducts(projectInfo, projectParam, distgoConfigModTime(), distgo.ToProductDockerIDs(args), dockerBuildVerboseFlagVal, dockerBuildDryRunFlagVal, cmd.OutOrStdout())
+			return docker.BuildProducts(projectInfo, projectParam, distgoConfigModTime(), distgo.ToProductDockerIDs(args), dockerBuildTagKeysFlagVal, dockerBuildVerboseFlagVal, dockerBuildDryRunFlagVal, cmd.OutOrStdout())
 		},
 	}
 	dockerPushSubCmd = &cobra.Command{
@@ -51,7 +51,7 @@ var (
 			if dockerPushRepositoryFlagVal != "" {
 				docker.SetDockerRepository(projectParam, dockerPushRepositoryFlagVal)
 			}
-			return docker.PushProducts(projectInfo, projectParam, distgo.ToProductDockerIDs(args), dockerPushDryRunFlagVal, cmd.OutOrStdout())
+			return docker.PushProducts(projectInfo, projectParam, distgo.ToProductDockerIDs(args), dockerPushTagKeysFlagVal, dockerPushDryRunFlagVal, cmd.OutOrStdout())
 		},
 	}
 )
@@ -60,20 +60,36 @@ var (
 	dockerBuildRepositoryFlagVal string
 	dockerBuildVerboseFlagVal    bool
 	dockerBuildDryRunFlagVal     bool
+	dockerBuildTagKeysFlagVal    []string
 
 	dockerPushRepositoryFlagVal string
 	dockerPushDryRunFlagVal     bool
+	dockerPushTagKeysFlagVal    []string
 )
 
 func init() {
-	dockerBuildSubCmd.Flags().StringVar(&dockerBuildRepositoryFlagVal, "repository", "", "specifies the value that should be used for the Docker repository (overrides any value(s) specified in configuration)")
+	addRepositoryFlag(dockerBuildSubCmd, &dockerBuildRepositoryFlagVal)
 	dockerBuildSubCmd.Flags().BoolVar(&dockerBuildVerboseFlagVal, "verbose", false, "print verbose output for the operation")
-	dockerBuildSubCmd.Flags().BoolVar(&dockerBuildDryRunFlagVal, "dry-run", false, "print the operations that would be performed")
+	addDryRunFlag(dockerBuildSubCmd, &dockerBuildDryRunFlagVal)
+	addTagKeysFlag(dockerBuildSubCmd, &dockerBuildTagKeysFlagVal)
 	dockerCmd.AddCommand(dockerBuildSubCmd)
 
-	dockerPushSubCmd.Flags().StringVar(&dockerPushRepositoryFlagVal, "repository", "", "specifies the value that should be used for the Docker repository (overrides any value(s) specified in configuration)")
-	dockerPushSubCmd.Flags().BoolVar(&dockerPushDryRunFlagVal, "dry-run", false, "print the operations that would be performed")
+	addRepositoryFlag(dockerPushSubCmd, &dockerPushRepositoryFlagVal)
+	addDryRunFlag(dockerPushSubCmd, &dockerPushDryRunFlagVal)
+	addTagKeysFlag(dockerPushSubCmd, &dockerPushTagKeysFlagVal)
 	dockerCmd.AddCommand(dockerPushSubCmd)
 
 	rootCmd.AddCommand(dockerCmd)
+}
+
+func addRepositoryFlag(cmd *cobra.Command, flagVal *string) {
+	cmd.Flags().StringVar(flagVal, "repository", "", "specifies the value that should be used for the Docker repository (overrides any value(s) specified in configuration)")
+}
+
+func addDryRunFlag(cmd *cobra.Command, flagVal *bool) {
+	cmd.Flags().BoolVar(flagVal, "dry-run", false, "print the operations that would be performed")
+}
+
+func addTagKeysFlag(cmd *cobra.Command, flagVal *[]string) {
+	cmd.Flags().StringSliceVar(flagVal, "tags", nil, "")
 }

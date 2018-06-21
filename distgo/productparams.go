@@ -502,6 +502,52 @@ func ProductParamsForDockerProductArgs(inputProducts map[ProductID]ProductParam,
 	return toSortedProductParams(filteredProducts), nil
 }
 
+// ProductParamsForDockerTagKeys returns the ProductParams from the provided inputProducts that have Docker tags whose
+// keys are contained in the provided keys. For example, if the provided keys are "release" and "snapshot", the returned
+// ProductParams will only contain Docker configurations that have tags that match one or both of those keys (and the
+// Docker configuration will be updated to contain only the tags that match those keys). Returns the provided input
+// unmodified if tagKeys does not contain any elements.
+func ProductParamsForDockerTagKeys(inputProducts []ProductParam, tagKeys []string) []ProductParam {
+	// if no products or tag keys were specified, return unmodified products
+	if len(inputProducts) == 0 || len(tagKeys) == 0 {
+		return inputProducts
+	}
+
+	tagKeysMap := make(map[string]struct{})
+	for _, k := range tagKeys {
+		tagKeysMap[k] = struct{}{}
+	}
+
+	var filteredProducts []ProductParam
+	for _, currProductParam := range inputProducts {
+		if currProductParam.Docker == nil {
+			continue
+		}
+		newDockerBuilders := make(map[DockerID]DockerBuilderParam)
+		for dockerID, dockerBuilderParam := range currProductParam.Docker.DockerBuilderParams {
+			filteredTagTemplates := make(map[DockerTagID]string)
+			for currTag, currTagVal := range dockerBuilderParam.TagTemplates {
+				if _, ok := tagKeysMap[string(currTag)]; !ok {
+					continue
+				}
+				filteredTagTemplates[currTag] = currTagVal
+			}
+			if len(filteredTagTemplates) == 0 {
+				continue
+			}
+			dockerBuilderParam.TagTemplates = filteredTagTemplates
+			newDockerBuilders[dockerID] = dockerBuilderParam
+		}
+
+		// modify copy so that original value remains the same
+		dockerCopy := *currProductParam.Docker
+		dockerCopy.DockerBuilderParams = newDockerBuilders
+		currProductParam.Docker = &dockerCopy
+		filteredProducts = append(filteredProducts, currProductParam)
+	}
+	return filteredProducts
+}
+
 func ClassifyProductParams(productParams []ProductParam) (allProducts map[ProductID]struct{}, specifiedProducts map[ProductID]struct{}, dependentProducts map[ProductID]struct{}) {
 	allProducts = make(map[ProductID]struct{})
 	specifiedProducts = make(map[ProductID]struct{})

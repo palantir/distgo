@@ -48,6 +48,7 @@ func TestDockerPublish(t *testing.T) {
 		name            string
 		projectCfg      distgoconfig.ProjectConfig
 		dockerIDs       []distgo.ProductDockerID
+		tagKeys         []string
 		preDockerAction func(projectDir string, projectCfg distgoconfig.ProjectConfig)
 		wantErrorRegexp string
 		wantStdout      string
@@ -87,6 +88,7 @@ func TestDockerPublish(t *testing.T) {
 					},
 				}),
 			},
+			nil,
 			nil,
 			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
@@ -140,6 +142,7 @@ func TestDockerPublish(t *testing.T) {
 				}),
 			},
 			nil,
+			nil,
 			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
@@ -153,6 +156,61 @@ func TestDockerPublish(t *testing.T) {
 			"",
 			`[DRY RUN] Running Docker push for configuration print-dockerfile of product foo...
 [DRY RUN] Run [docker push foo:0.1.0]
+[DRY RUN] Run [docker push foo:latest]
+`,
+		},
+		{
+			"publish pushes only Docker images for a product that match provided tag keys",
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
+					"foo": {
+						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
+							MainPkg: stringPtr("./foo"),
+						}),
+						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
+									Type: stringPtr(osarchbin.TypeName),
+								}),
+							}),
+						}),
+						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
+							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
+								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
+									Type:       stringPtr(printDockerfileDockerBuilderTypeName),
+									ContextDir: stringPtr("docker-context-dir"),
+									InputBuilds: &[]distgo.ProductBuildID{
+										"foo",
+									},
+									InputDists: &[]distgo.ProductDistID{
+										"foo",
+									},
+									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+										"latest":    "foo:latest",
+										"versioned": "foo:{{Version}}",
+									}),
+								}),
+							}),
+						}),
+					},
+				}),
+			},
+			nil,
+			[]string{
+				"latest",
+			},
+			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+				contextDir := path.Join(projectDir, "docker-context-dir")
+				err := os.Mkdir(contextDir, 0755)
+				require.NoError(t, err)
+				dockerfile := path.Join(contextDir, "Dockerfile")
+				err = ioutil.WriteFile(dockerfile, []byte(testDockerfile), 0644)
+				require.NoError(t, err)
+				gittest.CommitAllFiles(t, projectDir, "Commit files")
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			"",
+			`[DRY RUN] Running Docker push for configuration print-dockerfile of product foo...
 [DRY RUN] Run [docker push foo:latest]
 `,
 		},
@@ -211,6 +269,7 @@ func TestDockerPublish(t *testing.T) {
 			[]distgo.ProductDockerID{
 				"foo",
 			},
+			nil,
 			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
@@ -260,7 +319,7 @@ func TestDockerPublish(t *testing.T) {
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		buffer := &bytes.Buffer{}
-		err = docker.PushProducts(projectInfo, projectParam, tc.dockerIDs, true, buffer)
+		err = docker.PushProducts(projectInfo, projectParam, tc.dockerIDs, tc.tagKeys, true, buffer)
 		if tc.wantErrorRegexp == "" {
 			require.NoError(t, err, "Case %d: %s", i, tc.name)
 		} else {
