@@ -46,7 +46,10 @@ mkdir-tests-dir: &mkdir-tests-dir
   run: mkdir -p "${TESTS_DIR}"
 
 godelw-verify: &godelw-verify
-  run: ./godelw verify --apply=false --junit-output="$TESTS_DIR/$CIRCLE_PROJECT_REPONAME-tests.xml"
+  run: ./godelw verify --apply=false --skip-test
+
+godelw-test: &godelw-test
+  run: ./godelw test --junit-output="$TESTS_DIR/$CIRCLE_PROJECT_REPONAME-tests.xml"
 
 store-test-results: &store-test-results
   type: test-results-store
@@ -67,9 +70,18 @@ jobs:
       - *godel-cache-restore
       - *godel-version
       - *godel-cache-save
+      - *godelw-verify
+  test:
+    <<: *darwin-linux-no-cgo
+    steps:
+      - checkout
+      - *go-version
+      - *godel-cache-restore
+      - *godel-version
+      - *godel-cache-save
       - *define-tests-dir
       - *mkdir-tests-dir
-      - *godelw-verify
+      - *godelw-test
       - *store-test-results
       - *store-artifacts
   dist:
@@ -105,6 +117,7 @@ jobs:
 ### Workflows ###
 requires_products: &requires_products
   - verify
+  - test
   - dist
 
 all-tags-filter: &all-tags-filter
@@ -115,6 +128,8 @@ workflows:
   build-publish:
     jobs:
       - verify:
+          <<: *all-tags-filter
+      - test:
           <<: *all-tags-filter
       - dist:
           <<: *all-tags-filter
