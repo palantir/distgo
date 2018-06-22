@@ -486,8 +486,13 @@ products:
 										"test-2.linux-amd64",
 										"test-3.darwin-amd64",
 									},
-									TagTemplates: map[distgo.DockerTagID]string{
-										"latest": "foo:latest",
+									TagTemplates: distgo.TagTemplatesMap{
+										Templates: map[distgo.DockerTagID]string{
+											"latest": "foo:latest",
+										},
+										OrderedKeys: []distgo.DockerTagID{
+											"latest",
+										},
 									},
 								},
 							},
@@ -619,8 +624,13 @@ products:
 										"test-2.foo",
 										"test-3.os-arch-bin",
 									},
-									TagTemplates: map[distgo.DockerTagID]string{
-										"latest": "foo:latest",
+									TagTemplates: distgo.TagTemplatesMap{
+										Templates: map[distgo.DockerTagID]string{
+											"latest": "foo:latest",
+										},
+										OrderedKeys: []distgo.DockerTagID{
+											"latest",
+										},
 									},
 								},
 							},

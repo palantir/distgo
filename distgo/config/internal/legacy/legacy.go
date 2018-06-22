@@ -753,7 +753,12 @@ func upgradeLegacyConfig(
 					tagVal += "{{Version}}"
 				}
 				upgradedDockerBuilderConfig.TagTemplates = &v0.TagTemplatesMap{
-					"default": tagVal,
+					Templates: map[distgo.DockerTagID]string{
+						"default": tagVal,
+					},
+					OrderedKeys: []distgo.DockerTagID{
+						"default",
+					},
 				}
 
 				// ContextDir

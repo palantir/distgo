@@ -51,7 +51,7 @@ type DockerBuilderConfig struct {
 	//   * {{Repository}}: the Docker repository for the operation
 	//   * {{InputBuildArtifact(productID, osArch string) (string, error)}}: the path to the build artifact for the specified input product
 	//   * {{InputDistArtifacts(productID, distID string) ([]string, error)}}: the paths to the dist artifacts for the specified input product
-	//   * {{Tags(productID, dockerID string) ([]string, error)}}: the rendered tags for the specified Docker image sorted in ascending order
+	//   * {{Tags(productID, dockerID string) ([]string, error)}}: the rendered tags for the specified Docker image. Returned in the same order as defined in configuration.
 	DockerfilePath *string `yaml:"dockerfile-path,omitempty"`
 	// DisableTemplateRendering disables rendering the Go templates in the Dockerfile when set to true. This should only
 	// be set to true if the Dockerfile does not use the Docker task templating and contains other Go templating -- in
@@ -88,33 +88,72 @@ type DockerBuilderConfig struct {
 	TagTemplates *TagTemplatesMap `yaml:"tag-templates,omitempty"`
 }
 
-type TagTemplatesMap map[distgo.DockerTagID]string
+type TagTemplatesMap struct {
+	Templates   map[distgo.DockerTagID]string
+	OrderedKeys []distgo.DockerTagID
+}
+
+func (t *TagTemplatesMap) MarshalYAML() (interface{}, error) {
+	if t == nil || t.Templates == nil {
+		return nil, nil
+	}
+	out := make(yaml.MapSlice, len(t.Templates))
+	for i, k := range t.OrderedKeys {
+		out[i] = yaml.MapItem{
+			Key:   k,
+			Value: t.Templates[k],
+		}
+	}
+	return out, nil
+}
 
 func (t *TagTemplatesMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var strVal string
 	if err := unmarshal(&strVal); err == nil && strVal != "" {
 		// value is specified as single string: unmarshal with default key
 		*t = TagTemplatesMap{
-			"default": strVal,
+			Templates: map[distgo.DockerTagID]string{
+				"default": strVal,
+			},
+			OrderedKeys: []distgo.DockerTagID{
+				"default",
+			},
 		}
 		return nil
 	}
 
 	var strSliceVal []string
 	if err := unmarshal(&strSliceVal); err == nil && len(strSliceVal) > 0 {
+		templates := make(map[distgo.DockerTagID]string, len(strSliceVal))
+		orderedKeys := make([]distgo.DockerTagID, len(strSliceVal))
 		// value is specified as string array: unmarshal with keys as string representation of index
-		*t = make(TagTemplatesMap, len(strSliceVal))
 		for i, val := range strSliceVal {
-			(*t)[distgo.DockerTagID(strconv.Itoa(i))] = val
+			key := distgo.DockerTagID(strconv.Itoa(i))
+			templates[key] = val
+			orderedKeys[i] = key
+		}
+		*t = TagTemplatesMap{
+			Templates:   templates,
+			OrderedKeys: orderedKeys,
 		}
 		return nil
 	}
 
-	type TagTemplatesMapAlias TagTemplatesMap
-	var val TagTemplatesMapAlias
+	var val yaml.MapSlice
 	if err := unmarshal(&val); err != nil {
 		return err
 	}
-	*t = TagTemplatesMap(val)
+	templates := make(map[distgo.DockerTagID]string, len(val))
+	orderedKeys := make([]distgo.DockerTagID, len(val))
+	for i, item := range val {
+		key := distgo.DockerTagID(item.Key.(string))
+		val := item.Value.(string)
+		templates[key] = val
+		orderedKeys[i] = key
+	}
+	*t = TagTemplatesMap{
+		Templates:   templates,
+		OrderedKeys: orderedKeys,
+	}
 	return nil
 }

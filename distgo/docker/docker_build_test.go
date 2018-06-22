@@ -113,9 +113,9 @@ func TestDockerBuild(t *testing.T) {
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"default": "foo:latest",
-									}),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"default", "foo:latest",
+									)),
 								}),
 							}),
 						}),
@@ -170,9 +170,9 @@ func TestDockerBuild(t *testing.T) {
 											"docker/dist-latest.tgz",
 										},
 									},
-									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"default": "foo:latest",
-									}),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"default", "foo:latest",
+									)),
 								}),
 							}),
 						}),
@@ -227,9 +227,9 @@ func TestDockerBuild(t *testing.T) {
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"default": "{{Repository}}foo:latest",
-									}),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"default", "{{Repository}}foo:latest",
+									)),
 								}),
 							}),
 						}),
@@ -293,14 +293,14 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
 									Type:       stringPtr(printDockerfileDockerBuilderTypeName),
 									ContextDir: stringPtr("docker-context-dir"),
-									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"0": "foo:5",
-										"2": "foo:3",
-										"3": "foo:2",
-										"5": "foo:0",
-										"1": "foo:1",
-										"4": "foo:4",
-									}),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"0", "foo:5",
+										"2", "foo:3",
+										"3", "foo:2",
+										"5", "foo:0",
+										"1", "foo:1",
+										"4", "foo:4",
+									)),
 								}),
 							}),
 						}),
@@ -325,7 +325,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 			"",
 			`Running Docker build for configuration print-dockerfile of product foo...
 FROM alpine:3.5
-RUN echo 'Tags for foo: [foo:0 foo:1 foo:2 foo:3 foo:4 foo:5]'
+RUN echo 'Tags for foo: [foo:5 foo:3 foo:2 foo:0 foo:1 foo:4]'
 `,
 			func(caseNum int, name, projectDir string) {
 				bytes, err := ioutil.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
@@ -363,9 +363,9 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"default": "{{Repository}}foo:latest",
-									}),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"default", "{{Repository}}foo:latest",
+									)),
 								}),
 							}),
 						}),
@@ -448,9 +448,9 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"default": "{{Repository}}foo:latest",
-									}),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"default", "{{Repository}}foo:latest",
+									)),
 								}),
 							}),
 						}),
@@ -529,10 +529,10 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"snapshot": "{{Repository}}foo:latest",
-										"release":  "{{Repository}}foo:{{Version}}",
-									}),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"snapshot", "{{Repository}}foo:latest",
+										"release", "{{Repository}}foo:{{Version}}",
+									)),
 								}),
 							}),
 						}),
@@ -649,4 +649,16 @@ func stringPtr(in string) *string {
 
 func boolPtr(in bool) *bool {
 	return &in
+}
+
+func mustTagTemplatesMap(nameAndVal ...string) *distgoconfig.TagTemplatesMap {
+	out := &distgoconfig.TagTemplatesMap{
+		Templates: make(map[distgo.DockerTagID]string),
+	}
+	for i := 0; i < len(nameAndVal); i += 2 {
+		tagID := distgo.DockerTagID(nameAndVal[i])
+		out.Templates[tagID] = nameAndVal[i+1]
+		out.OrderedKeys = append(out.OrderedKeys, tagID)
+	}
+	return out
 }
