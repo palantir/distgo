@@ -284,6 +284,59 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 			},
 		},
 		{
+			"tags template function renders tags in order of rendered output",
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
+					"foo": {
+						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
+							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
+								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
+									Type:       stringPtr(printDockerfileDockerBuilderTypeName),
+									ContextDir: stringPtr("docker-context-dir"),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+										"0": "foo:5",
+										"2": "foo:3",
+										"3": "foo:2",
+										"5": "foo:0",
+										"1": "foo:1",
+										"4": "foo:4",
+									}),
+								}),
+							}),
+						}),
+					},
+				}),
+			},
+			nil,
+			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+				contextDir := path.Join(projectDir, "docker-context-dir")
+				err := os.Mkdir(contextDir, 0755)
+				require.NoError(t, err)
+
+				dockerfile := path.Join(contextDir, "Dockerfile")
+				err = ioutil.WriteFile(dockerfile, []byte(`FROM alpine:3.5
+RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
+`), 0644)
+
+				require.NoError(t, err)
+				gittest.CommitAllFiles(t, projectDir, "Commit files")
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			"",
+			`Running Docker build for configuration print-dockerfile of product foo...
+FROM alpine:3.5
+RUN echo 'Tags for foo: [foo:0 foo:1 foo:2 foo:3 foo:4 foo:5]'
+`,
+			func(caseNum int, name, projectDir string) {
+				bytes, err := ioutil.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
+				require.NoError(t, err)
+				originalDockerfileContent := `FROM alpine:3.5
+RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
+`
+				assert.Equal(t, originalDockerfileContent, string(bytes))
+			},
+		},
+		{
 			"Dockerfile renders empty repository",
 			distgoconfig.ProjectConfig{
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
