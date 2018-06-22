@@ -388,7 +388,7 @@ func ProductParamsForDockerProductArgs(inputProducts map[ProductID]ProductParam,
 		}
 		for dockerID, param := range (*productParam.Docker).DockerBuilderParams {
 			validIDs[fmt.Sprintf("%s.%s", productID, dockerID)] = struct{}{}
-			for dockerTagID := range param.TagTemplates {
+			for _, dockerTagID := range param.TagTemplates.OrderedKeys {
 				validIDs[fmt.Sprintf("%s.%s.%s", productID, dockerID, dockerTagID)] = struct{}{}
 			}
 		}
@@ -446,7 +446,7 @@ func ProductParamsForDockerProductArgs(inputProducts map[ProductID]ProductParam,
 			newDockerIDsMap := make(map[DockerID]map[DockerTagID]struct{})
 			for currDockerID, currDockerParam := range inputProducts[productID].Docker.DockerBuilderParams {
 				tagsMap := make(map[DockerTagID]struct{})
-				for currTagID := range currDockerParam.TagTemplates {
+				for _, currTagID := range currDockerParam.TagTemplates.OrderedKeys {
 					tagsMap[currTagID] = struct{}{}
 				}
 				newDockerIDsMap[currDockerID] = tagsMap
@@ -463,7 +463,7 @@ func ProductParamsForDockerProductArgs(inputProducts map[ProductID]ProductParam,
 
 			// no tags specified for current image: expand to all tags
 			newTagIDsMap := make(map[DockerTagID]struct{})
-			for currTagID := range inputProducts[productID].Docker.DockerBuilderParams[currDockerID].TagTemplates {
+			for _, currTagID := range inputProducts[productID].Docker.DockerBuilderParams[currDockerID].TagTemplates.OrderedKeys {
 				newTagIDsMap[currTagID] = struct{}{}
 			}
 			dockerIDsMap[currDockerID] = newTagIDsMap
@@ -481,13 +481,19 @@ func ProductParamsForDockerProductArgs(inputProducts map[ProductID]ProductParam,
 			newDockerBuilders = make(map[DockerID]DockerBuilderParam)
 			for currDockerID, dockerTagsMap := range dockerIDsMap {
 				currBuilderParam := (*currProductParam.Docker).DockerBuilderParams[currDockerID]
-				for currTag := range currBuilderParam.TagTemplates {
-					if _, ok := dockerTagsMap[currTag]; ok {
+
+				tagTemplatesMap := TagTemplatesMap{
+					Templates: make(map[DockerTagID]string),
+				}
+				for _, currTagKey := range currBuilderParam.TagTemplates.OrderedKeys {
+					if _, ok := dockerTagsMap[currTagKey]; !ok {
 						continue
 					}
-					// if current tag is not in the dockerTagsMap (the filter), remove it
-					delete(currBuilderParam.TagTemplates, currTag)
+					// if current tag is in the dockerTagsMap (the filter), add it
+					tagTemplatesMap.Templates[currTagKey] = currBuilderParam.TagTemplates.Templates[currTagKey]
+					tagTemplatesMap.OrderedKeys = append(tagTemplatesMap.OrderedKeys, currTagKey)
 				}
+				currBuilderParam.TagTemplates = tagTemplatesMap
 				newDockerBuilders[currDockerID] = currBuilderParam
 			}
 		}
@@ -525,14 +531,17 @@ func ProductParamsForDockerTagKeys(inputProducts []ProductParam, tagKeys []strin
 		}
 		newDockerBuilders := make(map[DockerID]DockerBuilderParam)
 		for dockerID, dockerBuilderParam := range currProductParam.Docker.DockerBuilderParams {
-			filteredTagTemplates := make(map[DockerTagID]string)
-			for currTag, currTagVal := range dockerBuilderParam.TagTemplates {
-				if _, ok := tagKeysMap[string(currTag)]; !ok {
+			filteredTagTemplates := TagTemplatesMap{
+				Templates: make(map[DockerTagID]string),
+			}
+			for _, currTagKey := range dockerBuilderParam.TagTemplates.OrderedKeys {
+				if _, ok := tagKeysMap[string(currTagKey)]; !ok {
 					continue
 				}
-				filteredTagTemplates[currTag] = currTagVal
+				filteredTagTemplates.Templates[currTagKey] = dockerBuilderParam.TagTemplates.Templates[currTagKey]
+				filteredTagTemplates.OrderedKeys = append(filteredTagTemplates.OrderedKeys, currTagKey)
 			}
-			if len(filteredTagTemplates) == 0 {
+			if len(filteredTagTemplates.Templates) == 0 {
 				continue
 			}
 			dockerBuilderParam.TagTemplates = filteredTagTemplates

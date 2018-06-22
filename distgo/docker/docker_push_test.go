@@ -79,9 +79,9 @@ func TestDockerPublish(t *testing.T) {
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"default": "foo:latest",
-									}),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"default", "foo:latest",
+									)),
 								}),
 							}),
 						}),
@@ -131,10 +131,10 @@ func TestDockerPublish(t *testing.T) {
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"latest":    "foo:latest",
-										"versioned": "foo:{{Version}}",
-									}),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"latest", "foo:latest",
+										"versioned", "foo:{{Version}}",
+									)),
 								}),
 							}),
 						}),
@@ -155,8 +155,8 @@ func TestDockerPublish(t *testing.T) {
 			},
 			"",
 			`[DRY RUN] Running Docker push for configuration print-dockerfile of product foo...
-[DRY RUN] Run [docker push foo:0.1.0]
 [DRY RUN] Run [docker push foo:latest]
+[DRY RUN] Run [docker push foo:0.1.0]
 `,
 		},
 		{
@@ -185,10 +185,10 @@ func TestDockerPublish(t *testing.T) {
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"latest":    "foo:latest",
-										"versioned": "foo:{{Version}}",
-									}),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"latest", "foo:latest",
+										"versioned", "foo:{{Version}}",
+									)),
 								}),
 							}),
 						}),
@@ -240,10 +240,10 @@ func TestDockerPublish(t *testing.T) {
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
-									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"latest":    "foo:latest",
-										"versioned": "foo:{{Version}}",
-									}),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"latest", "foo:latest",
+										"versioned", "foo:{{Version}}",
+									)),
 								}),
 							}),
 						}),
@@ -257,9 +257,9 @@ func TestDockerPublish(t *testing.T) {
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
 									Type:       stringPtr(printDockerfileDockerBuilderTypeName),
 									ContextDir: stringPtr("docker-context-dir"),
-									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"default": "bar:latest",
-									}),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"default", "bar:latest",
+									)),
 								}),
 							}),
 						}),
@@ -282,8 +282,8 @@ func TestDockerPublish(t *testing.T) {
 			},
 			"",
 			`[DRY RUN] Running Docker push for configuration print-dockerfile of product foo...
-[DRY RUN] Run [docker push foo:0.1.0]
 [DRY RUN] Run [docker push foo:latest]
+[DRY RUN] Run [docker push foo:0.1.0]
 `,
 		},
 	} {
@@ -328,7 +328,7 @@ func TestDockerPublish(t *testing.T) {
 		}
 
 		if tc.wantStdout != "" {
-			assert.Equal(t, tc.wantStdout, buffer.String(), "Case %d: %s", i, tc.name)
+			assert.Equal(t, tc.wantStdout, buffer.String(), "Case %d: %s\nOutput:\n%s", i, tc.name, buffer.String())
 		}
 	}
 }

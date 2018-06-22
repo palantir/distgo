@@ -181,7 +181,7 @@ products:
 				},
 			},
 			{
-				Name: `valid v0 config works`,
+				Name: `valid v0 config with tags specified as array works`,
 				ConfigFiles: map[string]string{
 					"godel/config/dist-plugin.yml": `
 products:
@@ -247,6 +247,82 @@ products:
           context-dir: testContextDir
           tag-templates:
             - tester-tag:latest-and-greatest
+`,
+				},
+			},
+			{
+				Name: `valid v0 config with tags specified as map works and maintains ordering`,
+				ConfigFiles: map[string]string{
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+      os-archs:
+        - os: darwin
+          arch: amd64
+        - os: linux
+          arch: amd64
+    dist:
+      disters:
+        type: os-arch-bin
+        config:
+          os-archs:
+            - os: darwin
+              arch: amd64
+            - os: linux
+              arch: amd64
+    docker:
+      docker-builders:
+        tester:
+          type: default
+          config:
+            build-args:
+              # comment
+              - "--rm"
+          context-dir: testContextDir
+          tag-templates:
+            "4": tester-tag:latest-and-greatest
+            "2": tester-tag:1
+            "1": tester-tag:3
+            "3": tester-tag:2
+`,
+				},
+				WantOutput: ``,
+				WantFiles: map[string]string{
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+      os-archs:
+        - os: darwin
+          arch: amd64
+        - os: linux
+          arch: amd64
+    dist:
+      disters:
+        type: os-arch-bin
+        config:
+          os-archs:
+            - os: darwin
+              arch: amd64
+            - os: linux
+              arch: amd64
+    docker:
+      docker-builders:
+        tester:
+          type: default
+          config:
+            build-args:
+              # comment
+              - "--rm"
+          context-dir: testContextDir
+          tag-templates:
+            "4": tester-tag:latest-and-greatest
+            "2": tester-tag:1
+            "1": tester-tag:3
+            "3": tester-tag:2
 `,
 				},
 			},

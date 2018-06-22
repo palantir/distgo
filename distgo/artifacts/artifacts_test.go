@@ -371,17 +371,17 @@ func TestPrintDockerArtifacts(t *testing.T) {
 						"docker-builder-1": distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
 							Type:       stringPtr(defaultdockerbuilder.TypeName),
 							ContextDir: stringPtr("dockerContextDir"),
-							TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-								"latest":  "{{Repository}}foo-db-1:latest",
-								"release": "{{Repository}}foo-db-1:release",
-							}),
+							TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+								"latest", "{{Repository}}foo-db-1:latest",
+								"release", "{{Repository}}foo-db-1:release",
+							)),
 						}),
 						"docker-builder-2": distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
 							Type:       stringPtr(defaultdockerbuilder.TypeName),
 							ContextDir: stringPtr("dockerContextDir-2"),
-							TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-								"latest": "{{Repository}}foo-db-2:latest",
-							}),
+							TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+								"latest", "{{Repository}}foo-db-2:latest",
+							)),
 						}),
 					}),
 				}),
@@ -393,10 +393,10 @@ func TestPrintDockerArtifacts(t *testing.T) {
 						"docker-builder-1": distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
 							Type:       stringPtr(defaultdockerbuilder.TypeName),
 							ContextDir: stringPtr("dockerContextDir"),
-							TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-								"latest":  "{{Repository}}bar-db-1:latest",
-								"release": "{{Repository}}bar-db-1:release",
-							}),
+							TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+								"latest", "{{Repository}}bar-db-1:latest",
+								"release", "{{Repository}}bar-db-1:release",
+							)),
 						}),
 					}),
 				}),
@@ -498,9 +498,9 @@ func TestDockerArtifacts(t *testing.T) {
 								defaultdockerbuilder.TypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
 									Type:       stringPtr(defaultdockerbuilder.TypeName),
 									ContextDir: stringPtr("dockerContextDir"),
-									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
-										"latest": "{{Repository}}foo:latest",
-									}),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"latest", "{{Repository}}foo:latest",
+									)),
 								}),
 							}),
 						}),
@@ -580,4 +580,16 @@ func createDistSpec(productName string, dister distgo.Dister) distgo.ProductPara
 
 func stringPtr(in string) *string {
 	return &in
+}
+
+func mustTagTemplatesMap(nameAndVal ...string) *distgoconfig.TagTemplatesMap {
+	out := &distgoconfig.TagTemplatesMap{
+		Templates: make(map[distgo.DockerTagID]string),
+	}
+	for i := 0; i < len(nameAndVal); i += 2 {
+		tagID := distgo.DockerTagID(nameAndVal[i])
+		out.Templates[tagID] = nameAndVal[i+1]
+		out.OrderedKeys = append(out.OrderedKeys, tagID)
+	}
+	return out
 }

@@ -115,8 +115,8 @@ func (cfg *DockerBuilderConfig) ToParam(scriptIncludes string, defaultCfg Docker
 	if contextDir == "" {
 		return distgo.DockerBuilderParam{}, errors.Errorf("context-dir must be non-empty")
 	}
-	tagTemplates := getConfigValue(cfg.TagTemplates, defaultCfg.TagTemplates, nil).(v0.TagTemplatesMap)
-	if len(tagTemplates) == 0 {
+	tagTemplates := TagTemplatesMap(getConfigValue(cfg.TagTemplates, defaultCfg.TagTemplates, nil).(v0.TagTemplatesMap))
+	if len(tagTemplates.Templates) == 0 {
 		return distgo.DockerBuilderParam{}, errors.Errorf("tag-templates must be non-empty")
 	}
 
@@ -130,7 +130,7 @@ func (cfg *DockerBuilderConfig) ToParam(scriptIncludes string, defaultCfg Docker
 		InputBuilds:              getConfigValue(cfg.InputBuilds, defaultCfg.InputBuilds, nil).([]distgo.ProductBuildID),
 		InputDists:               getConfigValue(cfg.InputDists, defaultCfg.InputDists, nil).([]distgo.ProductDistID),
 		InputDistsOutputPaths:    getConfigValue(cfg.InputDistsOutputPaths, defaultCfg.InputDistsOutputPaths, nil).(map[distgo.ProductDistID][]string),
-		TagTemplates:             tagTemplates,
+		TagTemplates:             tagTemplates.ToParam(),
 	}, nil
 }
 
@@ -152,4 +152,11 @@ type TagTemplatesMap v0.TagTemplatesMap
 
 func ToTagTemplatesMap(in *TagTemplatesMap) *v0.TagTemplatesMap {
 	return (*v0.TagTemplatesMap)(in)
+}
+
+func (cfg *TagTemplatesMap) ToParam() distgo.TagTemplatesMap {
+	return distgo.TagTemplatesMap{
+		Templates:   cfg.Templates,
+		OrderedKeys: cfg.OrderedKeys,
+	}
 }

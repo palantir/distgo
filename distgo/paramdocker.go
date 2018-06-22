@@ -147,7 +147,7 @@ type DockerBuilderParam struct {
 	//   * {{RepositoryLiteral}}: the Docker repository exactly as specified (does not append a trailing '/')
 	//   * {{InputBuildArtifact(productID, osArch string) (string, error)}}: the path to the build artifact for the specified input product
 	//   * {{InputDistArtifacts(productID, distID string) ([]string, error)}}: the paths to the dist artifacts for the specified input product
-	//   * {{Tags(productID, dockerID string) ([]string, error)}}: the rendered tags for the specified Docker image sorted in ascending order
+	//   * {{Tags(productID, dockerID string) ([]string, error)}}: the rendered tags for the specified Docker image. Returned in the same order as defined in configuration.
 	DockerfilePath string
 
 	// DisableTemplateRendering disables rendering the Go templates in the Dockerfile when set to true. This should only
@@ -181,13 +181,18 @@ type DockerBuilderParam struct {
 	//   * {{Version}}: the version of the project
 	//   * {{Repository}}: the Docker repository. If the repository is non-empty and does not end in a '/', appends '/'.
 	//   * {{RepositoryLiteral}}: the Docker repository exactly as specified (does not append a trailing '/')
-	TagTemplates map[DockerTagID]string
+	TagTemplates TagTemplatesMap
+}
+
+type TagTemplatesMap struct {
+	Templates   map[DockerTagID]string
+	OrderedKeys []DockerTagID
 }
 
 func (p *DockerBuilderParam) ToDockerBuilderOutputInfo(productID ProductID, version, repository string) (DockerBuilderOutputInfo, error) {
 	var renderedTags []string
-	for _, currTagTemplate := range p.TagTemplates {
-		currRenderedTag, err := RenderTemplate(currTagTemplate, nil,
+	for _, currTagTemplateKey := range p.TagTemplates.OrderedKeys {
+		currRenderedTag, err := RenderTemplate(p.TagTemplates.Templates[currTagTemplateKey], nil,
 			ProductTemplateFunction(productID),
 			VersionTemplateFunction(version),
 			RepositoryTemplateFunction(repository),
@@ -198,7 +203,6 @@ func (p *DockerBuilderParam) ToDockerBuilderOutputInfo(productID ProductID, vers
 		}
 		renderedTags = append(renderedTags, currRenderedTag)
 	}
-	sort.Strings(renderedTags)
 	var inputBuilds map[ProductID]map[OSArchID]struct{}
 	if len(p.InputBuilds) > 0 {
 		inputBuilds = make(map[ProductID]map[OSArchID]struct{})
