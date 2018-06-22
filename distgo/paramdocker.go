@@ -147,7 +147,7 @@ type DockerBuilderParam struct {
 	//   * {{RepositoryLiteral}}: the Docker repository exactly as specified (does not append a trailing '/')
 	//   * {{InputBuildArtifact(productID, osArch string) (string, error)}}: the path to the build artifact for the specified input product
 	//   * {{InputDistArtifacts(productID, distID string) ([]string, error)}}: the paths to the dist artifacts for the specified input product
-	//   * {{Tags(productID, dockerID string) ([]string, error)}}: the tags for the specified Docker image
+	//   * {{Tags(productID, dockerID string) ([]string, error)}}: the rendered tags for the specified Docker image sorted in ascending order
 	DockerfilePath string
 
 	// DisableTemplateRendering disables rendering the Go templates in the Dockerfile when set to true. This should only
