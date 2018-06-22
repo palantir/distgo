@@ -51,6 +51,7 @@ type DockerBuilderConfig struct {
 	//   * {{Repository}}: the Docker repository for the operation
 	//   * {{InputBuildArtifact(productID, osArch string) (string, error)}}: the path to the build artifact for the specified input product
 	//   * {{InputDistArtifacts(productID, distID string) ([]string, error)}}: the paths to the dist artifacts for the specified input product
+	//   * {{Tag(productID, dockerID, tagKey string) (string, error)}}: the rendered tag for the specified Docker image tag
 	//   * {{Tags(productID, dockerID string) ([]string, error)}}: the rendered tags for the specified Docker image. Returned in the same order as defined in configuration.
 	DockerfilePath *string `yaml:"dockerfile-path,omitempty"`
 	// DisableTemplateRendering disables rendering the Go templates in the Dockerfile when set to true. This should only

@@ -207,6 +207,7 @@ func runSingleDockerBuild(
 				distgo.RepositoryLiteralTemplateFunction(productTaskOutputInfo.Product.DockerOutputInfos.Repository),
 				inputBuildArtifactTemplateFunction(dockerID, pathToContextDir, buildArtifactPaths),
 				inputDistArtifactsTemplateFunction(dockerID, pathToContextDir, distArtifactPaths),
+				tagTemplateFunction(productTaskOutputInfo),
 				tagsTemplateFunction(productTaskOutputInfo),
 			); err != nil {
 				return err
@@ -291,24 +292,47 @@ func inputDistArtifactsTemplateFunction(dockerID distgo.DockerID, pathToContextD
 	}
 }
 
+func tagTemplateFunction(productTaskOutputInfo distgo.ProductTaskOutputInfo) distgo.TemplateFunction {
+	primaryProductID := productTaskOutputInfo.Product.ID
+	allOutputInfos := productTaskOutputInfo.AllProductOutputInfosMap()
+	return func(fnMap template.FuncMap) {
+		fnMap["Tag"] = func(productID, dockerID, tagKey string) (string, error) {
+			dockerBuilderOutput, err := getDockerBuilderOutputInfo(primaryProductID, allOutputInfos, productID, dockerID)
+			if err != nil {
+				return "", err
+			}
+			return dockerBuilderOutput.RenderedTagsMap[distgo.DockerTagID(tagKey)], nil
+		}
+	}
+}
+
 func tagsTemplateFunction(productTaskOutputInfo distgo.ProductTaskOutputInfo) distgo.TemplateFunction {
+	primaryProductID := productTaskOutputInfo.Product.ID
 	allOutputInfos := productTaskOutputInfo.AllProductOutputInfosMap()
 	return func(fnMap template.FuncMap) {
 		fnMap["Tags"] = func(productID, dockerID string) ([]string, error) {
-			productOutputInfo, ok := allOutputInfos[distgo.ProductID(productID)]
-			if !ok {
-				return nil, errors.Errorf("product %s is not the product or a dependent product of %s", productID, productTaskOutputInfo.Product.ID)
-			}
-			if productOutputInfo.DockerOutputInfos == nil {
-				return nil, errors.Errorf("product %s does not declare Docker outputs", productID)
-			}
-			dockerBuilderOutput, ok := productOutputInfo.DockerOutputInfos.DockerBuilderOutputInfos[distgo.DockerID(dockerID)]
-			if !ok {
-				return nil, errors.Errorf("product %s does not contain an entry for DockerID %s", productID, dockerID)
+			dockerBuilderOutput, err := getDockerBuilderOutputInfo(primaryProductID, allOutputInfos, productID, dockerID)
+			if err != nil {
+				return nil, err
 			}
 			return dockerBuilderOutput.RenderedTags, nil
 		}
 	}
+}
+
+func getDockerBuilderOutputInfo(primaryProductID distgo.ProductID, allOutputInfos map[distgo.ProductID]distgo.ProductOutputInfo, productID, dockerID string) (distgo.DockerBuilderOutputInfo, error) {
+	productOutputInfo, ok := allOutputInfos[distgo.ProductID(productID)]
+	if !ok {
+		return distgo.DockerBuilderOutputInfo{}, errors.Errorf("product %s is not the product or a dependent product of %s", productID, primaryProductID)
+	}
+	if productOutputInfo.DockerOutputInfos == nil {
+		return distgo.DockerBuilderOutputInfo{}, errors.Errorf("product %s does not declare Docker outputs", productID)
+	}
+	dockerBuilderOutput, ok := productOutputInfo.DockerOutputInfos.DockerBuilderOutputInfos[distgo.DockerID(dockerID)]
+	if !ok {
+		return distgo.DockerBuilderOutputInfo{}, errors.Errorf("product %s does not contain an entry for DockerID %s", productID, dockerID)
+	}
+	return dockerBuilderOutput, nil
 }
 
 func createNewHardLink(src, dst string) error {
