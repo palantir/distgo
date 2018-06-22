@@ -250,6 +250,7 @@ RUN echo 'Repository: {{Repository}}'
 RUN echo 'RepositoryLiteral: {{RepositoryLiteral}}'
 RUN echo 'InputBuildArtifact for foo: {{InputBuildArtifact "foo" %q}}'
 RUN echo 'InputDistArtifacts for foo: {{InputDistArtifacts "foo" "os-arch-bin"}}'
+RUN echo 'Tag for foo: {{Tag "foo" "print-dockerfile" "default"}}'
 RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 `, osarch.Current().String())), 0644)
 
@@ -266,6 +267,7 @@ RUN echo 'Repository: registry-host:5000/'
 RUN echo 'RepositoryLiteral: registry-host:5000'
 RUN echo 'InputBuildArtifact for foo: input-products/foo/build/%s/foo'
 RUN echo 'InputDistArtifacts for foo: [input-products/foo/dist/os-arch-bin/foo-0.1.0-%s.tgz]'
+RUN echo 'Tag for foo: registry-host:5000/foo:latest'
 RUN echo 'Tags for foo: [registry-host:5000/foo:latest]'
 `, osarch.Current().String(), osarch.Current().String()),
 			func(caseNum int, name, projectDir string) {
@@ -278,6 +280,7 @@ RUN echo 'Repository: {{Repository}}'
 RUN echo 'RepositoryLiteral: {{RepositoryLiteral}}'
 RUN echo 'InputBuildArtifact for foo: {{InputBuildArtifact "foo" %q}}'
 RUN echo 'InputDistArtifacts for foo: {{InputDistArtifacts "foo" "os-arch-bin"}}'
+RUN echo 'Tag for foo: {{Tag "foo" "print-dockerfile" "default"}}'
 RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 `, osarch.Current().String())
 				assert.Equal(t, originalDockerfileContent, string(bytes))

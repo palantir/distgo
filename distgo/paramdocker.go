@@ -64,6 +64,7 @@ type DockerBuilderOutputInfo struct {
 	DockerfilePath        string                              `json:"dockerfilePath"`
 	InputProductsDir      string                              `json:"inputProductsDir"`
 	RenderedTags          []string                            `json:"renderedDockerTags"`
+	RenderedTagsMap       map[DockerTagID]string              `json:"renderedDockerTagsMap"`
 	InputBuilds           map[ProductID]map[OSArchID]struct{} `json:"inputBuilds"`
 	InputDists            map[ProductID]map[DistID]struct{}   `json:"inputDists"`
 	InputDistsOutputPaths map[ProductID]map[DistID][]string   `json:"inputDistsOutputPaths"`
@@ -147,6 +148,7 @@ type DockerBuilderParam struct {
 	//   * {{RepositoryLiteral}}: the Docker repository exactly as specified (does not append a trailing '/')
 	//   * {{InputBuildArtifact(productID, osArch string) (string, error)}}: the path to the build artifact for the specified input product
 	//   * {{InputDistArtifacts(productID, distID string) ([]string, error)}}: the paths to the dist artifacts for the specified input product
+	//   * {{Tag(productID, dockerID, tagKey string) (string, error)}}: the rendered tag for the specified Docker image tag
 	//   * {{Tags(productID, dockerID string) ([]string, error)}}: the rendered tags for the specified Docker image. Returned in the same order as defined in configuration.
 	DockerfilePath string
 
@@ -190,6 +192,7 @@ type TagTemplatesMap struct {
 }
 
 func (p *DockerBuilderParam) ToDockerBuilderOutputInfo(productID ProductID, version, repository string) (DockerBuilderOutputInfo, error) {
+	renderedTagsMap := make(map[DockerTagID]string)
 	var renderedTags []string
 	for _, currTagTemplateKey := range p.TagTemplates.OrderedKeys {
 		currRenderedTag, err := RenderTemplate(p.TagTemplates.Templates[currTagTemplateKey], nil,
@@ -202,6 +205,7 @@ func (p *DockerBuilderParam) ToDockerBuilderOutputInfo(productID ProductID, vers
 			return DockerBuilderOutputInfo{}, err
 		}
 		renderedTags = append(renderedTags, currRenderedTag)
+		renderedTagsMap[currTagTemplateKey] = currRenderedTag
 	}
 	var inputBuilds map[ProductID]map[OSArchID]struct{}
 	if len(p.InputBuilds) > 0 {
@@ -252,6 +256,7 @@ func (p *DockerBuilderParam) ToDockerBuilderOutputInfo(productID ProductID, vers
 		ContextDir:            p.ContextDir,
 		DockerfilePath:        p.DockerfilePath,
 		InputProductsDir:      p.InputProductsDir,
+		RenderedTagsMap:       renderedTagsMap,
 		RenderedTags:          renderedTags,
 		InputBuilds:           inputBuilds,
 		InputDists:            inputDists,
