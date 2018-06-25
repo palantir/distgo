@@ -73,7 +73,7 @@ func (p *assetPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutp
 	}
 	args = append(args, "--"+runPublishCmdConfigYMLFlagName, cfgYMLString)
 	args = append(args, "--"+runPublishCmdFlagValsFlagName, string(flagValsJSON))
-	args = append(args, "--"+runPublishCmdDryRunFlagName, strconv.FormatBool(dryRun))
+	args = append(args, "--"+runPublishCmdDryRunFlagName+"="+strconv.FormatBool(dryRun))
 
 	runPublishCmd := exec.Command(p.assetPath, args...)
 	runPublishCmd.Stdout = stdout
