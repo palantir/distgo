@@ -68,6 +68,11 @@ type BuildParam struct {
 	// a value of map[string]string{"CGO_ENABLED": "0"} would build with CGo disabled.
 	Environment map[string]string
 
+	// Script is the content of a script that is written to a file and run before the build processes start. The script
+	// process inherits the environment variables of the Go process and also has project-related environment variables.
+	// Refer to the documentation for the distgo.BuildScriptEnvVariables function for the extra environment variables.
+	Script string
+
 	// OSArchs specifies the GOOS and GOARCH pairs for which the product is built.
 	OSArchs []osarch.OSArch
 }

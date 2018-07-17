@@ -81,6 +81,7 @@ func TestBuildAll(t *testing.T) {
 		mainFileContent string
 		mainFilePath    string
 		productParam    distgo.ProductParam
+		wantBuildOutput *string
 		wantError       bool
 		runExecutable   bool
 		wantOutput      string
@@ -94,6 +95,18 @@ func TestBuildAll(t *testing.T) {
 			}),
 			runExecutable: true,
 			wantOutput:    testVersionValue + ".dirty",
+		},
+		{
+			productName:     "scriptProduct",
+			mainFileContent: testMain,
+			mainFilePath:    "main.go",
+			productParam: createBuildProductParam(func(param *distgo.ProductParam) {
+				param.Build.Script = `
+echo "Custom build script content"
+`
+			}),
+			wantBuildOutput: stringVar(`(?sm)^Custom build script content\n.+`),
+			wantOutput:      "defaultVersion",
 		},
 		// building project that requires CGo succeeds if "CGO_ENABLED" environment variable is set to 1
 		{
@@ -184,11 +197,16 @@ echo "-X \"main.testVersionVar=$VALUE\""`
 		productOutputInfo, err := tc.productParam.ToProductOutputInfo(projectInfo.Version)
 		require.NoError(t, err, "Case %d", i)
 
+		outBuf := &bytes.Buffer{}
 		err = build.Run(projectInfo, []distgo.ProductParam{
 			tc.productParam,
 		}, build.Options{
 			Parallel: false,
-		}, ioutil.Discard)
+		}, outBuf)
+
+		if tc.wantBuildOutput != nil {
+			assert.Regexp(t, *tc.wantBuildOutput, outBuf.String(), "Case %d", i)
+		}
 
 		if tc.wantError {
 			assert.Error(t, err, fmt.Sprintf("Case %d", i))
@@ -209,7 +227,6 @@ echo "-X \"main.testVersionVar=$VALUE\""`
 					assert.Equal(t, tc.wantOutput, strings.TrimSpace(string(output)), "Case %d", i)
 				}
 			}
-
 			if tc.runExecutable {
 				assert.True(t, foundExecForCurrOSArch, "Case %d: executable for current os/arch (%v) not found in %v", osarch.Current(), tc.productParam.Build.OSArchs)
 			}
@@ -473,4 +490,8 @@ func createBuildProductParam(fn func(*distgo.ProductParam)) distgo.ProductParam 
 		fn(&param)
 	}
 	return param
+}
+
+func stringVar(in string) *string {
+	return &in
 }

@@ -277,6 +277,9 @@ products:
       main-pkg: ./foo/main/foo
       output-dir: foo/build/bin
       version-var: github.com/palantir/foo/main.version
+      script: |
+              # print output
+              echo "Running build script"
       os-archs:
         - os: linux
           arch: amd64
@@ -406,6 +409,10 @@ group-id: com.palantir.group
       output-dir: foo/build/bin
       main-pkg: ./foo/main/foo
       version-var: github.com/palantir/foo/main.version
+      script: |
+        #!/bin/bash
+        # print output
+        echo "Running build script"
       os-archs:
       - os: linux
         arch: amd64

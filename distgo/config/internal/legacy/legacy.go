@@ -516,7 +516,10 @@ func upgradeLegacyConfig(
 			product.Build = &v0.BuildConfig{}
 			// Script
 			if legacyProduct.Build.Script != "" {
-				return nil, errors.Errorf(`dist-plugin legacy configuration sets "script" field for the build configuration for %s, but build scripts are no longer supported`, k)
+				if product.Build.Script == nil {
+					product.Build.Script = stringPtr("")
+				}
+				product.Build.Script = stringPtr(appendToScript(*product.Build.Script, translateEnvVars(legacyProduct.Build.Script)))
 			}
 			// MainPkg
 			if legacyProduct.Build.MainPkg != "" {
