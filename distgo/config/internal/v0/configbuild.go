@@ -63,6 +63,11 @@ type BuildConfig struct {
 	//     CGO_ENABLED: "0"
 	Environment *map[string]string `yaml:"environment,omitempty"`
 
+	// Script is the content of a script that is written to a file and run before the build processes start. The script
+	// process inherits the environment variables of the Go process and also has project-related environment variables.
+	// Refer to the documentation for the distgo.BuildScriptEnvVariables function for the extra environment variables.
+	Script *string `yaml:"script,omitempty"`
+
 	// OSArchs specifies the GOOS and GOARCH pairs for which the product is built. If blank, defaults to the GOOS
 	// and GOARCH of the host system at runtime.
 	OSArchs *[]osarch.OSArch `yaml:"os-archs,omitempty"`

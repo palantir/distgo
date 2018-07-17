@@ -69,6 +69,12 @@ func Run(projectInfo distgo.ProjectInfo, productParams []distgo.ProductParam, bu
 		if currProductParam.Build == nil {
 			continue
 		}
+
+		// execute build script
+		if err := distgo.WriteAndExecuteScript(projectInfo, currProductParam.Build.Script, distgo.BuildScriptEnvVariables(currProductTaskOutputInfo), stdout); err != nil {
+			return errors.Wrapf(err, "failed to execute build script")
+		}
+
 		for _, currOSArch := range currProductParam.Build.OSArchs {
 			units = append(units, buildUnit{
 				buildParam:            *currProductParam.Build,
