@@ -180,7 +180,7 @@ func (p *bintrayPublisher) runBintrayCommand(urlString, httpMethod, username, pa
 		capitalizedMsg = strings.ToUpper(string(cmdMsg[0])) + cmdMsg[1:]
 	}
 
-	distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("%s...", capitalizedMsg), dryRun)
+	distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("%s... (url: %s)", capitalizedMsg, url), dryRun)
 	defer func() {
 		// not wrapped in dry run because that has already been handled at the beginning of the line
 		fmt.Fprintln(stdout)
