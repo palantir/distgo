@@ -92,11 +92,11 @@ func (p *ProductTaskOutputInfo) ProductDistWorkDirsAndArtifactPaths() map[DistID
 }
 
 func (p *ProductTaskOutputInfo) ProductDockerBuildArtifactPaths() map[DockerID]map[ProductID]map[osarch.OSArch]string {
-	return ProductDockerBuildArtifactPaths(p.Project, p.Product)
+	return ProductDockerBuildArtifactPaths(p.Project, p.Product, p.Deps)
 }
 
 func (p *ProductTaskOutputInfo) ProductDockerDistArtifactPaths() map[DockerID]map[ProductID]map[DistID][]string {
-	return ProductDockerDistArtifactPaths(p.Project, p.Product)
+	return ProductDockerDistArtifactPaths(p.Project, p.Product, p.Deps)
 }
 
 func ExecutableName(productName, goos string) string {
@@ -187,7 +187,7 @@ func ProductDistWorkDirsAndArtifactPaths(projectInfo ProjectInfo, productOutputI
 // artifacts should be placed in the Docker context directory. The DockerID key identifies the DockerBuilder, the
 // ProductID represents the input product for that DockerBuilder, and the osarch.OSArch represents the OS/Arch for the
 // build. Paths are of the form "{{ProjectDir}}/{{DockerID.ContextDir}}/{{DockerID.InputProductsDir}}/{{ProductID}}/build/{{OSArch}}/{{ExecutableName}}".
-func ProductDockerBuildArtifactPaths(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) map[DockerID]map[ProductID]map[osarch.OSArch]string {
+func ProductDockerBuildArtifactPaths(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo, deps map[ProductID]ProductOutputInfo) map[DockerID]map[ProductID]map[osarch.OSArch]string {
 	if productOutputInfo.DockerOutputInfos == nil {
 		return nil
 	}
@@ -201,12 +201,16 @@ func ProductDockerBuildArtifactPaths(projectInfo ProjectInfo, productOutputInfo 
 			if _, ok := out[dockerID][productID]; !ok {
 				out[dockerID][productID] = make(map[osarch.OSArch]string)
 			}
+			currProductOutputInfo := productOutputInfo
+			if productID != productOutputInfo.ID {
+				currProductOutputInfo = deps[productID]
+			}
 			for osArchID := range valMap {
 				osArch, err := osarch.New(string(osArchID))
 				if err != nil {
 					panic(errors.Wrapf(err, "OSArchID was not in a valid state"))
 				}
-				artifactPath := path.Join(pathToInputProductsDir, string(productID), "build", string(osArchID), ExecutableName(productOutputInfo.BuildOutputInfo.BuildNameTemplateRendered, osArch.OS))
+				artifactPath := path.Join(pathToInputProductsDir, string(productID), "build", string(osArchID), ExecutableName(currProductOutputInfo.BuildOutputInfo.BuildNameTemplateRendered, osArch.OS))
 				out[dockerID][productID][osArch] = artifactPath
 			}
 		}
@@ -218,7 +222,7 @@ func ProductDockerBuildArtifactPaths(projectInfo ProjectInfo, productOutputInfo 
 // should be placed in the Docker context directory. The DockerID key identifies the DockerBuilder, the ProductID
 // represents the input product for that DockerBuilder, and the DistID represents the Dister for the product. Paths are
 // of the form "{{ProjectDir}}/{{DockerID.ContextDir}}/{{DockerID.InputProductsDir}}/{{ProductID}}/dist/{{DistID}}/{{Artifacts}}".
-func ProductDockerDistArtifactPaths(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) map[DockerID]map[ProductID]map[DistID][]string {
+func ProductDockerDistArtifactPaths(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo, deps map[ProductID]ProductOutputInfo) map[DockerID]map[ProductID]map[DistID][]string {
 	if productOutputInfo.DockerOutputInfos == nil {
 		return nil
 	}
@@ -232,7 +236,12 @@ func ProductDockerDistArtifactPaths(projectInfo ProjectInfo, productOutputInfo P
 			if _, ok := out[dockerID][productID]; !ok {
 				out[dockerID][productID] = make(map[DistID][]string)
 			}
-			productDistArtifacts := ProductDistArtifactPaths(projectInfo, productOutputInfo)
+
+			currProductOutputInfo := productOutputInfo
+			if productID != productOutputInfo.ID {
+				currProductOutputInfo = deps[productID]
+			}
+			productDistArtifacts := ProductDistArtifactPaths(projectInfo, currProductOutputInfo)
 			for distID := range valMap {
 				var distOutputPathOverrides []string
 				if distToPathsMap, ok := dockerOutputInfo.InputDistsOutputPaths[productID]; ok {

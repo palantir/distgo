@@ -31,8 +31,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 
 	"github.com/palantir/distgo/dister/disterfactory"
+	"github.com/palantir/distgo/dister/manual"
 	"github.com/palantir/distgo/dister/osarchbin"
 	"github.com/palantir/distgo/distgo"
 	distgoconfig "github.com/palantir/distgo/distgo/config"
@@ -335,6 +337,167 @@ RUN echo 'Tags for foo: [foo:5 foo:3 foo:2 foo:0 foo:1 foo:4]'
 				require.NoError(t, err)
 				originalDockerfileContent := `FROM alpine:3.5
 RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
+`
+				assert.Equal(t, originalDockerfileContent, string(bytes))
+			},
+		},
+		{
+			"Dockerfile renders template variables for cross-product build dependencies",
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
+					"bar": {
+						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
+							Repository: stringPtr("registry-host:5000"),
+							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
+								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
+									Type:             stringPtr(printDockerfileDockerBuilderTypeName),
+									ContextDir:       stringPtr("docker-context-dir"),
+									InputProductsDir: stringPtr("input-products"),
+									InputBuilds: &[]distgo.ProductBuildID{
+										"foo",
+									},
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"default", "{{Repository}}bar:latest",
+									)),
+								}),
+							}),
+						}),
+						Dependencies: &[]distgo.ProductID{
+							"foo",
+						},
+					},
+					"foo": {
+						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
+							MainPkg: stringPtr("./foo"),
+						}),
+					},
+				}),
+			},
+			nil,
+			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+				contextDir := path.Join(projectDir, "docker-context-dir")
+				err := os.Mkdir(contextDir, 0755)
+				require.NoError(t, err)
+
+				dockerfile := path.Join(contextDir, "Dockerfile")
+				err = ioutil.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+RUN echo 'Product: {{Product}}'
+RUN echo 'Version: {{Version}}'
+RUN echo 'Repository: {{Repository}}'
+RUN echo 'RepositoryLiteral: {{RepositoryLiteral}}'
+RUN echo 'InputBuildArtifact for bar: {{InputBuildArtifact "foo" %q}}'
+`, osarch.Current().String())), 0644)
+
+				require.NoError(t, err)
+				gittest.CommitAllFiles(t, projectDir, "Commit files")
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			"",
+			fmt.Sprintf(`foo does not have Docker outputs; skipping build
+Running Docker build for configuration print-dockerfile of product bar...
+FROM alpine:3.5
+RUN echo 'Product: bar'
+RUN echo 'Version: 0.1.0'
+RUN echo 'Repository: registry-host:5000/'
+RUN echo 'RepositoryLiteral: registry-host:5000'
+RUN echo 'InputBuildArtifact for bar: input-products/foo/build/%s/foo'
+`, osarch.Current().String()),
+			func(caseNum int, name, projectDir string) {
+				bytes, err := ioutil.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
+				require.NoError(t, err)
+				originalDockerfileContent := fmt.Sprintf(`FROM alpine:3.5
+RUN echo 'Product: {{Product}}'
+RUN echo 'Version: {{Version}}'
+RUN echo 'Repository: {{Repository}}'
+RUN echo 'RepositoryLiteral: {{RepositoryLiteral}}'
+RUN echo 'InputBuildArtifact for bar: {{InputBuildArtifact "foo" %q}}'
+`, osarch.Current().String())
+				assert.Equal(t, originalDockerfileContent, string(bytes))
+			},
+		},
+		{
+			"Dockerfile renders template variables for cross-product dist dependencies",
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
+					"bar": {
+						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
+							Repository: stringPtr("registry-host:5000"),
+							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
+								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
+									Type:             stringPtr(printDockerfileDockerBuilderTypeName),
+									ContextDir:       stringPtr("docker-context-dir"),
+									InputProductsDir: stringPtr("input-products"),
+									InputDists: &[]distgo.ProductDistID{
+										"foo.manual",
+									},
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"default", "{{Repository}}bar:latest",
+									)),
+								}),
+							}),
+						}),
+						Dependencies: &[]distgo.ProductID{
+							"foo",
+						},
+					},
+					"foo": {
+						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+								manual.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
+									Type: stringPtr(manual.TypeName),
+									Config: &yaml.MapSlice{
+										{
+											Key:   "extension",
+											Value: "tar",
+										},
+									},
+									Script: stringPtr(`#!/usr/bin/env bash
+echo "hello" > $DIST_WORK_DIR/out.txt
+tar -cf "$DIST_DIR/$DIST_NAME".tar -C "$DIST_WORK_DIR" out.txt`),
+								}),
+							}),
+						}),
+					},
+				}),
+			},
+			nil,
+			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+				contextDir := path.Join(projectDir, "docker-context-dir")
+				err := os.Mkdir(contextDir, 0755)
+				require.NoError(t, err)
+
+				dockerfile := path.Join(contextDir, "Dockerfile")
+				err = ioutil.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+RUN echo 'Product: {{Product}}'
+RUN echo 'Version: {{Version}}'
+RUN echo 'Repository: {{Repository}}'
+RUN echo 'RepositoryLiteral: {{RepositoryLiteral}}'
+RUN echo 'InputDistArtifacts for bar: {{InputDistArtifacts "foo" "manual"}}'
+`)), 0644)
+
+				require.NoError(t, err)
+				gittest.CommitAllFiles(t, projectDir, "Commit files")
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			"",
+			`foo does not have Docker outputs; skipping build
+Running Docker build for configuration print-dockerfile of product bar...
+FROM alpine:3.5
+RUN echo 'Product: bar'
+RUN echo 'Version: 0.1.0'
+RUN echo 'Repository: registry-host:5000/'
+RUN echo 'RepositoryLiteral: registry-host:5000'
+RUN echo 'InputDistArtifacts for bar: [input-products/foo/dist/manual/foo-0.1.0.tar]'
+`,
+			func(caseNum int, name, projectDir string) {
+				bytes, err := ioutil.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
+				require.NoError(t, err)
+				originalDockerfileContent := `FROM alpine:3.5
+RUN echo 'Product: {{Product}}'
+RUN echo 'Version: {{Version}}'
+RUN echo 'Repository: {{Repository}}'
+RUN echo 'RepositoryLiteral: {{RepositoryLiteral}}'
+RUN echo 'InputDistArtifacts for bar: {{InputDistArtifacts "foo" "manual"}}'
 `
 				assert.Equal(t, originalDockerfileContent, string(bytes))
 			},
