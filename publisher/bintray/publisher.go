@@ -83,6 +83,7 @@ func (p *bintrayPublisher) Flags() ([]distgo.PublisherFlag, error) {
 		bintrayPublisherPublishFlag,
 		bintrayPublisherDownloadsListFlag,
 		publisher.GroupIDFlag,
+		maven.NoPOMFlag,
 	), nil
 }
 
@@ -115,6 +116,7 @@ func (p *bintrayPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOu
 	if err := publisher.SetConfigValues(flagVals,
 		bintrayPublisherPublishFlag, &cfg.Publish,
 		bintrayPublisherDownloadsListFlag, &cfg.DownloadsList,
+		maven.NoPOMFlag, &cfg.NoPOM,
 	); err != nil {
 		return err
 	}
