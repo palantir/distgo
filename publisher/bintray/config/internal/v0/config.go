@@ -28,6 +28,7 @@ type Config struct {
 	Product                       string `yaml:"product,omitempty"`
 	Publish                       bool   `yaml:"publish,omitempty"`
 	DownloadsList                 bool   `yaml:"downloads-list,omitempty"`
+	NoPOM                         bool   `yaml:"no-pom,omitempty"`
 }
 
 func UpgradeConfig(cfgBytes []byte) ([]byte, error) {
