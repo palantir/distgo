@@ -131,7 +131,7 @@ func (p *bintrayPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOu
 	}
 	if cfg.DownloadsList {
 		if err := p.addToDownloadsList(productTaskOutputInfo, cfg, mavenProductPath, dryRun, stdout); err != nil {
-			fmt.Fprintln(stdout, "Uploading artifacts succeeded, but addings artifact to downloads list failed:", err)
+			fmt.Fprintln(stdout, "Uploading artifacts succeeded, but adding artifact to downloads list failed:", err)
 		}
 	}
 	return nil
@@ -165,7 +165,7 @@ func (p *bintrayPublisher) runBintrayCommand(urlString, httpMethod, username, pa
 		capitalizedMsg = strings.ToUpper(string(cmdMsg[0])) + cmdMsg[1:]
 	}
 
-	distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("%s...", capitalizedMsg), dryRun)
+	distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("%s... (url: %s)", capitalizedMsg, url), dryRun)
 	defer func() {
 		// not wrapped in dry run because that has already been handled at the beginning of the line
 		fmt.Fprintln(stdout)
