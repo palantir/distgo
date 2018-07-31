@@ -306,6 +306,25 @@ Finished creating bin distribution for foo
 					verifyLayoutAndTGZ(t, projectDir, wantInnerLayout)
 				},
 			},
+			{
+				Name: "bin does not panic if build output does not exist",
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    dist:
+      disters:
+        type: bin
+`,
+				},
+				WantError: true,
+				WantOutput: func(projectDir string) string {
+					return `Creating distribution for foo at out/dist/foo/1.0.0/bin/foo-1.0.0.tgz
+Error: dist failed for foo: bin dist failed: no build outputs for product foo
+`
+				},
+			},
 		},
 	)
 }

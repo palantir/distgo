@@ -49,6 +49,10 @@ func (d *Dister) PackagingExtension() (string, error) {
 }
 
 func (d *Dister) RunDist(distID distgo.DistID, productTaskOutputInfo distgo.ProductTaskOutputInfo) ([]byte, error) {
+	if productTaskOutputInfo.Product.BuildOutputInfo == nil {
+		return nil, errors.Errorf("bin dist failed: no build outputs for product %s", productTaskOutputInfo.Product.ID)
+	}
+
 	for _, osArch := range productTaskOutputInfo.Product.BuildOutputInfo.OSArchs {
 		if err := verifyDistTargetSupported(osArch, productTaskOutputInfo); err != nil {
 			return nil, err
