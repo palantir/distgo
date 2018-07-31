@@ -45,7 +45,7 @@ func TestBintrayPublish(t *testing.T) {
 		"bintray",
 		[]publishertester.TestCase{
 			{
-				Name: "publishes artifact to Bintray",
+				Name: "publishes artifact and POM to Bintray",
 				Specs: []gofiles.GoFileSpec{
 					{
 						RelPath: "foo/foo.go",
@@ -82,6 +82,7 @@ products:
 				},
 				WantOutput: func(projectDir string) string {
 					return fmt.Sprintf(`[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://bintray.domain.com/content/testSubject/testRepo/testProduct/1.0.0/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+[DRY RUN] Uploading to http://bintray.domain.com/content/testSubject/testRepo/testProduct/1.0.0/com/test/group/foo/1.0.0/foo-1.0.0.pom
 [DRY RUN] Running Bintray publish for uploaded artifacts...done
 [DRY RUN] Adding artifact to Bintray downloads list for package...done
 `, osarch.Current().String(), osarch.Current().String())
@@ -124,6 +125,95 @@ products:
 				},
 				WantOutput: func(projectDir string) string {
 					return fmt.Sprintf(`[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://bintray.domain.com/content/testSubject/testRepo/foo/1.0.0/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+[DRY RUN] Uploading to http://bintray.domain.com/content/testSubject/testRepo/foo/1.0.0/com/test/group/foo/1.0.0/foo-1.0.0.pom
+[DRY RUN] Running Bintray publish for uploaded artifacts...done
+[DRY RUN] Adding artifact to Bintray downloads list for package...done
+`, osarch.Current().String(), osarch.Current().String())
+				},
+			},
+			{
+				Name: "can skip POM publish based on configuration",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+    dist:
+      disters:
+        type: os-arch-bin
+    publish:
+      group-id: com.test.group
+      info:
+        bintray:
+          config:
+            url: http://bintray.domain.com
+            username: testUsername
+            password: testPassword
+            subject: testSubject
+            repository: testRepo
+            product: testProduct
+            publish: true
+            downloads-list: true
+            no-pom: true
+`,
+				},
+				Args: []string{
+					"--dry-run",
+				},
+				WantOutput: func(projectDir string) string {
+					return fmt.Sprintf(`[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://bintray.domain.com/content/testSubject/testRepo/testProduct/1.0.0/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+[DRY RUN] Running Bintray publish for uploaded artifacts...done
+[DRY RUN] Adding artifact to Bintray downloads list for package...done
+`, osarch.Current().String(), osarch.Current().String())
+				},
+			},
+			{
+				Name: "can use flag to specify no-pom",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+    dist:
+      disters:
+        type: os-arch-bin
+    publish:
+      group-id: com.test.group
+      info:
+        bintray:
+          config:
+            url: http://bintray.domain.com
+            username: testUsername
+            password: testPassword
+            subject: testSubject
+            repository: testRepo
+            product: testProduct
+            publish: true
+            downloads-list: true
+`,
+				},
+				Args: []string{
+					"--dry-run",
+					"--no-pom",
+				},
+				WantOutput: func(projectDir string) string {
+					return fmt.Sprintf(`[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://bintray.domain.com/content/testSubject/testRepo/testProduct/1.0.0/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
 [DRY RUN] Running Bintray publish for uploaded artifacts...done
 [DRY RUN] Adding artifact to Bintray downloads list for package...done
 `, osarch.Current().String(), osarch.Current().String())

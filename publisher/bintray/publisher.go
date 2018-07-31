@@ -29,6 +29,7 @@ import (
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/publisher"
 	"github.com/palantir/distgo/publisher/bintray/config"
+	"github.com/palantir/distgo/publisher/maven"
 )
 
 const TypeName = "bintray"
@@ -82,6 +83,7 @@ func (p *bintrayPublisher) Flags() ([]distgo.PublisherFlag, error) {
 		bintrayPublisherPublishFlag,
 		bintrayPublisherDownloadsListFlag,
 		publisher.GroupIDFlag,
+		maven.NoPOMFlag,
 	), nil
 }
 
@@ -114,6 +116,7 @@ func (p *bintrayPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOu
 	if err := publisher.SetConfigValues(flagVals,
 		bintrayPublisherPublishFlag, &cfg.Publish,
 		bintrayPublisherDownloadsListFlag, &cfg.DownloadsList,
+		maven.NoPOMFlag, &cfg.NoPOM,
 	); err != nil {
 		return err
 	}
@@ -124,6 +127,18 @@ func (p *bintrayPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOu
 		return err
 	}
 
+	if !cfg.NoPOM {
+		for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
+			pomName, pomContent, err := maven.POM(groupID, maven.Packaging(currDistID, productTaskOutputInfo), productTaskOutputInfo)
+			if err != nil {
+				return err
+			}
+			if _, err := cfg.UploadFile(publisher.NewFileInfoFromBytes([]byte(pomContent)), baseURL, pomName, nil, dryRun, stdout); err != nil {
+				return err
+			}
+		}
+	}
+
 	if cfg.Publish {
 		if err := p.publish(productTaskOutputInfo, cfg, dryRun, stdout); err != nil {
 			fmt.Fprintln(stdout, "Uploading artifacts succeeded, but publish of uploaded artifacts failed:", err)
@@ -131,7 +146,7 @@ func (p *bintrayPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOu
 	}
 	if cfg.DownloadsList {
 		if err := p.addToDownloadsList(productTaskOutputInfo, cfg, mavenProductPath, dryRun, stdout); err != nil {
-			fmt.Fprintln(stdout, "Uploading artifacts succeeded, but addings artifact to downloads list failed:", err)
+			fmt.Fprintln(stdout, "Uploading artifacts succeeded, but adding artifact to downloads list failed:", err)
 		}
 	}
 	return nil
