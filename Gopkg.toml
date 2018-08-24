@@ -34,18 +34,6 @@
   version = "2.0.0"
 
 [[constraint]]
-  branch = "develop"
-  name = "github.com/nmiyake/pkg"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/palantir/godel"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/palantir/pkg"
-
-[[constraint]]
   name = "github.com/pkg/errors"
   version = "0.8.0"
 
