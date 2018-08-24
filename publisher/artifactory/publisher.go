@@ -57,7 +57,7 @@ func (p *artifactoryPublisher) TypeName() (string, error) {
 }
 
 var (
-	artifactoryPublisherRepositoryFlag = distgo.PublisherFlag{
+	PublisherRepositoryFlag = distgo.PublisherFlag{
 		Name:        "repository",
 		Description: "repository that is the destination for the publish",
 		Type:        distgo.StringFlag,
@@ -66,7 +66,7 @@ var (
 
 func (p *artifactoryPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	return append(publisher.BasicConnectionInfoFlags(),
-		artifactoryPublisherRepositoryFlag,
+		PublisherRepositoryFlag,
 		publisher.GroupIDFlag,
 		maven.NoPOMFlag,
 	), nil
@@ -89,7 +89,7 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 	if err := cfg.BasicConnectionInfo.SetValuesFromFlags(flagVals); err != nil {
 		return nil, err
 	}
-	if err := publisher.SetRequiredStringConfigValue(flagVals, artifactoryPublisherRepositoryFlag, &cfg.Repository); err != nil {
+	if err := publisher.SetRequiredStringConfigValue(flagVals, PublisherRepositoryFlag, &cfg.Repository); err != nil {
 		return nil, err
 	}
 	if err := publisher.SetConfigValue(flagVals, maven.NoPOMFlag, &cfg.NoPOM); err != nil {
