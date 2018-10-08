@@ -12,16 +12,6 @@ darwin-linux-no-cgo: &darwin-linux-no-cgo
       environment:
         CGO_ENABLED: 0
 
-godel-root-cache-restore: &godel-root-cache-restore
-  restore_cache:
-    keys:
-      - godel-root-cache-{{ checksum "godelw" }}-{{ checksum "godel/config/godel.yml" }}-v1
-godel-root-cache-save: &godel-root-cache-save
-  save_cache:
-    key: godel-root-cache-{{ checksum "godelw" }}-{{ checksum "godel/config/godel.yml" }}-v1
-    paths:
-      - ~/.godel
-
 go-version: &go-version
   run: go version
 
@@ -45,12 +35,6 @@ define-tests-dir: &define-tests-dir
 mkdir-tests-dir: &mkdir-tests-dir
   run: mkdir -p "${TESTS_DIR}"
 
-godelw-verify: &godelw-verify
-  run: ./godelw verify --apply=false --skip-test
-
-godelw-test: &godelw-test
-  run: ./godelw test --junit-output="$TESTS_DIR/$CIRCLE_PROJECT_REPONAME-tests.xml"
-
 store-test-results: &store-test-results
   type: test-results-store
   path: /tmp/test-results
@@ -70,7 +54,7 @@ jobs:
       - *godel-cache-restore
       - *godel-version
       - *godel-cache-save
-      - *godelw-verify
+      - run: ./godelw verify --apply=false --skip-test
   test:
     <<: *darwin-linux-no-cgo
     steps:
@@ -81,7 +65,7 @@ jobs:
       - *godel-cache-save
       - *define-tests-dir
       - *mkdir-tests-dir
-      - *godelw-test
+      - run: ./godelw test --junit-output="$TESTS_DIR/$CIRCLE_PROJECT_REPONAME-tests.xml"
       - *store-test-results
       - *store-artifacts
   dist:
@@ -102,9 +86,8 @@ jobs:
     steps:
       - checkout
       - *go-version
-      - *godel-root-cache-restore
+      - *godel-cache-restore
       - *godel-version
-      - *godel-root-cache-save
       - restore_cache:
           keys:
             - dist-{{ .Environment.CIRCLE_WORKFLOW_ID }}-{{ .Environment.CIRCLE_SHA1 }}-v1
@@ -112,7 +95,7 @@ jobs:
       # the cache with the original modification dates, but the source's modification date in CI is the time of checkout.
       # Manually touch all of the cache output to mark it as being generated after source was checked out.
       - run: find out -exec touch {} \;
-      - run: ./godelw publish bintray --url https://api.bintray.com --subject palantir --repository releases --product distgo --username "$BINTRAY_USERNAME" --password "$BINTRAY_PASSWORD" --publish --downloads-list
+      - run: ./godelw publish bintray --url https://api.bintray.com --subject palantir --repository releases --product "$CIRCLE_PROJECT_REPONAME" --username "$BINTRAY_USERNAME" --password "$BINTRAY_PASSWORD" --publish --downloads-list
 
 ### Workflows ###
 requires_products: &requires_products
