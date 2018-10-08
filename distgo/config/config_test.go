@@ -478,7 +478,7 @@ products:
 						Docker: &distgo.DockerParam{
 							DockerBuilderParams: map[distgo.DockerID]distgo.DockerBuilderParam{
 								"default": {
-									DockerBuilder:  defaultdockerbuilder.NewDefaultDockerBuilder(nil),
+									DockerBuilder:  defaultdockerbuilder.NewDefaultDockerBuilder(nil, ""),
 									DockerfilePath: "Dockerfile",
 									ContextDir:     "docker",
 									InputBuilds: []distgo.ProductBuildID{
@@ -616,7 +616,7 @@ products:
 						Docker: &distgo.DockerParam{
 							DockerBuilderParams: map[distgo.DockerID]distgo.DockerBuilderParam{
 								"default": {
-									DockerBuilder:  defaultdockerbuilder.NewDefaultDockerBuilder(nil),
+									DockerBuilder:  defaultdockerbuilder.NewDefaultDockerBuilder(nil, ""),
 									DockerfilePath: "Dockerfile",
 									ContextDir:     "docker",
 									InputDists: []distgo.ProductDistID{

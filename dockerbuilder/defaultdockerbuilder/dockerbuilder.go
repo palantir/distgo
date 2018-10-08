@@ -25,12 +25,14 @@ import (
 const TypeName = "default"
 
 type DefaultDockerBuilder struct {
-	BuildArgs []string
+	BuildArgs       []string
+	BuildArgsScript string
 }
 
-func NewDefaultDockerBuilder(buildArgs []string) distgo.DockerBuilder {
+func NewDefaultDockerBuilder(buildArgs []string, buildArgsScript string) distgo.DockerBuilder {
 	return &DefaultDockerBuilder{
-		BuildArgs: buildArgs,
+		BuildArgs:       buildArgs,
+		BuildArgsScript: buildArgsScript,
 	}
 }
 
@@ -51,6 +53,13 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		)
 	}
 	args = append(args, d.BuildArgs...)
+	if d.BuildArgsScript != "" {
+		buildArgsFromScript, err := distgo.DockerBuildArgsFromScript(dockerID, productTaskOutputInfo, d.BuildArgsScript)
+		if err != nil {
+			return err
+		}
+		args = append(args, buildArgsFromScript...)
+	}
 	args = append(args, contextDirPath)
 
 	cmd := exec.Command("docker", args...)

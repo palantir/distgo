@@ -105,3 +105,16 @@ func BuildArgsFromScript(productTaskOutputInfo ProductTaskOutputInfo, buildArgsS
 	}
 	return strings.Split(buildArgsString, "\n"), nil
 }
+
+func DockerBuildArgsFromScript(dockerID DockerID, productTaskOutputInfo ProductTaskOutputInfo, buildArgsScript string) ([]string, error) {
+	outputBuf := &bytes.Buffer{}
+	if err := WriteAndExecuteScript(productTaskOutputInfo.Project, buildArgsScript, DockerScriptEnvVariables(dockerID, productTaskOutputInfo), outputBuf); err != nil {
+		return nil, errors.Wrapf(err, "failed to execute docker build args script for dockerID %s for product %s: %s", dockerID, productTaskOutputInfo.Product.ID, outputBuf.String())
+	}
+
+	buildArgsString := strings.TrimSpace(outputBuf.String())
+	if buildArgsString == "" {
+		return nil, nil
+	}
+	return strings.Split(buildArgsString, "\n"), nil
+}
