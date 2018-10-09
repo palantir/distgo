@@ -38,17 +38,17 @@ type BuildConfig struct {
 	MainPkg *string `yaml:"main-pkg,omitempty"`
 
 	// BuildArgsScript is the content of a script that is written to a file and run before this product is built
-	// to provide supplemental build arguments for the product. The contents of this value are written to a file
-	// with a header `#!/bin/bash` and executed. The script process inherits the environment variables of the Go
-	// process. Each line of output of the script is provided to the "build" command as a separate argument. For
-	// example, the following script would add the arguments "-ldflags" "-X" "main.year=$YEAR" to the build command:
+	// to provide supplemental build arguments for the product. The content of this value is written to a file and
+	// executed. The script process uses the project directory as its working directory and inherits the environment
+	// variables of the Go process. Each line of the output of the script is provided to the "build" command as a
+	// separate argument. For example, the following script would add the arguments "-ldflags" "-X" "main.year=$YEAR" to
+	// the build command:
 	//
-	//   build-args-script: |
-	//                      #!/usr/bin/env bash
-	//                      YEAR=$(date +%Y)
-	//                      echo "-ldflags"
-	//                      echo "-X"
-	//                      echo "main.year=$YEAR"
+	//   #!/usr/bin/env bash
+	//   YEAR=$(date +%Y)
+	//   echo "-ldflags"
+	//   echo "-X"
+	//   echo "main.year=$YEAR"
 	BuildArgsScript *string `yaml:"build-args-script,omitempty"`
 
 	// VersionVar is the path to a variable that is set with the version information for the build. For example,
