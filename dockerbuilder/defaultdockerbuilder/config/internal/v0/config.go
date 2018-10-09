@@ -21,6 +21,13 @@ import (
 
 type Config struct {
 	BuildArgs []string `yaml:"build-args,omitempty"`
+
+	// BuildArgsScript is the content of a script that is written to a file and run before this image is built to
+	// provide supplemental "docker build" arguments for the image. The content of this value is written to a file and
+	// executed. The script process uses the project directory as its working directory and inherits the environment
+	// variables of the Go process. Each line of output of the script is provided to the "docker build" command as a
+	// separate argument. The arguments produced by the script are appended to any arguments specified in BuildArgs.
+	BuildArgsScript *string `yaml:"build-args-script,omitempty"`
 }
 
 func UpgradeConfig(cfgBytes []byte) ([]byte, error) {

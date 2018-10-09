@@ -23,7 +23,12 @@ import (
 type Default v0.Config
 
 func (cfg *Default) ToDockerBuilder() distgo.DockerBuilder {
+	var buildArgsScript string
+	if cfg.BuildArgsScript != nil {
+		buildArgsScript = *cfg.BuildArgsScript
+	}
 	return &defaultdockerbuilder.DefaultDockerBuilder{
-		BuildArgs: cfg.BuildArgs,
+		BuildArgs:       cfg.BuildArgs,
+		BuildArgsScript: buildArgsScript,
 	}
 }
