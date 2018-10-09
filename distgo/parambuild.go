@@ -46,8 +46,8 @@ type BuildParam struct {
 	MainPkg string
 
 	// BuildArgsScript is the content of a script that is written to a file and run before this product is built
-	// to provide supplemental build arguments for the product. The contents of this value are written to a file
-	// and executed with the project directory as the working directory. The script process inherits the environment
+	// to provide supplemental build arguments for the product. The content of this value is written to a file and
+	// executed. The script process uses the project directory as its working directory and inherits the environment
 	// variables of the Go process. Each line of output of the script is provided to the "build" command as a separate
 	// argument. For example, the following script would add the arguments "-ldflags" "-X" "main.year=$YEAR" to the
 	// build command:
