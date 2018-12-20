@@ -1,11 +1,13 @@
 version: 2.1
 
 orbs:
-  godel: palantir/godel@0.0.1
+  go: palantir/go@0.0.3
+  godel: palantir/godel@0.0.2
 
-owner-repo: &owner-repo
-  owner: palantir
-  repo: distgo
+executor-param: &executor-param
+  executor:
+    name: go/darwin-linux-no-cgo
+    owner-repo: palantir/distgo
 
 all-tags-filter: &all-tags-filter
   filters:
@@ -18,19 +20,14 @@ workflows:
     jobs:
       - godel/verify:
           <<: *all-tags-filter
-          <<: *owner-repo
+          <<: *executor-param
       - godel/test:
           <<: *all-tags-filter
-          <<: *owner-repo
+          <<: *executor-param
       - godel/dist:
           <<: *all-tags-filter
-          <<: *owner-repo
+          <<: *executor-param
       - godel/bintray-publish:
-          <<: *all-tags-filter
-          <<: *owner-repo
-          bintray-subject: palantir
-          bintray-repo: releases
-          bintray-product: distgo
           requires:
             - godel/verify
             - godel/test
@@ -40,3 +37,7 @@ workflows:
               only: /^v?[0-9]+(\.[0-9]+)+(-rc[0-9]+)?(-alpha[0-9]+)?$/
             branches:
               ignore: /.*/
+          <<: *executor-param
+          bintray-subject: palantir
+          bintray-repo: releases
+          bintray-product: distgo
