@@ -14,7 +14,7 @@ all-tags-filter: &all-tags-filter
 
 workflows:
   version: 2
-  build-publish:
+  dist-publish:
     jobs:
       - godel/verify:
           <<: *all-tags-filter
@@ -32,9 +32,9 @@ workflows:
           bintray-repo: releases
           bintray-product: distgo
           requires:
-            - verify
-            - test
-            - dist
+            - godel/verify
+            - godel/test
+            - godel/dist
           filters:
             tags:
               only: /^v?[0-9]+(\.[0-9]+)+(-rc[0-9]+)?(-alpha[0-9]+)?$/
