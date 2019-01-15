@@ -34,33 +34,13 @@
   version = "2.0.0"
 
 [[constraint]]
-  name = "github.com/pkg/errors"
-  version = "0.8.0"
-
-[[constraint]]
-  name = "github.com/spf13/cobra"
-  version = "0.0.2"
-
-[[constraint]]
   name = "github.com/spf13/pflag"
   version = "1.0.0"
-
-[[constraint]]
-  name = "github.com/stretchr/testify"
-  version = "1.2.1"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/termie/go-shutil"
-
-[[constraint]]
-  branch = "master"
-  name = "golang.org/x/oauth2"
 
 [[constraint]]
   name = "gopkg.in/cheggaaa/pb.v1"
   version = "1.0.22"
 
-[[constraint]]
-  name = "gopkg.in/yaml.v2"
-  version = "2.1.1"
+[prune]
+  go-tests = true
+  unused-packages = true
