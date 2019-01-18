@@ -101,8 +101,7 @@
   revision = "e06696f847aeda6f39a8f0b7cdff193b7690aef6"
 
 [[projects]]
-  branch = "master"
-  digest = "1:d67c3f012722672cd6225a3ac428664c5d386be6e4fca34642ed2e63cc4de6d4"
+  digest = "1:069c6a5d2df9af9f866bb3725c6882b5552a2163238632d0bc976b338b588218"
   name = "github.com/palantir/godel"
   packages = [
     "framework/artifactresolver",
@@ -132,11 +131,11 @@
     "pkg/versionedconfig",
   ]
   pruneopts = "UT"
-  revision = "8c968dda40d570b807085b878ff512fac168a2de"
+  revision = "723a5b3f06a1384237c9386e44d31a3bae360e7b"
+  version = "v2.11.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:fe81e87be37ad6e80efd4d4a314ace569634c67fef0a1ee9f340cd83e0a37248"
+  digest = "1:a43b6962789b5fd8cce3145d7f4885b3063f0eb8517a90da8973cac12f456021"
   name = "github.com/palantir/pkg"
   packages = [
     "cobracli",
@@ -147,7 +146,8 @@
     "specdir",
   ]
   pruneopts = "UT"
-  revision = "23395ebeee5df1083443a6261e5f674a76af91b6"
+  revision = "b2b34217111b014adb22fa992d96f52aefea654d"
+  version = "0.9.3"
 
 [[projects]]
   digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
