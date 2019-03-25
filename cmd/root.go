@@ -184,11 +184,11 @@ func distgoProjectParamFromVals(projectDir, distgoConfigFile, godelConfigFile st
 		distgoCfg = cfg
 	}
 	if godelConfigFile != "" {
-		cfg, err := godelconfig.ReadGodelConfigFromFile(godelConfigFile)
+		excludes, err := godelconfig.ReadGodelConfigExcludesFromFile(godelConfigFile)
 		if err != nil {
 			return distgo.ProjectInfo{}, distgo.ProjectParam{}, err
 		}
-		distgoCfg.Exclude.Add(cfg.Exclude)
+		distgoCfg.Exclude.Add(excludes)
 	}
 	projectParam, err := distgoCfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
 	if err != nil {
