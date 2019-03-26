@@ -101,7 +101,7 @@
   revision = "e06696f847aeda6f39a8f0b7cdff193b7690aef6"
 
 [[projects]]
-  digest = "1:069c6a5d2df9af9f866bb3725c6882b5552a2163238632d0bc976b338b588218"
+  digest = "1:c5d50b9944d963587c6dce9de2f608079436d49d8a72197b266c20571bfee07d"
   name = "github.com/palantir/godel"
   packages = [
     "framework/artifactresolver",
@@ -131,8 +131,8 @@
     "pkg/versionedconfig",
   ]
   pruneopts = "UT"
-  revision = "723a5b3f06a1384237c9386e44d31a3bae360e7b"
-  version = "v2.11.0"
+  revision = "727863e5179c37e1b6d4bede2cf89c5bb9ff3f2e"
+  version = "v2.14.0"
 
 [[projects]]
   digest = "1:a43b6962789b5fd8cce3145d7f4885b3063f0eb8517a90da8973cac12f456021"
