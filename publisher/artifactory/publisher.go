@@ -15,13 +15,17 @@
 package artifactory
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -223,12 +227,45 @@ func (p *artifactoryPublisher) artifactorySetSHA256Checksum(cfg config.Artifacto
 
 func (p *artifactoryPublisher) getDeploymentURL(cfg config.Artifactory) (string, error) {
 	url := strings.Join([]string{cfg.URL, "artifactory", cfg.Repository}, "/")
-	if len(cfg.Properties) > 0 {
-		encoded, err := config.EncodeProperties(cfg.Properties)
-		if err != nil {
-			return "", err
-		}
-		url += ";" + encoded
+	encodedProps, err := encodeProperties(cfg.Properties)
+	if err != nil {
+		return "", err
 	}
-	return url, nil
+
+	return strings.Join(append([]string{url}, encodedProps...), ";"), nil
+}
+
+// encodeProperties takes in a map[string]string of properties, renders each value as a Go template, and returns
+// the sorted slice of strings of the form `key=renderedVal`. The Go template can include the `env` function,
+// which fetches an environment variable.
+func encodeProperties(properties map[string]string) ([]string, error) {
+	if len(properties) == 0 {
+		return nil, nil
+	}
+
+	tmpl := template.New("properties").Funcs(template.FuncMap{
+		"env": func(key string) string {
+			return os.Getenv(key)
+		},
+	})
+	var encoded []string
+	for k, v := range properties {
+		parsed, err := tmpl.Clone()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to clone template")
+		}
+		parsed, err = parsed.Parse(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse template")
+		}
+		output := &bytes.Buffer{}
+		if err := parsed.Execute(output, nil); err != nil {
+			return nil, errors.Wrapf(err, "failed to execute template")
+		}
+		if outStr := output.String(); len(outStr) > 0 {
+			encoded = append(encoded, fmt.Sprintf("%s=%s", k, outStr))
+		}
+	}
+	sort.Strings(encoded)
+	return encoded, nil
 }
