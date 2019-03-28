@@ -25,6 +25,9 @@ type Config struct {
 	publisher.BasicConnectionInfo `yaml:",inline,omitempty"`
 	Repository                    string `yaml:"repository,omitempty"`
 	NoPOM                         bool   `yaml:"no-pom,omitempty"`
+	// Properties is a map of properties to attach to an artifact on publishing. Environment variables
+	// can be substituted in the value with {{ env "ENV_VAR" }}.
+	Properties map[string]string `yaml:"properties,omitempty"`
 }
 
 func UpgradeConfig(cfgBytes []byte) ([]byte, error) {

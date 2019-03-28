@@ -135,7 +135,11 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 		return false
 	}
 
-	baseURL := strings.Join([]string{artifactoryURL, cfg.Repository, productPath}, "/")
+	deploymentURL, err := p.getDeploymentURL(cfg)
+	if err != nil {
+		return nil, err
+	}
+	baseURL := strings.Join([]string{deploymentURL, productPath}, "/")
 	artifactPaths, uploadedURLs, err := cfg.BasicConnectionInfo.UploadDistArtifacts(productTaskOutputInfo, baseURL, artifactExists, dryRun, stdout)
 	if err != nil {
 		return nil, err
@@ -215,4 +219,16 @@ func (p *artifactoryPublisher) artifactorySetSHA256Checksum(cfg config.Artifacto
 		return errors.Errorf("triggering computation of SHA-256 checksum for %s resulted in response: %s", filePath, resp.Status)
 	}
 	return nil
+}
+
+func (p *artifactoryPublisher) getDeploymentURL(cfg config.Artifactory) (string, error) {
+	url := strings.Join([]string{cfg.URL, "artifactory", cfg.Repository}, "/")
+	if len(cfg.Properties) > 0 {
+		encoded, err := config.EncodeProperties(cfg.Properties)
+		if err != nil {
+			return "", err
+		}
+		url += ";" + encoded
+	}
+	return url, nil
 }
