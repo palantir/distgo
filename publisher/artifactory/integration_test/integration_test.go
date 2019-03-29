@@ -288,6 +288,19 @@ products:
 			},
 		},
 	)
+}
+
+func TestArtifactoryPublishRendersPropertiesGoTemplates(t *testing.T) {
+	const godelYML = `exclude:
+  names:
+    - "\\..+"
+    - "vendor"
+  paths:
+    - "godel"
+`
+
+	pluginPath, err := products.Bin("dist-plugin")
+	require.NoError(t, err)
 
 	err = os.Setenv("TEST_ENV_VAR", "testValue")
 	require.NoError(t, err)
