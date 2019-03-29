@@ -25,9 +25,10 @@ type Config struct {
 	publisher.BasicConnectionInfo `yaml:",inline,omitempty"`
 	Repository                    string `yaml:"repository,omitempty"`
 	NoPOM                         bool   `yaml:"no-pom,omitempty"`
-	// Properties is a map of properties to attach to an artifact on publishing. The value can be a
-	// string literal or a Go template. In particular, it is possible to get the value of a environment
-	// variable by using the `env` Go template function: {{ env "ENV_VAR" }}.
+	// Properties is a map of properties to attach to an artifact on publishing:
+	// https://www.jfrog.com/confluence/display/RTF/Using+Properties+in+Deployment+and+Resolution
+	// The values are processed as Go templates. In particular, it is possible to get the value of an
+	// environment variable by using the `env` Go template function: {{ env "ENV_VAR" }}.
 	Properties map[string]string `yaml:"properties,omitempty"`
 }
 

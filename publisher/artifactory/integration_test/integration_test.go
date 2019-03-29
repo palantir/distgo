@@ -16,6 +16,7 @@ package integration_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/nmiyake/pkg/gofiles"
@@ -287,6 +288,61 @@ products:
 			},
 		},
 	)
+
+	err = os.Setenv("TEST_ENV_VAR", "testValue")
+	require.NoError(t, err)
+	publishertester.RunAssetPublishTest(t,
+		pluginapitester.NewPluginProvider(pluginPath),
+		nil,
+		"artifactory",
+		[]publishertester.TestCase{
+
+			{
+				Name: "appends properties with env vars to publish URL",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+    dist:
+      disters:
+        type: os-arch-bin
+    publish:
+      group-id: com.test.group
+      info:
+        artifactory:
+          config:
+            url: http://artifactory.domain.com
+            username: testUsername
+            password: testPassword
+            repository: testRepo
+            properties:
+              key1: value1
+              env-key: '{{ env "TEST_ENV_VAR" }}'
+`,
+				},
+				Args: []string{
+					"--dry-run",
+				},
+				WantOutput: func(projectDir string) string {
+					return fmt.Sprintf(`[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://artifactory.domain.com/artifactory/testRepo;env-key=testValue;key1=value1/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+[DRY RUN] Uploading to http://artifactory.domain.com/artifactory/testRepo;env-key=testValue;key1=value1/com/test/group/foo/1.0.0/foo-1.0.0.pom
+`, osarch.Current().String(), osarch.Current().String())
+				},
+			},
+		},
+	)
+
+	err = os.Unsetenv("TEST_ENV_VAR")
+	require.NoError(t, err)
 }
 
 func TestArtifactoryUpgradeConfig(t *testing.T) {

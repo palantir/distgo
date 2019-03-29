@@ -244,9 +244,7 @@ func encodeProperties(properties map[string]string) ([]string, error) {
 	}
 
 	tmpl := template.New("properties").Funcs(template.FuncMap{
-		"env": func(key string) string {
-			return os.Getenv(key)
-		},
+		"env": os.Getenv,
 	})
 	var encoded []string
 	for k, v := range properties {
