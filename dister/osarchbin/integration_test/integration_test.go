@@ -184,7 +184,7 @@ Finished creating os-arch-bin distribution for foo
 					require.NoError(t, err)
 
 					assert.Equal(t, "linux-amd64\n", string(arch))
-					assert.Equal(t, os.FileMode(0775), binInfo.Mode())
+					assert.Equal(t, os.FileMode(0111), binInfo.Mode()&0111)
 				},
 			},
 		},
