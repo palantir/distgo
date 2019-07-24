@@ -15,9 +15,13 @@
 package integration_test
 
 import (
+	"io/ioutil"
+	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
+	"github.com/mholt/archiver"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/godel/framework/pluginapitester"
 	"github.com/palantir/godel/pkg/products/v2/products"
@@ -98,6 +102,89 @@ Finished creating os-arch-bin distribution for foo
 						), true,
 					)
 					assert.NoError(t, wantLayout.Validate(path.Join(projectDir, "out", "dist", "foo", "1.0.0"), nil))
+				},
+			},
+			{
+				Name: "os-arch-bin allows customized output",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+      os-archs:
+        - os: darwin
+          arch: amd64
+        - os: linux
+          arch: amd64
+    dist:
+      disters:
+        type: os-arch-bin
+        config:
+          os-archs:
+            - os: darwin
+              arch: amd64
+            - os: linux
+              arch: amd64
+        script: |
+          #!/bin/bash
+          for (( i=0; i<${BUILD_OS_ARCH_COUNT}; i++ )); do
+            OS_ARCH_VAR="BUILD_OS_ARCH_${i}"
+            echo "${!OS_ARCH_VAR}" > "${DIST_WORK_DIR}/${!OS_ARCH_VAR}/os-arch"
+          done
+`,
+				},
+				WantOutput: func(projectDir string) string {
+					return `Creating distribution for foo at out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-darwin-amd64.tgz, out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-linux-amd64.tgz
+Finished creating os-arch-bin distribution for foo
+`
+				},
+				Validate: func(projectDir string) {
+					wantLayout := specdir.NewLayoutSpec(
+						specdir.Dir(specdir.LiteralName("1.0.0"), "",
+							specdir.Dir(specdir.LiteralName("os-arch-bin"), "",
+								specdir.Dir(specdir.LiteralName("foo-1.0.0"), "",
+									specdir.Dir(specdir.LiteralName("darwin-amd64"), "",
+										specdir.File(specdir.LiteralName("foo"), ""),
+										specdir.File(specdir.LiteralName("os-arch"), ""),
+									),
+									specdir.Dir(specdir.LiteralName("linux-amd64"), "",
+										specdir.File(specdir.LiteralName("foo"), ""),
+										specdir.File(specdir.LiteralName("os-arch"), ""),
+									),
+								),
+								specdir.File(specdir.LiteralName("foo-1.0.0-darwin-amd64.tgz"), ""),
+								specdir.File(specdir.LiteralName("foo-1.0.0-linux-amd64.tgz"), ""),
+							),
+						), true,
+					)
+					require.NoError(t, wantLayout.Validate(path.Join(projectDir, "out", "dist", "foo", "1.0.0"), nil))
+
+					dir, err := ioutil.TempDir("", "")
+					require.NoError(t, err)
+
+					defer func() {
+						require.NoError(t, os.RemoveAll(dir))
+					}()
+
+					dist := filepath.Join(projectDir, "out", "dist", "foo", "1.0.0", "os-arch-bin", "foo-1.0.0-linux-amd64.tgz")
+					require.NoError(t, archiver.TarGz.Open(dist, dir))
+
+					arch, err := ioutil.ReadFile(filepath.Join(dir, "os-arch"))
+					require.NoError(t, err)
+
+					binInfo, err := os.Stat(filepath.Join(dir, "foo"))
+					require.NoError(t, err)
+
+					assert.Equal(t, "linux-amd64\n", string(arch))
+					assert.Equal(t, os.FileMode(0111), binInfo.Mode()&0111)
 				},
 			},
 		},

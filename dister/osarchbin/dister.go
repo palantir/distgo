@@ -17,8 +17,10 @@ package osarchbin
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -93,25 +95,25 @@ func (d *Dister) RunDist(distID distgo.DistID, productTaskOutputInfo distgo.Prod
 }
 
 func (d *Dister) GenerateDistArtifacts(distID distgo.DistID, productTaskOutputInfo distgo.ProductTaskOutputInfo, runDistResult []byte) error {
-	var outputPathsForOSArchs map[string][]string
-	if err := json.Unmarshal(runDistResult, &outputPathsForOSArchs); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal runDistResult JSON %s", string(runDistResult))
-	}
-	artifactToInputPaths := make(map[string][]string)
+	distWorkDir := productTaskOutputInfo.ProductDistWorkDirs()[distID]
 	outputArtifactPaths := productTaskOutputInfo.ProductDistArtifactPaths()[distID]
 	for _, artifactPath := range outputArtifactPaths {
 		currOSArch, err := d.osArchFromArtifactPath(distID, artifactPath, productTaskOutputInfo)
 		if err != nil {
 			return err
 		}
-		artifactToInputPaths[artifactPath] = outputPathsForOSArchs[currOSArch.String()]
-	}
-	return createTgz(outputArtifactPaths, artifactToInputPaths)
-}
 
-func createTgz(dstArtifactPaths []string, dstToContentPaths map[string][]string) error {
-	for _, currDstPath := range dstArtifactPaths {
-		if err := archiver.TarGz.Make(currDstPath, dstToContentPaths[currDstPath]); err != nil {
+		workDir := filepath.Join(distWorkDir, currOSArch.String())
+		items, err := ioutil.ReadDir(workDir)
+		if err != nil {
+			return errors.Wrap(err, "failed to list distribution items")
+		}
+
+		itemPaths := make([]string, len(items))
+		for i, item := range items {
+			itemPaths[i] = filepath.Join(workDir, item.Name())
+		}
+		if err := archiver.TarGz.Make(artifactPath, itemPaths); err != nil {
 			return errors.Wrapf(err, "failed to create TGZ archive")
 		}
 	}
