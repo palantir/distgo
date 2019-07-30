@@ -128,7 +128,7 @@ func (cfg *ProjectConfig) ToParam(
 		for _, dockerID := range dockerIDs {
 			dockerBuilderParam := productParam.Docker.DockerBuilderParams[dockerID]
 			// verify that input builds for product are syntactically valid and specify legal products
-			inputBuildProducts, err := distgo.ProductParamsForBuildProductArgs(productSubmap, dockerBuilderParam.InputBuilds...)
+			inputBuildProducts, err := distgo.ProductParamsForBuildProductArgs(productSubmap, nil, dockerBuilderParam.InputBuilds...)
 			if err != nil {
 				return distgo.ProjectParam{}, errors.Errorf("invalid Docker input build(s) specified for DockerBuilderParam %q for product %q", dockerID, productID)
 			}

@@ -15,6 +15,8 @@
 package cmd
 
 import (
+	"github.com/palantir/godel/pkg/osarch"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/palantir/distgo/distgo"
@@ -30,10 +32,19 @@ var (
 			if err != nil {
 				return err
 			}
+			var osArchs []osarch.OSArch
+			for _, osArchStr := range buildOSArchsFlagVal {
+				osArchVal, err := osarch.New(osArchStr)
+				if err != nil {
+					return errors.Wrapf(err, "invalid os-arch: %s", osArchStr)
+				}
+				osArchs = append(osArchs, osArchVal)
+			}
 			return build.Products(projectInfo, projectParam, distgo.ToProductBuildIDs(args), build.Options{
 				Parallel: buildParallelFlagVal,
 				Install:  buildInstallFlagVal,
 				DryRun:   buildDryRunFlagVal,
+				OSArchs:  osArchs,
 			}, cmd.OutOrStdout())
 		},
 	}

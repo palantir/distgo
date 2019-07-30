@@ -105,18 +105,20 @@ func ToProductBuildIDs(in []string) []ProductBuildID {
 }
 
 // ProductParamsForBuildProductArgs returns the ProductParams from the provided inputProducts for the specified
-// ProductBuildIDs. The ProductParam values in the returned slice will reflect the items specified by the build IDs. For
-// example, if the project defines a product "foo" with OS-Archs "darwin-amd64" and "linux-amd64" and the productBuildID
-// is "foo.darwin-amd64", the returned ProductParam will only contain "darwin-amd64" in the build configuration. Returns
-// an error if any of the productBuildID values cannot be resolved to a configuration in the provided inputProducts.
-func ProductParamsForBuildProductArgs(inputProducts map[ProductID]ProductParam, productBuildIDs ...ProductBuildID) ([]ProductParam, error) {
+// ProductBuildIDs. The ProductParam values in the returned slice will reflect the items specified by the build IDs. If
+// the osArchs parameter is non-empty, then the returned results will only include ProductParam values that match the
+// provided osArchs. For example, if the project defines a product "foo" with OS-Archs "darwin-amd64" and "linux-amd64"
+// and the productBuildID is "foo.darwin-amd64", the returned ProductParam will only contain "darwin-amd64" in the build
+// configuration. Returns an error if any of the productBuildID values cannot be resolved to a configuration in the
+// provided inputProducts.
+func ProductParamsForBuildProductArgs(inputProducts map[ProductID]ProductParam, osArchs []osarch.OSArch, productBuildIDs ...ProductBuildID) ([]ProductParam, error) {
 	// error if project does not contain any productBuildIDs
 	if len(inputProducts) == 0 {
 		return nil, errors.Errorf("project does not contain any products")
 	}
 	// if no productBuildIDs were specified, return project's productBuildIDs unmodified
 	if len(productBuildIDs) == 0 {
-		return toSortedProductParams(inputProducts), nil
+		return filterProductParamsToOSArch(toSortedProductParams(inputProducts), osArchs), nil
 	}
 
 	productIDToOSArchs := make(map[ProductID][]osarch.OSArch)
@@ -192,7 +194,50 @@ func ProductParamsForBuildProductArgs(inputProducts map[ProductID]ProductParam, 
 
 		filteredProducts[productID] = currProductParam
 	}
-	return toSortedProductParams(filteredProducts), nil
+	return filterProductParamsToOSArch(toSortedProductParams(filteredProducts), osArchs), nil
+}
+
+// If osArchs is non-empty, returns a new ProductParam slice that contains only ProductParam values in the input where
+// at least one of the OSArchs in Build.OSArchs of the ProductParam is in the provided osArchs param. The Build.OSArchs
+// of the ProductParam values in the returned slice will also only contain the OSArchs that match the filter input. If
+// osArchs is empty, then the input is returned unmodified.
+func filterProductParamsToOSArch(in []ProductParam, osArchs []osarch.OSArch) []ProductParam {
+	// if filter set is empty, no need to filter
+	if len(osArchs) == 0 {
+		return in
+	}
+
+	osArchsMap := make(map[osarch.OSArch]struct{})
+	for _, osArch := range osArchs {
+		osArchsMap[osArch] = struct{}{}
+	}
+
+	var out []ProductParam
+	for _, currParam := range in {
+		filtered := filterOSArch(currParam.Build.OSArchs, osArchsMap)
+		if len(filtered) == 0 {
+			continue
+		}
+		currParam.Build.OSArchs = filtered
+		out = append(out, currParam)
+	}
+	return out
+}
+
+// if filter is non-empty, returns a new osArch slice that contains only the values in the input that are also keys in
+// filter. If filter is empty, the input is returned unmodified.
+func filterOSArch(in []osarch.OSArch, filter map[osarch.OSArch]struct{}) []osarch.OSArch {
+	if len(filter) == 0 {
+		return in
+	}
+	var out []osarch.OSArch
+	for _, v := range in {
+		if _, ok := filter[v]; !ok {
+			continue
+		}
+		out = append(out, v)
+	}
+	return out
 }
 
 // ProductDistID identifies a product or a specific dist for a product. A ProductDistID is one of the following:

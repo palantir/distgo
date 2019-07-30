@@ -30,7 +30,7 @@ import (
 )
 
 func PrintBuildArtifacts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productBuildIDs []distgo.ProductBuildID, absPath, requiresBuild bool, stdout io.Writer) error {
-	productParams, err := distgo.ProductParamsForBuildProductArgs(projectParam.Products, productBuildIDs...)
+	productParams, err := distgo.ProductParamsForBuildProductArgs(projectParam.Products, nil, productBuildIDs...)
 	if err != nil {
 		return err
 	}
