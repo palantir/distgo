@@ -45,7 +45,7 @@ func New(providedProjectVersionerCreators []projectversioner.Creator, providedCo
 		configUpgraders[currUpgrader.TypeName()] = currUpgrader
 	}
 	return &projectVersionerFactoryImpl{
-		types: types,
+		types:                           types,
 		projectVersionerCreators:        projectVersionerCreators,
 		projectVersionerConfigUpgraders: configUpgraders,
 	}, nil

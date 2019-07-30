@@ -16,7 +16,7 @@ package config
 
 import (
 	"github.com/palantir/distgo/dister/manual"
-	"github.com/palantir/distgo/dister/manual/config/internal/v0"
+	v0 "github.com/palantir/distgo/dister/manual/config/internal/v0"
 	"github.com/palantir/distgo/distgo"
 )
 

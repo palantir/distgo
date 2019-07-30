@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/palantir/distgo/distgo"
-	"github.com/palantir/distgo/distgo/config/internal/v0"
+	v0 "github.com/palantir/distgo/distgo/config/internal/v0"
 )
 
 type BuildConfig v0.BuildConfig

@@ -17,7 +17,7 @@ package config
 import (
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/projectversioner/script"
-	"github.com/palantir/distgo/projectversioner/script/config/internal/v0"
+	v0 "github.com/palantir/distgo/projectversioner/script/config/internal/v0"
 )
 
 type Script v0.Config

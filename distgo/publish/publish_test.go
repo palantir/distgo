@@ -71,7 +71,7 @@ func (p *testPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutpu
 	for _, distID := range distIDs {
 		outputs = append(outputs, fmt.Sprintf("%s: %v", distID, productDistArtifactPaths[distID]))
 	}
-	fmt.Fprintln(stdout, strings.Join(outputs, "\n"))
+	_, _ = fmt.Fprintln(stdout, strings.Join(outputs, "\n"))
 	return nil
 }
 

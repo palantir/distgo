@@ -141,12 +141,12 @@ func (p *bintrayPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOu
 
 	if cfg.Publish {
 		if err := p.publish(productTaskOutputInfo, cfg, dryRun, stdout); err != nil {
-			fmt.Fprintln(stdout, "Uploading artifacts succeeded, but publish of uploaded artifacts failed:", err)
+			_, _ = fmt.Fprintln(stdout, "Uploading artifacts succeeded, but publish of uploaded artifacts failed:", err)
 		}
 	}
 	if cfg.DownloadsList {
 		if err := p.addToDownloadsList(productTaskOutputInfo, cfg, mavenProductPath, dryRun, stdout); err != nil {
-			fmt.Fprintln(stdout, "Uploading artifacts succeeded, but adding artifact to downloads list failed:", err)
+			_, _ = fmt.Fprintln(stdout, "Uploading artifacts succeeded, but adding artifact to downloads list failed:", err)
 		}
 	}
 	return nil
@@ -183,7 +183,7 @@ func (p *bintrayPublisher) runBintrayCommand(urlString, httpMethod, username, pa
 	distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("%s...", capitalizedMsg), dryRun)
 	defer func() {
 		// not wrapped in dry run because that has already been handled at the beginning of the line
-		fmt.Fprintln(stdout)
+		_, _ = fmt.Fprintln(stdout)
 	}()
 
 	if !dryRun {
@@ -216,6 +216,6 @@ func (p *bintrayPublisher) runBintrayCommand(urlString, httpMethod, username, pa
 	}
 
 	// not wrapped in dry run because that has already been handled at the beginning of the line
-	fmt.Fprint(stdout, "done")
+	_, _ = fmt.Fprint(stdout, "done")
 	return nil
 }

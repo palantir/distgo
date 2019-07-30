@@ -45,7 +45,7 @@ func New(providedDockerBuilderCreators []dockerbuilder.Creator, providedConfigUp
 		configUpgraders[currUpgrader.TypeName()] = currUpgrader
 	}
 	return &dockerBuilderFactory{
-		types: types,
+		types:                        types,
 		dockerBuilderCreators:        dockerBuilderCreators,
 		dockerBuilderConfigUpgraders: configUpgraders,
 	}, nil

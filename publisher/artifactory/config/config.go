@@ -15,7 +15,7 @@
 package config
 
 import (
-	"github.com/palantir/distgo/publisher/artifactory/config/internal/v0"
+	v0 "github.com/palantir/distgo/publisher/artifactory/config/internal/v0"
 )
 
 type Artifactory v0.Config

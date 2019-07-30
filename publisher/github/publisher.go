@@ -135,7 +135,7 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 		if err != nil {
 			// newline to complement "..." output
 			// no need for dry run print because beginning of line has already been printed
-			fmt.Fprintln(stdout)
+			_, _ = fmt.Fprintln(stdout)
 
 			if ghErr, ok := err.(*github.ErrorResponse); ok && len(ghErr.Errors) > 0 {
 				if ghErr.Errors[0].Code == "already_exists" {
@@ -146,7 +146,7 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 		}
 	}
 	// no need for dry run print because beginning of line has already been printed
-	fmt.Fprintln(stdout, "done")
+	_, _ = fmt.Fprintln(stdout, "done")
 
 	for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
 		for _, currArtifactPath := range productTaskOutputInfo.ProductDistArtifactPaths()[currDistID] {
@@ -212,7 +212,7 @@ func githubUploadReleaseAssetWithProgress(ctx context.Context, client *github.Cl
 		return nil, nil, errors.New("the asset to upload can't be a directory")
 	}
 
-	fmt.Fprintf(stdout, "Uploading %s to %s\n", file.Name(), uploadURI)
+	_, _ = fmt.Fprintf(stdout, "Uploading %s to %s\n", file.Name(), uploadURI)
 	bar := pb.New(int(stat.Size())).SetUnits(pb.U_BYTES)
 	bar.Output = stdout
 	bar.SetMaxWidth(120)

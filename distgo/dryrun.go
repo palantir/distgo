@@ -26,7 +26,7 @@ func DryRunPrintln(w io.Writer, msg string) {
 }
 
 func DryRunPrint(w io.Writer, msg string) {
-	fmt.Fprint(w, dryRunPrefix+" ", msg)
+	_, _ = fmt.Fprint(w, dryRunPrefix+" ", msg)
 }
 
 func PrintlnOrDryRunPrintln(w io.Writer, msg string, dryRun bool) {
@@ -37,6 +37,6 @@ func PrintOrDryRunPrint(w io.Writer, msg string, dryRun bool) {
 	if dryRun {
 		DryRunPrint(w, msg)
 	} else {
-		fmt.Fprint(w, msg)
+		_, _ = fmt.Fprint(w, msg)
 	}
 }

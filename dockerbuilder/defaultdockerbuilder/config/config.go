@@ -17,7 +17,7 @@ package config
 import (
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/dockerbuilder/defaultdockerbuilder"
-	"github.com/palantir/distgo/dockerbuilder/defaultdockerbuilder/config/internal/v0"
+	v0 "github.com/palantir/distgo/dockerbuilder/defaultdockerbuilder/config/internal/v0"
 )
 
 type Default v0.Config

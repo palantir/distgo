@@ -26,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/palantir/distgo/distgo"
-	"github.com/palantir/distgo/distgo/config/internal/v0"
+	v0 "github.com/palantir/distgo/distgo/config/internal/v0"
 )
 
 func mainPkgsProductsConfig(projectDir string, defaultDisterCfg DisterConfig, exclude matcher.Matcher) (map[distgo.ProductID]ProductConfig, error) {

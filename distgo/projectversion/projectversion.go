@@ -22,6 +22,6 @@ import (
 )
 
 func Run(projectInfo distgo.ProjectInfo, stdout io.Writer) error {
-	fmt.Fprintln(stdout, projectInfo.Version)
+	_, _ = fmt.Fprintln(stdout, projectInfo.Version)
 	return nil
 }

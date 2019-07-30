@@ -171,7 +171,7 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 		// compute SHA-256 Checksums for artifacts
 		if err := p.computeArtifactChecksums(cfg, artifactoryURL, productPath, artifactNames); err != nil {
 			// if triggering checksum computation fails, print message but don't throw error
-			fmt.Fprintln(stdout, "Uploading artifacts succeeded, but failed to trigger computation of SHA-256 checksums:", err)
+			_, _ = fmt.Fprintln(stdout, "Uploading artifacts succeeded, but failed to trigger computation of SHA-256 checksums:", err)
 		}
 	}
 	return uploadedURLs, nil

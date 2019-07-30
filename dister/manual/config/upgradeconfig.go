@@ -19,7 +19,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/palantir/distgo/dister/manual/config/internal/legacy"
-	"github.com/palantir/distgo/dister/manual/config/internal/v0"
+	v0 "github.com/palantir/distgo/dister/manual/config/internal/v0"
 )
 
 func UpgradeConfig(cfgBytes []byte) ([]byte, error) {

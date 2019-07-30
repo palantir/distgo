@@ -29,7 +29,7 @@ func Run(projectParam distgo.ProjectParam, stdout io.Writer) error {
 	}
 	sort.Sort(distgo.ByProductID(productIDs))
 	for _, currProductID := range productIDs {
-		fmt.Fprintln(stdout, currProductID)
+		_, _ = fmt.Fprintln(stdout, currProductID)
 	}
 	return nil
 }
