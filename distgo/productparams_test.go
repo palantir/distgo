@@ -91,6 +91,7 @@ func TestProductParamsForBuildProductArgs(t *testing.T) {
 
 	for i, tc := range []struct {
 		projectParam    distgo.ProjectParam
+		osArchs         []osarch.OSArch
 		productBuildIDs []distgo.ProductBuildID
 		want            []distgo.ProductParam
 		wantError       string
@@ -132,6 +133,46 @@ func TestProductParamsForBuildProductArgs(t *testing.T) {
 					Build: &distgo.BuildParam{
 						OSArchs: []osarch.OSArch{
 							mustOSArch("darwin-amd64"),
+							mustOSArch("linux-amd64"),
+						},
+					},
+				},
+			},
+		},
+		{
+			projectParam: distgo.ProjectParam{
+				Products: map[distgo.ProductID]distgo.ProductParam{
+					"foo": {
+						ID: "foo",
+						Build: &distgo.BuildParam{
+							OSArchs: []osarch.OSArch{
+								mustOSArch("darwin-amd64"),
+								mustOSArch("linux-amd64"),
+							},
+						},
+					},
+					"bar": {
+						ID: "bar",
+						Build: &distgo.BuildParam{
+							OSArchs: []osarch.OSArch{
+								mustOSArch("darwin-amd64"),
+							},
+						},
+					},
+				},
+			},
+			osArchs: []osarch.OSArch{
+				{
+					OS:   "linux",
+					Arch: "amd64",
+				},
+			},
+			productBuildIDs: nil,
+			want: []distgo.ProductParam{
+				{
+					ID: "foo",
+					Build: &distgo.BuildParam{
+						OSArchs: []osarch.OSArch{
 							mustOSArch("linux-amd64"),
 						},
 					},
@@ -238,7 +279,7 @@ func TestProductParamsForBuildProductArgs(t *testing.T) {
 			wantError: "build product(s) [bar.linux-amd64] not valid -- valid values are [bar bar.darwin-amd64 foo foo.darwin-amd64 foo.linux-amd64]",
 		},
 	} {
-		products, err := distgo.ProductParamsForBuildProductArgs(tc.projectParam.Products, tc.productBuildIDs...)
+		products, err := distgo.ProductParamsForBuildProductArgs(tc.projectParam.Products, tc.osArchs, tc.productBuildIDs...)
 		if tc.wantError == "" {
 			assert.Equal(t, tc.want, products, "Case %d", i)
 		} else {

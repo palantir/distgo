@@ -43,10 +43,11 @@ type Options struct {
 	Parallel bool
 	Install  bool
 	DryRun   bool
+	OSArchs  []osarch.OSArch
 }
 
 func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productBuildIDs []distgo.ProductBuildID, buildOpts Options, stdout io.Writer) error {
-	productParams, err := distgo.ProductParamsForBuildProductArgs(projectParam.Products, productBuildIDs...)
+	productParams, err := distgo.ProductParamsForBuildProductArgs(projectParam.Products, buildOpts.OSArchs, productBuildIDs...)
 	if err != nil {
 		return err
 	}
