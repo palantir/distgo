@@ -15,7 +15,7 @@
 package config
 
 import (
-	"github.com/palantir/distgo/publisher/bintray/config/internal/v0"
+	v0 "github.com/palantir/distgo/publisher/bintray/config/internal/v0"
 )
 
 type Bintray v0.Config

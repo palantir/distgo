@@ -20,7 +20,7 @@ import (
 
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/config/internal/legacy"
-	"github.com/palantir/distgo/distgo/config/internal/v0"
+	v0 "github.com/palantir/distgo/distgo/config/internal/v0"
 )
 
 func UpgradeConfig(

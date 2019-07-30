@@ -189,7 +189,7 @@ func (b *BasicConnectionInfo) UploadFile(fileInfo FileInfo, baseURL, artifactNam
 			errMsgParts = append(errMsgParts, filePath)
 		}
 		errMsgParts = append(errMsgParts, fmt.Sprintf("already exists at %s, skipping upload.\n", rawUploadURL))
-		fmt.Fprintf(stdout, strings.Join(errMsgParts, " "))
+		_, _ = fmt.Fprintf(stdout, strings.Join(errMsgParts, " "))
 		return rawUploadURL, nil
 	}
 

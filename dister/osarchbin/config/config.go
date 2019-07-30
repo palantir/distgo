@@ -18,7 +18,7 @@ import (
 	"github.com/palantir/godel/pkg/osarch"
 
 	"github.com/palantir/distgo/dister/osarchbin"
-	"github.com/palantir/distgo/dister/osarchbin/config/internal/v0"
+	v0 "github.com/palantir/distgo/dister/osarchbin/config/internal/v0"
 	"github.com/palantir/distgo/distgo"
 )
 

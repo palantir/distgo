@@ -71,7 +71,7 @@ func (b *printDockerfileDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, 
 	if err != nil {
 		return errors.Wrapf(err, "failed to read Dockerfile at %s", fullDockerfilePath)
 	}
-	fmt.Fprint(stdout, string(bytes))
+	_, _ = fmt.Fprint(stdout, string(bytes))
 	return nil
 }
 
@@ -604,7 +604,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 							Repository: stringPtr("registry-host:5000"),
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type: stringPtr(printDockerfileDockerBuilderTypeName),
+									Type:                     stringPtr(printDockerfileDockerBuilderTypeName),
 									DisableTemplateRendering: boolPtr(true),
 									ContextDir:               stringPtr("docker-context-dir"),
 									InputProductsDir:         stringPtr("input-products"),

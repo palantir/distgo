@@ -180,7 +180,7 @@ func printArtifacts(artifacts map[distgo.ProductID][]string, opts *printArtifact
 	sort.Strings(outputs)
 
 	for _, output := range outputs {
-		fmt.Fprintln(stdout, output)
+		_, _ = fmt.Fprintln(stdout, output)
 	}
 	return nil
 }

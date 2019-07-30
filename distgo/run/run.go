@@ -69,7 +69,7 @@ func Product(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, r
 	cmd.Stderr = stderr
 	cmd.Stdin = os.Stdin
 
-	fmt.Fprintln(stdout, strings.Join(args, " "))
+	_, _ = fmt.Fprintln(stdout, strings.Join(args, " "))
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "go run failed")
 	}
