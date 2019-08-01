@@ -26,8 +26,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func WriteScript(projectInfo ProjectInfo, script string) (name string, cleanup func() error, rErr error) {
-	tmpFile, err := ioutil.TempFile(projectInfo.ProjectDir, "")
+func WriteScript(outputDir, script string) (name string, cleanup func() error, rErr error) {
+	tmpFile, err := ioutil.TempFile(outputDir, "")
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "Failed to create script file")
 	}
@@ -60,10 +60,10 @@ func WriteScript(projectInfo ProjectInfo, script string) (name string, cleanup f
 	return tmpFile.Name(), cleanup, nil
 }
 
-func WriteAndExecuteScript(projectInfo ProjectInfo, script string, additionalEnvVars map[string]string, stdOut io.Writer) (rErr error) {
+func WriteAndExecuteScript(projectInfo ProjectInfo, outputDir, script string, additionalEnvVars map[string]string, stdOut io.Writer) (rErr error) {
 	// if script exists, write it as a temporary file and execute it
 	if script != "" {
-		tmpFile, cleanup, err := WriteScript(projectInfo, script)
+		tmpFile, cleanup, err := WriteScript(outputDir, script)
 		if err != nil {
 			return err
 		}
@@ -95,7 +95,7 @@ func WriteAndExecuteScript(projectInfo ProjectInfo, script string, additionalEnv
 
 func BuildArgsFromScript(productTaskOutputInfo ProductTaskOutputInfo, buildArgsScript string) ([]string, error) {
 	outputBuf := &bytes.Buffer{}
-	if err := WriteAndExecuteScript(productTaskOutputInfo.Project, buildArgsScript, BuildScriptEnvVariables(productTaskOutputInfo), outputBuf); err != nil {
+	if err := WriteAndExecuteScript(productTaskOutputInfo.Project, productTaskOutputInfo.Project.ProjectDir, buildArgsScript, BuildScriptEnvVariables(productTaskOutputInfo), outputBuf); err != nil {
 		return nil, errors.Wrapf(err, "failed to execute build args script for %s: %s", productTaskOutputInfo.Product.ID, outputBuf.String())
 	}
 
@@ -108,7 +108,7 @@ func BuildArgsFromScript(productTaskOutputInfo ProductTaskOutputInfo, buildArgsS
 
 func DockerBuildArgsFromScript(dockerID DockerID, productTaskOutputInfo ProductTaskOutputInfo, buildArgsScript string) ([]string, error) {
 	outputBuf := &bytes.Buffer{}
-	if err := WriteAndExecuteScript(productTaskOutputInfo.Project, buildArgsScript, DockerScriptEnvVariables(dockerID, productTaskOutputInfo), outputBuf); err != nil {
+	if err := WriteAndExecuteScript(productTaskOutputInfo.Project, productTaskOutputInfo.Project.ProjectDir, buildArgsScript, DockerScriptEnvVariables(dockerID, productTaskOutputInfo), outputBuf); err != nil {
 		return nil, errors.Wrapf(err, "failed to execute docker build args script for dockerID %s for product %s: %s", dockerID, productTaskOutputInfo.Product.ID, outputBuf.String())
 	}
 

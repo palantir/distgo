@@ -72,7 +72,7 @@ func Run(projectInfo distgo.ProjectInfo, productParams []distgo.ProductParam, bu
 		}
 
 		// execute build script
-		if err := distgo.WriteAndExecuteScript(projectInfo, currProductParam.Build.Script, distgo.BuildScriptEnvVariables(currProductTaskOutputInfo), stdout); err != nil {
+		if err := distgo.WriteAndExecuteScript(projectInfo, projectInfo.ProjectDir, currProductParam.Build.Script, distgo.BuildScriptEnvVariables(currProductTaskOutputInfo), stdout); err != nil {
 			return errors.Wrapf(err, "failed to execute build script")
 		}
 

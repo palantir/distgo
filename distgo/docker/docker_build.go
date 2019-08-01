@@ -187,7 +187,7 @@ func runSingleDockerBuild(
 		}
 
 		// write and execute Docker script
-		if err := distgo.WriteAndExecuteScript(projectInfo, dockerBuilderParam.Script, distgo.DockerScriptEnvVariables(dockerID, productTaskOutputInfo), stdout); err != nil {
+		if err := distgo.WriteAndExecuteScript(projectInfo, projectInfo.ProjectDir, dockerBuilderParam.Script, distgo.DockerScriptEnvVariables(dockerID, productTaskOutputInfo), stdout); err != nil {
 			return errors.Wrapf(err, "failed to execute Docker script")
 		}
 

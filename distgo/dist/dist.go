@@ -162,7 +162,7 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, dryRu
 				return err
 			}
 			// execute dist script
-			if err := distgo.WriteAndExecuteScript(projectInfo, currDistParam.Script, distgo.DistScriptEnvVariables(currDistID, productTaskOutputInfo), stdout); err != nil {
+			if err := distgo.WriteAndExecuteScript(projectInfo, distWorkDir, currDistParam.Script, distgo.DistScriptEnvVariables(currDistID, productTaskOutputInfo), stdout); err != nil {
 				return errors.Wrapf(err, "failed to execute dist script")
 			}
 			// generate dist artifacts
