@@ -15,6 +15,7 @@
 package imports
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -44,16 +45,25 @@ func (g GoFiles) NewerThan(fi os.FileInfo) (bool, error) {
 }
 
 // AllFiles returns a map that contains all of the non-standard library Go files that are imported by (and thus are
-// required to build) the package at the specified file path (including the package itself). The keys in the returned
+// required to build) the package at the specified file path (including the package itself) using the specified GOOS and
+// GOARCH. If GOOS or GOARCH is empty, the default value for the current environment is used. The keys in the returned
 // map are the package or module names and the values are a slice of the paths of the .go source files in the package
 // (excluding Cgo and test files).
-func AllFiles(pkgDir string) (GoFiles, error) {
+func AllFiles(pkgDir, goos, goarch string) (GoFiles, error) {
 	// package or module name to all non-test Go files in the package
 	pkgFiles := make(map[string][]string)
 
+	env := os.Environ()
+	if goos != "" {
+		env = append(env, fmt.Sprintf("GOOS=%s", goos))
+	}
+	if goarch != "" {
+		env = append(env, fmt.Sprintf("GOARCH=%s", goarch))
+	}
 	cfg := &packages.Config{
 		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles | packages.NeedImports,
 		Dir:  pkgDir,
+		Env:  env,
 	}
 	pkgs, err := packages.Load(cfg, ".")
 	if err != nil {

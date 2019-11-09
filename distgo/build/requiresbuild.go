@@ -47,7 +47,7 @@ func RequiresBuild(projectInfo distgo.ProjectInfo, productParam distgo.ProductPa
 	var requiresBuildOSArchs []osarch.OSArch
 	for _, currOSArch := range productParam.Build.OSArchs {
 		if fi, err := os.Stat(pathsMap[currOSArch]); err == nil {
-			if goFiles, err := imports.AllFiles(path.Join(projectInfo.ProjectDir, productParam.Build.MainPkg)); err == nil {
+			if goFiles, err := imports.AllFiles(path.Join(projectInfo.ProjectDir, productParam.Build.MainPkg), currOSArch.OS, currOSArch.Arch); err == nil {
 				if newerThan, err := goFiles.NewerThan(fi); err == nil && !newerThan {
 					// if the build artifact for the product already exists and none of the source files for the
 					// product are newer than the build artifact, consider spec up-to-date

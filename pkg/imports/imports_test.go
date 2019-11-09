@@ -171,7 +171,7 @@ func TestAllFilesGoModOff(t *testing.T) {
 			_, err = gofiles.Write(currProjectDir, currCase.files)
 			require.NoError(t, err, "Case %d", i)
 
-			got, err := imports.AllFiles(currProjectDir)
+			got, err := imports.AllFiles(currProjectDir, "", "")
 			require.NoError(t, err, "Case %d", i)
 			assert.Equal(t, currCase.want(currProjectDir), got, "Case %d", i)
 		})
@@ -341,7 +341,7 @@ func TestAllFilesGoModOn(t *testing.T) {
 			_, err = gofiles.Write(currProjectDir, currCase.files)
 			require.NoError(t, err, "Case %d", i)
 
-			got, err := imports.AllFiles(currProjectDir)
+			got, err := imports.AllFiles(currProjectDir, "", "")
 			require.NoError(t, err, "Case %d", i)
 			assert.Equal(t, currCase.want(currProjectDir), got, "Case %d", i)
 		})
@@ -370,7 +370,7 @@ func TestNewerThanFileIsNewer(t *testing.T) {
 	err = ioutil.WriteFile(path.Join(tmpDir, "main.go"), []byte(`package main; import "fmt"; func main() {}`), 0644)
 	require.NoError(t, err)
 
-	goFiles, err := imports.AllFiles(tmpDir)
+	goFiles, err := imports.AllFiles(tmpDir, "", "")
 	require.NoError(t, err)
 
 	newer, err := goFiles.NewerThan(fi)
@@ -390,7 +390,7 @@ func TestNewerThanFileIsNotNewer(t *testing.T) {
 	err = ioutil.WriteFile(path.Join(tmpDir, "main.go"), []byte(`package main; import "fmt"; func main() {}`), 0644)
 	require.NoError(t, err)
 
-	goFiles, err := imports.AllFiles(tmpDir)
+	goFiles, err := imports.AllFiles(tmpDir, "", "")
 	require.NoError(t, err)
 
 	// sleep for 1 second to ensure that mtimes differ
