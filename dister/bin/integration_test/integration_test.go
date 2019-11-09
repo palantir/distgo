@@ -50,6 +50,10 @@ func TestBinDist(t *testing.T) {
 				Name: "bin creates expected output",
 				Specs: []gofiles.GoFileSpec{
 					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
 					},
@@ -109,6 +113,10 @@ Finished creating bin distribution for foo
 			{
 				Name: "bin compresses work directory and includes output created by script",
 				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
@@ -177,6 +185,10 @@ Finished creating bin distribution for foo
 			{
 				Name: "bin is able to create a valid TGZ archive containing long paths",
 				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
