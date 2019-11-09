@@ -15,13 +15,11 @@
 package imports
 
 import (
-	"go/build"
 	"os"
-	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
+	"golang.org/x/tools/go/packages"
 )
 
 // GoFiles is a map from package paths to the names of the buildable .go source files (.go files excluding Cgo and test
@@ -30,9 +28,9 @@ type GoFiles map[string][]string
 
 // NewerThan returns true if the modification time of any of the GoFiles is newer than that of the provided file.
 func (g GoFiles) NewerThan(fi os.FileInfo) (bool, error) {
-	for pkg, files := range g {
+	for _, files := range g {
 		for _, goFile := range files {
-			currPath := path.Join(pkg, goFile)
+			currPath := goFile
 			currFi, err := os.Stat(currPath)
 			if err != nil {
 				return false, errors.Wrapf(err, "Failed to stat file %v", currPath)
@@ -45,51 +43,42 @@ func (g GoFiles) NewerThan(fi os.FileInfo) (bool, error) {
 	return false, nil
 }
 
-// AllFiles returns a map that contains all of the non-standard library Go files that are imported (and thus required to
-// build) the specified package (including the package itself). The keys in the returned map are the paths to the
-// packages and the values are a slice of the names of the .go source files in the package (excluding Cgo and test
-// files).
-func AllFiles(pkgPath string) (GoFiles, error) {
-	// package name to all non-test Go files in the package
+// AllFiles returns a map that contains all of the non-standard library Go files that are imported by (and thus are
+// required to build) the package at the specified file path (including the package itself). The keys in the returned
+// map are the package or module names and the values are a slice of the paths of the .go source files in the package
+// (excluding Cgo and test files).
+func AllFiles(pkgDir string) (GoFiles, error) {
+	// package or module name to all non-test Go files in the package
 	pkgFiles := make(map[string][]string)
 
-	absPkgPath, err := filepath.Abs(pkgPath)
+	cfg := &packages.Config{
+		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles | packages.NeedImports,
+		Dir:  pkgDir,
+	}
+	pkgs, err := packages.Load(cfg, ".")
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to convert %v to absolute path", pkgPath)
+		return nil, err
 	}
-
-	pkgsToProcess := []string{
-		absPkgPath,
-	}
+	pkgsToProcess := pkgs
 
 	for len(pkgsToProcess) > 0 {
 		currPkg := pkgsToProcess[0]
 		pkgsToProcess = pkgsToProcess[1:]
-		if _, ok := pkgFiles[currPkg]; ok {
+		if _, ok := pkgFiles[currPkg.PkgPath]; ok {
 			continue
 		}
 
-		// parse current package
-		pkg, err := build.Import(".", currPkg, build.ImportComment)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to import package %v", currPkg)
-		}
-
 		// add all files for the current package to output
-		pkgFiles[currPkg] = pkg.GoFiles
+		pkgFiles[currPkg.PkgPath] = currPkg.GoFiles
 
 		// convert all non-built-in imports into packages and add to packages to process
-		for importPath := range pkg.ImportPos {
+		for importPath, importPkg := range currPkg.Imports {
 			if !strings.Contains(importPath, ".") {
 				// if import is a standard package, skip
 				continue
 			}
-			importPkg, err := build.Import(importPath, currPkg, build.ImportComment)
-			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to import package %v using srcDir %v", importPath, currPkg)
-			}
-			pkgsToProcess = append(pkgsToProcess, importPkg.Dir)
+			pkgsToProcess = append(pkgsToProcess, importPkg)
 		}
 	}
-	return GoFiles(pkgFiles), nil
+	return pkgFiles, nil
 }
