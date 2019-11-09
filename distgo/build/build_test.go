@@ -182,6 +182,9 @@ echo "-X \"main.testVersionVar=$VALUE\""`
 		err = os.MkdirAll(path.Dir(mainFilePath), 0755)
 		require.NoError(t, err, "Case %d", i)
 
+		err = ioutil.WriteFile(path.Join(currTmpDir, "go.mod"), []byte("module foo"), 0644)
+		require.NoError(t, err, "Case %d", i)
+
 		err = ioutil.WriteFile(mainFilePath, []byte(tc.mainFileContent), 0644)
 		require.NoError(t, err, "Case %d", i)
 
@@ -279,6 +282,10 @@ func TestBuildOnlySpecifiedOSArchs(t *testing.T) {
 		projectInfo := distgo.ProjectInfo{
 			ProjectDir: tmp,
 		}
+
+		err = ioutil.WriteFile(path.Join(tmp, "go.mod"), []byte("module foo"), 0644)
+		require.NoError(t, err, "Case %d", i)
+
 		productParam := createBuildProductParam(func(param *distgo.ProductParam) {
 			param.Build.MainPkg = "./foo"
 			param.Build.OSArchs = tc.specOSArchs
@@ -455,6 +462,9 @@ func TestBuildAllParallel(t *testing.T) {
 	} {
 		currTmpDir, err := ioutil.TempDir(tmp, "")
 		require.NoError(t, err)
+
+		err = ioutil.WriteFile(path.Join(currTmpDir, "go.mod"), []byte("module foo"), 0644)
+		require.NoError(t, err, "Case %d", i)
 
 		for file, content := range tc.mainFiles {
 			err := os.MkdirAll(path.Join(currTmpDir, path.Dir(file)), 0755)

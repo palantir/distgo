@@ -441,6 +441,8 @@ func main() {}
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 		err = ioutil.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
+		err = ioutil.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
+		require.NoError(t, err, "Case %d: %s", i, tc.name)
 		gittest.CommitAllFiles(t, projectDir, "Commit")
 
 		if tc.preDistAction != nil {

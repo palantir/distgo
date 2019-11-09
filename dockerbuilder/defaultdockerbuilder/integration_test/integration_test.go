@@ -46,6 +46,10 @@ func TestDocker(t *testing.T) {
 				Name: "builds Docker image",
 				Specs: []gofiles.GoFileSpec{
 					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
 					},
@@ -90,6 +94,10 @@ products:
 			{
 				Name: "uses Docker build arguments",
 				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
@@ -142,6 +150,10 @@ products:
 			{
 				Name: "filters Docker tags based on flag",
 				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,

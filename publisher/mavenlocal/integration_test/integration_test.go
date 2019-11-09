@@ -52,6 +52,10 @@ func TestMavenLocalPublish(t *testing.T) {
 				Name: "publishes artifact and POM to M2 home by default",
 				Specs: []gofiles.GoFileSpec{
 					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
 					},
@@ -84,6 +88,10 @@ products:
 				Name: "skips POM publish based on flag",
 				Specs: []gofiles.GoFileSpec{
 					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
 					},
@@ -115,6 +123,10 @@ products:
 			{
 				Name: "skips POM publish based on configuration",
 				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
@@ -151,6 +163,10 @@ products:
 				Name: "publishes artifact and POM to local directory",
 				Specs: []gofiles.GoFileSpec{
 					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
 					},
@@ -185,6 +201,10 @@ products:
 			{
 				Name: "verify content of published POM",
 				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
@@ -234,6 +254,10 @@ Copying artifact from out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to out/pub
 			{
 				Name: "publishes artifact and POM to current directory using '.'",
 				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,

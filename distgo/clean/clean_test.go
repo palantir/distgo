@@ -80,6 +80,10 @@ func TestClean(t *testing.T) {
 			func(projectDir string) {
 				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
 					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
 						RelPath: "foo/main.go",
 						Src:     "package main; func main(){}",
 					},
@@ -126,6 +130,10 @@ func TestClean(t *testing.T) {
 			},
 			func(projectDir string) {
 				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/main.go",
 						Src:     "package main; func main(){}",
@@ -190,6 +198,10 @@ func TestClean(t *testing.T) {
 			func(projectDir string) {
 				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
 					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
 						RelPath: "foo/main.go",
 						Src:     "package main; func main(){}",
 					},
@@ -247,6 +259,10 @@ func TestClean(t *testing.T) {
 			},
 			func(projectDir string) {
 				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/main.go",
 						Src:     "package main; func main(){}",
@@ -319,6 +335,10 @@ func TestClean(t *testing.T) {
 			},
 			func(projectDir string) {
 				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/main.go",
 						Src:     "package main; func main(){}",
