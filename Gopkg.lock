@@ -244,6 +244,25 @@
   revision = "dd2ff4accc098aceecb86b36eaa7829b2a17b1c9"
 
 [[projects]]
+  branch = "master"
+  digest = "1:d5a055a7a6dd9c46ead3bb18c513c3d72feb15a969cd866db98e4710aa5a47b1"
+  name = "golang.org/x/tools"
+  packages = [
+    "go/ast/astutil",
+    "go/gcexportdata",
+    "go/internal/gcimporter",
+    "go/internal/packagesdriver",
+    "go/packages",
+    "go/types/typeutil",
+    "internal/fastwalk",
+    "internal/gopathwalk",
+    "internal/semver",
+    "internal/span",
+  ]
+  pruneopts = "UT"
+  revision = "7d206e10da11c2c24ecc75fc000f2924f811b649"
+
+[[projects]]
   digest = "1:9cf45e754ab2dff5f53a553e6948b994ff738e4d1092ca608dcada945d8be0ef"
   name = "google.golang.org/appengine"
   packages = [
@@ -303,6 +322,7 @@
     "github.com/stretchr/testify/require",
     "github.com/termie/go-shutil",
     "golang.org/x/oauth2",
+    "golang.org/x/tools/go/packages",
     "gopkg.in/cheggaaa/pb.v1",
     "gopkg.in/yaml.v2",
   ]
