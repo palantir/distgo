@@ -30,13 +30,6 @@ workflows:
           name: test
           <<: *executor
           <<: *all-tags-filter
-      - godel/test:
-          name: test-1.12
-          executor:
-            name: go/golang
-            version: 1.12.12
-            <<: *owner-repo
-          <<: *all-tags-filter
       - godel/dist:
           name: dist
           <<: *executor
@@ -50,7 +43,6 @@ workflows:
           requires:
             - verify
             - test
-            - test-1.12
             - dist
           filters:
             tags:
