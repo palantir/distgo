@@ -61,6 +61,10 @@ func TestBuildArtifactsDefaultOutput(t *testing.T) {
 			func(projectDir string) {
 				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
 					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
 						RelPath: "main.go",
 						Src:     `package main`,
 					},

@@ -48,6 +48,10 @@ func TestGitHubPublish(t *testing.T) {
 				Name: "publishes artifact to GitHub",
 				Specs: []gofiles.GoFileSpec{
 					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
 					},

@@ -26,36 +26,23 @@ workflows:
           name: verify
           <<: *executor
           <<: *all-tags-filter
-          mod-cache: false
       - godel/test:
           name: test
           <<: *executor
           <<: *all-tags-filter
-          mod-cache: false
-      - godel/test:
-          name: test-1.12
-          executor:
-            name: go/golang
-            version: 1.12.12
-            <<: *owner-repo
-          <<: *all-tags-filter
-          mod-cache: false
       - godel/dist:
           name: dist
           <<: *executor
           <<: *all-tags-filter
-          mod-cache: false
       - godel/bintray-publish:
           name: publish
           <<: *executor
-          mod-cache: false
           bintray-subject: palantir
           bintray-repo: releases
           bintray-product: distgo
           requires:
             - verify
             - test
-            - test-1.12
             - dist
           filters:
             tags:

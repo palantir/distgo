@@ -49,6 +49,10 @@ func TestManualDist(t *testing.T) {
 				Name: "manual creates output with script",
 				Specs: []gofiles.GoFileSpec{
 					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
 					},
@@ -98,6 +102,10 @@ Finished creating manual distribution for foo
 			{
 				Name: "manual fails if script does not create expected output",
 				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,

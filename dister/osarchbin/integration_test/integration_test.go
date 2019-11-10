@@ -52,6 +52,10 @@ func TestOSArchBinDist(t *testing.T) {
 				Name: "os-arch-bin creates expected output",
 				Specs: []gofiles.GoFileSpec{
 					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
 					},
@@ -107,6 +111,10 @@ Finished creating os-arch-bin distribution for foo
 			{
 				Name: "os-arch-bin allows customized output",
 				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,

@@ -49,6 +49,10 @@ func TestArtifactoryPublish(t *testing.T) {
 				Name: "publishes artifact and POM to Artifactory",
 				Specs: []gofiles.GoFileSpec{
 					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
 					},
@@ -86,6 +90,10 @@ products:
 			{
 				Name: "skips POM publish based on configuration",
 				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
@@ -125,6 +133,10 @@ products:
 				Name: "can use flags to specify values",
 				Specs: []gofiles.GoFileSpec{
 					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
 					},
@@ -162,6 +174,10 @@ products:
 				Name: "can use flags to specify values including no-pom",
 				Specs: []gofiles.GoFileSpec{
 					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
 					},
@@ -198,6 +214,10 @@ products:
 			{
 				Name: "publishes multiple artifacts and POM to Artifactory",
 				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
@@ -248,6 +268,10 @@ products:
 			{
 				Name: "appends properties to publish URL",
 				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
@@ -313,6 +337,10 @@ func TestArtifactoryPublishRendersPropertiesGoTemplates(t *testing.T) {
 			{
 				Name: "appends properties with env vars to publish URL",
 				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
 					{
 						RelPath: "foo/foo.go",
 						Src:     `package main; func main() {}`,
