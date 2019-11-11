@@ -1,3 +1,7 @@
+<p align="right">
+<a href="https://autorelease.general.dmz.palantir.tech/palantir/distgo"><img src="https://img.shields.io/badge/Perform%20an-Autorelease-success.svg" alt="Autorelease"></a>
+</p>
+
 distgo
 ======
 distgo is a gödel plugin that runs, builds, distributes and publishes products in a Go project based on declarative
