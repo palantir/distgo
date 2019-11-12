@@ -24,7 +24,7 @@ import (
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
-	"github.com/palantir/godel/pkg/osarch"
+	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/gittest"
 	"github.com/palantir/pkg/matcher"
 	"github.com/stretchr/testify/assert"

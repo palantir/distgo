@@ -17,7 +17,7 @@ package distgo_test
 import (
 	"testing"
 
-	"github.com/palantir/godel/pkg/osarch"
+	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/palantir/distgo/dister/osarchbin"

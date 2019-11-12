@@ -17,7 +17,7 @@ package distgo
 import (
 	"fmt"
 
-	"github.com/palantir/godel/pkg/osarch"
+	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/pkg/errors"
 )
 
@@ -60,7 +60,7 @@ type BuildParam struct {
 	BuildArgsScript string
 
 	// VersionVar is the path to a variable that is set with the version information for the build. For example,
-	// "github.com/palantir/godel/cmd/godel.Version". If specified, it is provided to the "build" command as an
+	// "github.com/palantir/godel/v2/cmd/godel.Version". If specified, it is provided to the "build" command as an
 	// ldflag.
 	VersionVar string
 

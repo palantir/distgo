@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	"github.com/nmiyake/pkg/gofiles"
-	"github.com/palantir/godel/framework/pluginapitester"
-	"github.com/palantir/godel/pkg/products/v2/products"
+	"github.com/palantir/godel/v2/framework/pluginapitester"
+	"github.com/palantir/godel/v2/pkg/products"
 	"github.com/stretchr/testify/require"
 
 	"github.com/palantir/distgo/dockerbuilder/dockerbuildertester"

@@ -15,7 +15,7 @@
 package cmd
 
 import (
-	"github.com/palantir/godel/framework/pluginapi/v2/pluginapi"
+	"github.com/palantir/godel/v2/framework/pluginapi/v2/pluginapi"
 	"github.com/spf13/cobra"
 )
 

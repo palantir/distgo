@@ -15,7 +15,7 @@
 package v0
 
 import (
-	"github.com/palantir/godel/pkg/osarch"
+	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )

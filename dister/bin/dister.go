@@ -21,7 +21,7 @@ import (
 	"sort"
 
 	"github.com/mholt/archiver"
-	"github.com/palantir/godel/pkg/osarch"
+	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/pkg/errors"
 	"github.com/termie/go-shutil"
 

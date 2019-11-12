@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/nmiyake/pkg/dirs"
-	"github.com/palantir/godel/pkg/osarch"
+	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/gittest"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"

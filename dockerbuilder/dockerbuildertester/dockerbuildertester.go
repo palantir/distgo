@@ -26,7 +26,7 @@ import (
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
-	"github.com/palantir/godel/framework/pluginapitester"
+	"github.com/palantir/godel/v2/framework/pluginapitester"
 	"github.com/palantir/pkg/gittest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
