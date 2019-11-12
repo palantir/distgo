@@ -26,7 +26,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/palantir/godel/pkg/osarch"
+	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/signals"
 	"github.com/pkg/errors"
 

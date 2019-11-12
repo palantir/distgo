@@ -26,8 +26,10 @@ github.com/nmiyake/pkg v0.0.0-20170627000939-b64318170fde h1:mbX9O6OxpIoONUqof/P
 github.com/nmiyake/pkg v0.0.0-20170627000939-b64318170fde/go.mod h1:1mqQ24p9iRljD6gKVkWOwMJRvbzgbyAtb0zALIt0lis=
 github.com/nwaples/rardecode v0.0.0-20171029023500-e06696f847ae h1:UF9xsJn7AeQ72TCus3eRO1lh08Id3AoF37vl+qigL/w=
 github.com/nwaples/rardecode v0.0.0-20171029023500-e06696f847ae/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
-github.com/palantir/godel v2.14.0+incompatible h1:votp3K0BDunem81cb8b3xdhFT/n3dgQ8q5mEzlso3d8=
-github.com/palantir/godel v2.14.0+incompatible/go.mod h1:y5sjaV4I8yAOiKeuML5FxFHOpWvXCyPPj79/5PQLq0E=
+github.com/palantir/distgo v1.2.0/go.mod h1:jOCcoLD92T/eN4VfRxczaDIWsqyy1f0yQZMFOt3cJCw=
+github.com/palantir/godel/v2 v2.22.0 h1:6uzSkN72gJO07QBxgSw3wmr63sr3NN1AkcJUXlmNfkI=
+github.com/palantir/godel/v2 v2.22.0/go.mod h1:Da/HS4lwo4j/v/PpmpJxgfamjg4Jwp6qPSnPzAr0Ppk=
+github.com/palantir/pkg v0.0.0-20181230161202-d12f4064ff8e/go.mod h1:jLbXCfQ4HRrT5RRj5JuKc1ucQeridBMyRCpmzRtUYMY=
 github.com/palantir/pkg v0.0.0-20190110173045-b2b34217111b h1:h/Lag7MAYKnTP+rUncoOXYRoMa34Xp7oX2/RXE8e15Y=
 github.com/palantir/pkg v0.0.0-20190110173045-b2b34217111b/go.mod h1:jLbXCfQ4HRrT5RRj5JuKc1ucQeridBMyRCpmzRtUYMY=
 github.com/pkg/errors v0.8.0 h1:WdK/asTD0HN+q6hsWO3/vpuAkAr+tw6aNJNDFFf0+qw=

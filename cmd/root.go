@@ -19,8 +19,8 @@ import (
 	"os"
 	"time"
 
-	godelconfig "github.com/palantir/godel/framework/godel/config"
-	"github.com/palantir/godel/framework/pluginapi"
+	godelconfig "github.com/palantir/godel/v2/framework/godel/config"
+	"github.com/palantir/godel/v2/framework/pluginapi"
 	"github.com/palantir/pkg/cobracli"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"

@@ -18,7 +18,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/palantir/godel/pkg/osarch"
+	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/pkg/errors"
 
 	"github.com/palantir/distgo/distgo"

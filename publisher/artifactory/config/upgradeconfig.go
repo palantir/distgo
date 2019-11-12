@@ -15,7 +15,7 @@
 package config
 
 import (
-	"github.com/palantir/godel/pkg/versionedconfig"
+	"github.com/palantir/godel/v2/pkg/versionedconfig"
 	"github.com/pkg/errors"
 
 	v0 "github.com/palantir/distgo/publisher/artifactory/config/internal/v0"
