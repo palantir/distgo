@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v28/github"
 	"github.com/jtacoma/uritemplates"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
