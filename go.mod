@@ -3,8 +3,7 @@ module github.com/palantir/distgo
 go 1.13
 
 require (
-	github.com/golang/protobuf v1.0.0 // indirect
-	github.com/google/go-github v15.0.0+incompatible
+	github.com/google/go-github/v28 v28.1.1
 	github.com/jtacoma/uritemplates v1.0.0
 	github.com/mholt/archiver v2.0.0+incompatible
 	github.com/nmiyake/pkg v0.0.0-20170627000939-b64318170fde
@@ -15,10 +14,9 @@ require (
 	github.com/spf13/pflag v1.0.0
 	github.com/stretchr/testify v1.2.1
 	github.com/termie/go-shutil v0.0.0-20140729215957-bcacb06fecae
-	golang.org/x/oauth2 v0.0.0-20180228173056-2f32c3ac0fa4
+	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/tools v0.0.0-20191109212701-97ad0ed33101
-	google.golang.org/appengine v1.0.0 // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.22
 	gopkg.in/yaml.v2 v2.1.1
 )
