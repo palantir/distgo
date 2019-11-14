@@ -19,7 +19,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/mholt/archiver"
+	"github.com/mholt/archiver/v3"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/godel/v2/framework/pluginapitester"
 	"github.com/palantir/godel/v2/pkg/products"
@@ -348,7 +348,7 @@ func verifyLayoutAndTGZ(t *testing.T, projectDir string, wantLayout specdir.Layo
 	// expand tgz and validate directory layout of expanded tgz
 	tmpDir, err := ioutil.TempDir(projectDir, "expanded")
 	require.NoError(t, err)
-	require.NoError(t, archiver.TarGz.Open(path.Join(projectDir, "out", "dist", "foo", "1.0.0", "bin", "foo-1.0.0.tgz"), tmpDir))
+	require.NoError(t, archiver.DefaultTarGz.Unarchive(path.Join(projectDir, "out", "dist", "foo", "1.0.0", "bin", "foo-1.0.0.tgz"), tmpDir))
 	assert.NoError(t, wantLayout.Validate(path.Join(tmpDir, "foo-1.0.0"), nil))
 }
 

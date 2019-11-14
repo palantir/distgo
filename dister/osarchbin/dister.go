@@ -24,7 +24,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mholt/archiver"
+	"github.com/mholt/archiver/v3"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/pkg/errors"
 	"github.com/termie/go-shutil"
@@ -113,7 +113,7 @@ func (d *Dister) GenerateDistArtifacts(distID distgo.DistID, productTaskOutputIn
 		for i, item := range items {
 			itemPaths[i] = filepath.Join(workDir, item.Name())
 		}
-		if err := archiver.TarGz.Make(artifactPath, itemPaths); err != nil {
+		if err := archiver.DefaultTarGz.Archive(itemPaths, artifactPath); err != nil {
 			return errors.Wrapf(err, "failed to create TGZ archive")
 		}
 	}
