@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/google/go-github/v28 v28.1.1
 	github.com/jtacoma/uritemplates v1.0.0
-	github.com/mholt/archiver v2.0.0+incompatible
+	github.com/mholt/archiver/v3 v3.3.0
 	github.com/nmiyake/pkg v0.0.0-20170627000939-b64318170fde
 	github.com/palantir/godel/v2 v2.22.0
 	github.com/palantir/pkg v0.0.0-20190110173045-b2b34217111b

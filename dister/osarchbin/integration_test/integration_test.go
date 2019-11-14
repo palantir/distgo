@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mholt/archiver"
+	"github.com/mholt/archiver/v3"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/godel/v2/framework/pluginapitester"
 	"github.com/palantir/godel/v2/pkg/products"
@@ -183,7 +183,7 @@ Finished creating os-arch-bin distribution for foo
 					}()
 
 					dist := filepath.Join(projectDir, "out", "dist", "foo", "1.0.0", "os-arch-bin", "foo-1.0.0-linux-amd64.tgz")
-					require.NoError(t, archiver.TarGz.Open(dist, dir))
+					require.NoError(t, archiver.DefaultTarGz.Unarchive(dist, dir))
 
 					arch, err := ioutil.ReadFile(filepath.Join(dir, "os-arch"))
 					require.NoError(t, err)
