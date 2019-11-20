@@ -1,6 +1,6 @@
 # github.com/andybalholm/brotli v0.0.0-20190621154722-5f990b63d2d6
 github.com/andybalholm/brotli
-# github.com/davecgh/go-spew v1.1.0
+# github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/dsnet/compress v0.0.1
 github.com/dsnet/compress
@@ -75,12 +75,17 @@ github.com/palantir/godel/v2/godelgetter
 github.com/palantir/godel/v2/pkg/osarch
 github.com/palantir/godel/v2/pkg/products
 github.com/palantir/godel/v2/pkg/versionedconfig
-# github.com/palantir/pkg v0.0.0-20190110173045-b2b34217111b
+# github.com/palantir/pkg/cobracli v1.0.0
 github.com/palantir/pkg/cobracli
+# github.com/palantir/pkg/gittest v1.0.0
 github.com/palantir/pkg/gittest
+# github.com/palantir/pkg/matcher v1.0.0
 github.com/palantir/pkg/matcher
+# github.com/palantir/pkg/pkgpath v1.0.0
 github.com/palantir/pkg/pkgpath
+# github.com/palantir/pkg/signals v1.0.0
 github.com/palantir/pkg/signals
+# github.com/palantir/pkg/specdir v1.0.0
 github.com/palantir/pkg/specdir
 # github.com/pierrec/lz4 v2.0.5+incompatible
 github.com/pierrec/lz4
@@ -89,9 +94,9 @@ github.com/pierrec/lz4/internal/xxh32
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/spf13/cobra v0.0.2
+# github.com/spf13/cobra v0.0.5
 github.com/spf13/cobra
-# github.com/spf13/pflag v1.0.0
+# github.com/spf13/pflag v1.0.3
 github.com/spf13/pflag
 # github.com/stretchr/testify v1.4.0
 github.com/stretchr/testify/assert
@@ -140,5 +145,5 @@ google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
 # gopkg.in/cheggaaa/pb.v1 v1.0.22
 gopkg.in/cheggaaa/pb.v1
-# gopkg.in/yaml.v2 v2.2.2
+# gopkg.in/yaml.v2 v2.2.5
 gopkg.in/yaml.v2
