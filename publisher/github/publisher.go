@@ -27,14 +27,13 @@ import (
 
 	"github.com/google/go-github/v28/github"
 	"github.com/jtacoma/uritemplates"
+	"github.com/palantir/distgo/distgo"
+	"github.com/palantir/distgo/publisher"
+	"github.com/palantir/distgo/publisher/github/config"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"gopkg.in/cheggaaa/pb.v1"
 	"gopkg.in/yaml.v2"
-
-	"github.com/palantir/distgo/distgo"
-	"github.com/palantir/distgo/publisher"
-	"github.com/palantir/distgo/publisher/github/config"
 )
 
 const TypeName = "github"

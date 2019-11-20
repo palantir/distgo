@@ -17,14 +17,13 @@ package testfuncs
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/palantir/distgo/dister/disterfactory"
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/dockerbuilder/dockerbuilderfactory"
 	"github.com/palantir/distgo/projectversioner/projectversionerfactory"
 	"github.com/palantir/distgo/publisher/publisherfactory"
+	"github.com/stretchr/testify/require"
 )
 
 func NewProjectParam(t *testing.T, projectConfig config.ProjectConfig, projectDir, failMsg string) distgo.ProjectParam {

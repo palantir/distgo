@@ -24,14 +24,13 @@ import (
 	"testing"
 
 	"github.com/nmiyake/pkg/dirs"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/palantir/distgo/dister/disterfactory"
 	"github.com/palantir/distgo/distgo"
 	distgoconfig "github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/distgo/run"
 	"github.com/palantir/distgo/dockerbuilder/dockerbuilderfactory"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (

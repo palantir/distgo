@@ -17,10 +17,9 @@ package publisherfactory
 import (
 	"sort"
 
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/publisher"
+	"github.com/pkg/errors"
 )
 
 func New(providedPublisherCreators []publisher.Creator, providedConfigUpgraders []distgo.ConfigUpgrader) (distgo.PublisherFactory, error) {

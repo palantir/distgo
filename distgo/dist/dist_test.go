@@ -24,18 +24,17 @@ import (
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
-	"github.com/palantir/godel/v2/pkg/osarch"
-	"github.com/palantir/pkg/gittest"
-	"github.com/palantir/pkg/matcher"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/palantir/distgo/dister/disterfactory"
 	"github.com/palantir/distgo/dister/osarchbin"
 	"github.com/palantir/distgo/distgo"
 	distgoconfig "github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/distgo/dist"
 	"github.com/palantir/distgo/distgo/testfuncs"
+	"github.com/palantir/godel/v2/pkg/osarch"
+	"github.com/palantir/pkg/gittest"
+	"github.com/palantir/pkg/matcher"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (

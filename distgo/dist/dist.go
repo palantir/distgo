@@ -25,12 +25,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/palantir/distgo/distgo"
+	"github.com/palantir/distgo/distgo/build"
 	"github.com/palantir/pkg/matcher"
 	"github.com/pkg/errors"
 	"github.com/termie/go-shutil"
-
-	"github.com/palantir/distgo/distgo"
-	"github.com/palantir/distgo/distgo/build"
 )
 
 func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDistIDs []distgo.ProductDistID, dryRun bool, stdout io.Writer) error {

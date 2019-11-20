@@ -19,12 +19,11 @@ import (
 	"testing"
 
 	"github.com/nmiyake/pkg/gofiles"
+	"github.com/palantir/distgo/publisher/publishertester"
 	"github.com/palantir/godel/v2/framework/pluginapitester"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/godel/v2/pkg/products"
 	"github.com/stretchr/testify/require"
-
-	"github.com/palantir/distgo/publisher/publishertester"
 )
 
 func TestGitHubPublish(t *testing.T) {

@@ -17,10 +17,9 @@ package cmd
 import (
 	"time"
 
-	"github.com/spf13/cobra"
-
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/dist"
+	"github.com/spf13/cobra"
 )
 
 var (

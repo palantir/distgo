@@ -17,11 +17,10 @@ package publisher_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/publisher"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSetConfigValueString(t *testing.T) {

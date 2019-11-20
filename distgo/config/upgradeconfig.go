@@ -15,12 +15,11 @@
 package config
 
 import (
-	"github.com/palantir/godel/v2/pkg/versionedconfig"
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/config/internal/legacy"
 	v0 "github.com/palantir/distgo/distgo/config/internal/v0"
+	"github.com/palantir/godel/v2/pkg/versionedconfig"
+	"github.com/pkg/errors"
 )
 
 func UpgradeConfig(

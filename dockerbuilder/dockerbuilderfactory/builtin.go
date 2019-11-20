@@ -15,14 +15,13 @@
 package dockerbuilderfactory
 
 import (
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
-
 	"github.com/palantir/distgo/dister/osarchbin"
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/dockerbuilder"
 	"github.com/palantir/distgo/dockerbuilder/defaultdockerbuilder"
 	defaultdockerbuilderconfig "github.com/palantir/distgo/dockerbuilder/defaultdockerbuilder/config"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 type creatorWithUpgrader struct {

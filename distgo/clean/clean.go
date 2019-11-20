@@ -23,9 +23,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
+	"github.com/pkg/errors"
 )
 
 func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productIDs []distgo.ProductID, dryRun bool, stdout io.Writer) error {

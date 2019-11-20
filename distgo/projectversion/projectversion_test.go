@@ -22,14 +22,13 @@ import (
 	"testing"
 
 	"github.com/nmiyake/pkg/dirs"
-	"github.com/palantir/pkg/gittest"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/projectversion"
 	"github.com/palantir/distgo/projectversioner/git"
 	"github.com/palantir/distgo/projectversioner/script"
+	"github.com/palantir/pkg/gittest"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestProjectVersionDefaultParam(t *testing.T) {

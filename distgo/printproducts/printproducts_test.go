@@ -23,15 +23,14 @@ import (
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
-	"github.com/palantir/pkg/gittest"
-	"github.com/palantir/pkg/matcher"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/palantir/distgo/distgo"
 	distgoconfig "github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/distgo/printproducts"
 	"github.com/palantir/distgo/distgo/testfuncs"
+	"github.com/palantir/pkg/gittest"
+	"github.com/palantir/pkg/matcher"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestProducts(t *testing.T) {

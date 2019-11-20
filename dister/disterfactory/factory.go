@@ -15,10 +15,9 @@
 package disterfactory
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/dister"
 	"github.com/palantir/distgo/distgo"
+	"github.com/pkg/errors"
 )
 
 func New(providedDisterCreators []dister.Creator, providedConfigUpgraders []distgo.ConfigUpgrader) (distgo.DisterFactory, error) {

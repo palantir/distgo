@@ -23,13 +23,12 @@ import (
 	"path"
 	"strings"
 
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
-
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/publisher"
 	"github.com/palantir/distgo/publisher/bintray/config"
 	"github.com/palantir/distgo/publisher/maven"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 const TypeName = "bintray"

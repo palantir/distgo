@@ -15,9 +15,6 @@
 package disterfactory
 
 import (
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
-
 	"github.com/palantir/distgo/dister"
 	"github.com/palantir/distgo/dister/bin"
 	binconfig "github.com/palantir/distgo/dister/bin/config"
@@ -26,6 +23,8 @@ import (
 	"github.com/palantir/distgo/dister/osarchbin"
 	osarchbinconfig "github.com/palantir/distgo/dister/osarchbin/config"
 	"github.com/palantir/distgo/distgo"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 type creatorWithUpgrader struct {

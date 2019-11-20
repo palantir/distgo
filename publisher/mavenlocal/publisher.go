@@ -23,14 +23,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
-	"github.com/termie/go-shutil"
-	"gopkg.in/yaml.v2"
-
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/publisher"
 	"github.com/palantir/distgo/publisher/maven"
 	"github.com/palantir/distgo/publisher/mavenlocal/config"
+	"github.com/pkg/errors"
+	"github.com/termie/go-shutil"
+	"gopkg.in/yaml.v2"
 )
 
 const TypeName = "maven-local" // publishes output artifacts to a location in the local filesystem

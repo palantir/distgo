@@ -21,11 +21,10 @@ import (
 	"sort"
 
 	"github.com/mholt/archiver/v3"
+	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/pkg/errors"
 	"github.com/termie/go-shutil"
-
-	"github.com/palantir/distgo/distgo"
 )
 
 const TypeName = "bin" // distribution that consists of the binaries in a "bin" directory

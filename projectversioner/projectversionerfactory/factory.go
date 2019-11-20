@@ -15,10 +15,9 @@
 package projectversionerfactory
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/projectversioner"
+	"github.com/pkg/errors"
 )
 
 func New(providedProjectVersionerCreators []projectversioner.Creator, providedConfigUpgraders []distgo.ConfigUpgrader) (distgo.ProjectVersionerFactory, error) {

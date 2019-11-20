@@ -17,9 +17,8 @@ package dockerbuilder
 import (
 	"sort"
 
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
+	"github.com/pkg/errors"
 )
 
 type CreatorFunction func(cfgYML []byte) (distgo.DockerBuilder, error)

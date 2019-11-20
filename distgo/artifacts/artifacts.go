@@ -22,11 +22,10 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/palantir/godel/v2/pkg/osarch"
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/build"
+	"github.com/palantir/godel/v2/pkg/osarch"
+	"github.com/pkg/errors"
 )
 
 func PrintBuildArtifacts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productBuildIDs []distgo.ProductBuildID, absPath, requiresBuild bool, stdout io.Writer) error {

@@ -18,11 +18,10 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/palantir/distgo/projectversioner/projectversiontester"
 	"github.com/palantir/godel/v2/framework/pluginapitester"
 	"github.com/palantir/godel/v2/pkg/products"
 	"github.com/stretchr/testify/require"
-
-	"github.com/palantir/distgo/projectversioner/projectversiontester"
 )
 
 func TestScriptProjectVersioner(t *testing.T) {

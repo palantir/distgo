@@ -15,10 +15,9 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/clean"
+	"github.com/spf13/cobra"
 )
 
 var (

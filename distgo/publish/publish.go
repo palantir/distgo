@@ -20,10 +20,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/dist"
+	"github.com/pkg/errors"
 )
 
 func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDistIDs []distgo.ProductDistID, publisher distgo.Publisher, flagVals map[distgo.PublisherFlagName]interface{}, dryRun bool, stdout io.Writer) error {

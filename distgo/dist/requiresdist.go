@@ -18,9 +18,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
+	"github.com/pkg/errors"
 )
 
 // RequiresDist returns a pointer to a distgo.ProductParam that contains only the Dister parameters for the output dist
