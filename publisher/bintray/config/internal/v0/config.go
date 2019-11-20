@@ -15,10 +15,9 @@
 package v0
 
 import (
+	"github.com/palantir/distgo/publisher"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
-
-	"github.com/palantir/distgo/publisher"
 )
 
 type Config struct {

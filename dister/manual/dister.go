@@ -17,9 +17,8 @@ package manual
 import (
 	"os"
 
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
+	"github.com/pkg/errors"
 )
 
 const TypeName = "manual" // distribution that consists of a distribution whose output is created by the distribution script

@@ -15,10 +15,9 @@
 package config
 
 import (
+	v0 "github.com/palantir/distgo/publisher/artifactory/config/internal/v0"
 	"github.com/palantir/godel/v2/pkg/versionedconfig"
 	"github.com/pkg/errors"
-
-	v0 "github.com/palantir/distgo/publisher/artifactory/config/internal/v0"
 )
 
 func UpgradeConfig(cfgBytes []byte) ([]byte, error) {

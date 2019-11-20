@@ -17,11 +17,10 @@ package distgo_test
 import (
 	"testing"
 
-	"github.com/palantir/godel/v2/pkg/osarch"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/palantir/distgo/dister/osarchbin"
 	"github.com/palantir/distgo/distgo"
+	"github.com/palantir/godel/v2/pkg/osarch"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestProductParamsForProductArgs(t *testing.T) {

@@ -15,11 +15,10 @@
 package legacy
 
 import (
+	v0 "github.com/palantir/distgo/dister/manual/config/internal/v0"
 	"github.com/palantir/godel/v2/pkg/versionedconfig"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
-
-	v0 "github.com/palantir/distgo/dister/manual/config/internal/v0"
 )
 
 type Config struct {

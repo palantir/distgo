@@ -17,9 +17,8 @@ package v0
 import (
 	"strconv"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/palantir/distgo/distgo"
+	"gopkg.in/yaml.v2"
 )
 
 type DockerConfig struct {

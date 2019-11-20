@@ -19,11 +19,10 @@ import (
 	"testing"
 
 	"github.com/nmiyake/pkg/gofiles"
+	"github.com/palantir/distgo/dockerbuilder/dockerbuildertester"
 	"github.com/palantir/godel/v2/framework/pluginapitester"
 	"github.com/palantir/godel/v2/pkg/products"
 	"github.com/stretchr/testify/require"
-
-	"github.com/palantir/distgo/dockerbuilder/dockerbuildertester"
 )
 
 func TestDocker(t *testing.T) {

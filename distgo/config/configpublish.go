@@ -15,11 +15,10 @@
 package config
 
 import (
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
-
 	"github.com/palantir/distgo/distgo"
 	v0 "github.com/palantir/distgo/distgo/config/internal/v0"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 type PublishConfig v0.PublishConfig

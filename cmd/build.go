@@ -15,12 +15,11 @@
 package cmd
 
 import (
+	"github.com/palantir/distgo/distgo"
+	"github.com/palantir/distgo/distgo/build"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-
-	"github.com/palantir/distgo/distgo"
-	"github.com/palantir/distgo/distgo/build"
 )
 
 var (

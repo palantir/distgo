@@ -20,9 +20,8 @@ import (
 	"os/exec"
 	"strconv"
 
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
+	"github.com/pkg/errors"
 )
 
 type assetPublisher struct {

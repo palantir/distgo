@@ -15,11 +15,10 @@
 package config
 
 import (
-	"github.com/palantir/godel/v2/pkg/osarch"
-
 	"github.com/palantir/distgo/dister/osarchbin"
 	v0 "github.com/palantir/distgo/dister/osarchbin/config/internal/v0"
 	"github.com/palantir/distgo/distgo"
+	"github.com/palantir/godel/v2/pkg/osarch"
 )
 
 type OSArchBin v0.Config

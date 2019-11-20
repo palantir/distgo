@@ -23,13 +23,6 @@ import (
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
-	"github.com/palantir/godel/v2/pkg/osarch"
-	"github.com/palantir/pkg/gittest"
-	"github.com/palantir/pkg/matcher"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
-
 	"github.com/palantir/distgo/dister/manual"
 	"github.com/palantir/distgo/dister/osarchbin"
 	"github.com/palantir/distgo/distgo"
@@ -37,6 +30,12 @@ import (
 	"github.com/palantir/distgo/distgo/testfuncs"
 	"github.com/palantir/distgo/dockerbuilder/defaultdockerbuilder"
 	"github.com/palantir/distgo/projectversioner/git"
+	"github.com/palantir/godel/v2/pkg/osarch"
+	"github.com/palantir/pkg/gittest"
+	"github.com/palantir/pkg/matcher"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 )
 
 func TestLoadConfig(t *testing.T) {

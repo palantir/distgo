@@ -26,13 +26,12 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/palantir/godel/v2/pkg/osarch"
-	"github.com/palantir/pkg/signals"
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/build"
 	"github.com/palantir/distgo/distgo/dist"
+	"github.com/palantir/godel/v2/pkg/osarch"
+	"github.com/palantir/pkg/signals"
+	"github.com/pkg/errors"
 )
 
 func BuildProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDockerIDs []distgo.ProductDockerID, tagKeys []string, verbose, dryRun bool, stdout io.Writer) error {

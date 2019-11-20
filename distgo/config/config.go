@@ -19,11 +19,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/palantir/pkg/matcher"
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
 	v0 "github.com/palantir/distgo/distgo/config/internal/v0"
+	"github.com/palantir/pkg/matcher"
+	"github.com/pkg/errors"
 )
 
 type ProjectConfig v0.ProjectConfig

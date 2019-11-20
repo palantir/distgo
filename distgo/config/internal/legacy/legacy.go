@@ -19,18 +19,17 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/palantir/godel/v2/pkg/osarch"
-	"github.com/palantir/godel/v2/pkg/versionedconfig"
-	"github.com/palantir/pkg/matcher"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
-
 	"github.com/palantir/distgo/dister/bin"
 	"github.com/palantir/distgo/dister/manual"
 	"github.com/palantir/distgo/dister/osarchbin"
 	"github.com/palantir/distgo/distgo"
 	v0 "github.com/palantir/distgo/distgo/config/internal/v0"
 	"github.com/palantir/distgo/dockerbuilder/defaultdockerbuilder"
+	"github.com/palantir/godel/v2/pkg/osarch"
+	"github.com/palantir/godel/v2/pkg/versionedconfig"
+	"github.com/palantir/pkg/matcher"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 type Project struct {

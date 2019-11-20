@@ -15,11 +15,10 @@
 package v0
 
 import (
+	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/pkg/matcher"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
-
-	"github.com/palantir/distgo/distgo"
 )
 
 type DistConfig struct {

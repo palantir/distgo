@@ -17,10 +17,9 @@ package maven
 import (
 	"testing"
 
+	"github.com/palantir/distgo/distgo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/palantir/distgo/distgo"
 )
 
 func TestRenderPOM(t *testing.T) {

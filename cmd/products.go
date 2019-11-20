@@ -15,9 +15,8 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-
 	"github.com/palantir/distgo/distgo/printproducts"
+	"github.com/spf13/cobra"
 )
 
 var productsCmd = &cobra.Command{

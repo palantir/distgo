@@ -27,14 +27,13 @@ import (
 	"testing"
 
 	"github.com/nmiyake/pkg/dirs"
+	"github.com/palantir/distgo/distgo"
+	"github.com/palantir/distgo/distgo/build"
+	"github.com/palantir/distgo/pkg/git"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/gittest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/palantir/distgo/distgo"
-	"github.com/palantir/distgo/distgo/build"
-	"github.com/palantir/distgo/pkg/git"
 )
 
 const (

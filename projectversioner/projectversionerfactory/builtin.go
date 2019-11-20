@@ -15,15 +15,14 @@
 package projectversionerfactory
 
 import (
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
-
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/projectversioner"
 	"github.com/palantir/distgo/projectversioner/git"
 	gitconfig "github.com/palantir/distgo/projectversioner/git/config"
 	"github.com/palantir/distgo/projectversioner/script"
 	scriptconfig "github.com/palantir/distgo/projectversioner/script/config"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 type creatorWithUpgrader struct {

@@ -18,9 +18,8 @@ import (
 	"encoding/base64"
 	"os/exec"
 
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/assetapi"
+	"github.com/pkg/errors"
 )
 
 type assetConfigUpgrader struct {

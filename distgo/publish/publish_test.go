@@ -28,12 +28,6 @@ import (
 	"time"
 
 	"github.com/nmiyake/pkg/dirs"
-	"github.com/palantir/godel/v2/pkg/osarch"
-	"github.com/palantir/pkg/gittest"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
-
 	"github.com/palantir/distgo/dister/osarchbin"
 	osarchbinconfig "github.com/palantir/distgo/dister/osarchbin/config"
 	"github.com/palantir/distgo/distgo"
@@ -41,6 +35,11 @@ import (
 	"github.com/palantir/distgo/distgo/dist"
 	"github.com/palantir/distgo/distgo/publish"
 	"github.com/palantir/distgo/distgo/testfuncs"
+	"github.com/palantir/godel/v2/pkg/osarch"
+	"github.com/palantir/pkg/gittest"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 )
 
 const (

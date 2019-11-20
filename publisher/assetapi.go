@@ -17,12 +17,11 @@ package publisher
 import (
 	"encoding/json"
 
+	"github.com/palantir/distgo/assetapi"
+	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/godel/v2/framework/pluginapi"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-
-	"github.com/palantir/distgo/assetapi"
-	"github.com/palantir/distgo/distgo"
 )
 
 func AssetRootCmd(creator Creator, upgradeConfigFn pluginapi.UpgradeConfigFn, short string) *cobra.Command {

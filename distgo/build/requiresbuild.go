@@ -18,11 +18,10 @@ import (
 	"os"
 	"path"
 
-	"github.com/palantir/godel/v2/pkg/osarch"
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/pkg/imports"
+	"github.com/palantir/godel/v2/pkg/osarch"
+	"github.com/pkg/errors"
 )
 
 // RequiresBuild returns a pointer to a distgo.ProductParam that contains only the OS/arch parameters for the outputs

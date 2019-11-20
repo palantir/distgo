@@ -15,11 +15,10 @@
 package config
 
 import (
-	"github.com/palantir/godel/v2/pkg/versionedconfig"
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/dister/osarchbin/config/internal/legacy"
 	v0 "github.com/palantir/distgo/dister/osarchbin/config/internal/v0"
+	"github.com/palantir/godel/v2/pkg/versionedconfig"
+	"github.com/pkg/errors"
 )
 
 func UpgradeConfig(cfgBytes []byte) ([]byte, error) {

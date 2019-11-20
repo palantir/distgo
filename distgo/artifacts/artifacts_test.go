@@ -25,11 +25,6 @@ import (
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
-	"github.com/palantir/godel/v2/pkg/osarch"
-	"github.com/palantir/pkg/gittest"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/palantir/distgo/dister/disterfactory"
 	"github.com/palantir/distgo/dister/osarchbin"
 	"github.com/palantir/distgo/distgo"
@@ -41,6 +36,10 @@ import (
 	"github.com/palantir/distgo/dockerbuilder/dockerbuilderfactory"
 	"github.com/palantir/distgo/projectversioner/projectversionerfactory"
 	"github.com/palantir/distgo/publisher/publisherfactory"
+	"github.com/palantir/godel/v2/pkg/osarch"
+	"github.com/palantir/pkg/gittest"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuildArtifactsDefaultOutput(t *testing.T) {

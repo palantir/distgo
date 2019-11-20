@@ -18,11 +18,10 @@ import (
 	"path"
 	"strings"
 
-	"github.com/palantir/godel/v2/pkg/osarch"
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
 	v0 "github.com/palantir/distgo/distgo/config/internal/v0"
+	"github.com/palantir/godel/v2/pkg/osarch"
+	"github.com/pkg/errors"
 )
 
 type BuildConfig v0.BuildConfig

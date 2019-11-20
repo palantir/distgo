@@ -19,13 +19,6 @@ import (
 	"os"
 	"time"
 
-	godelconfig "github.com/palantir/godel/v2/framework/godel/config"
-	"github.com/palantir/godel/v2/framework/pluginapi"
-	"github.com/palantir/pkg/cobracli"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
-
 	"github.com/palantir/distgo/assetapi"
 	"github.com/palantir/distgo/dister"
 	"github.com/palantir/distgo/dister/disterfactory"
@@ -36,6 +29,12 @@ import (
 	"github.com/palantir/distgo/projectversioner/projectversionerfactory"
 	"github.com/palantir/distgo/publisher"
 	"github.com/palantir/distgo/publisher/publisherfactory"
+	godelconfig "github.com/palantir/godel/v2/framework/godel/config"
+	"github.com/palantir/godel/v2/framework/pluginapi"
+	"github.com/palantir/pkg/cobracli"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 )
 
 var (

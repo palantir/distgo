@@ -15,9 +15,8 @@
 package v0
 
 import (
-	"gopkg.in/yaml.v2"
-
 	"github.com/palantir/distgo/distgo"
+	"gopkg.in/yaml.v2"
 )
 
 type PublishConfig struct {

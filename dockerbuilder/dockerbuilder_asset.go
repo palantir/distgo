@@ -23,9 +23,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/palantir/distgo/distgo"
+	"github.com/pkg/errors"
 )
 
 type assetDockerBuilder struct {

@@ -25,11 +25,10 @@ import (
 	"strings"
 
 	"github.com/mholt/archiver/v3"
+	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/pkg/errors"
 	"github.com/termie/go-shutil"
-
-	"github.com/palantir/distgo/distgo"
 )
 
 const TypeName = "os-arch-bin" // distribution that consists of the binaries for a specific OS/Architecture

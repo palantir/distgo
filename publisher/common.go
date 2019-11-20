@@ -31,10 +31,9 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/palantir/distgo/distgo"
 	"github.com/pkg/errors"
 	"gopkg.in/cheggaaa/pb.v1"
-
-	"github.com/palantir/distgo/distgo"
 )
 
 type FileInfo struct {
