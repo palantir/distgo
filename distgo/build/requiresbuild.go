@@ -19,7 +19,7 @@ import (
 	"path"
 
 	"github.com/palantir/distgo/distgo"
-	"github.com/palantir/distgo/pkg/imports"
+	"github.com/palantir/distgo/distgo/build/imports"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/pkg/errors"
 )

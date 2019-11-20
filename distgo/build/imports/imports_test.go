@@ -24,7 +24,7 @@ import (
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
-	"github.com/palantir/distgo/pkg/imports"
+	"github.com/palantir/distgo/distgo/build/imports"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -67,7 +67,7 @@ func TestAllFilesGoModOff(t *testing.T) {
 				absPkgDir, err := filepath.Abs(projectDir)
 				require.NoError(t, err)
 				return map[string][]string{
-					path.Join("github.com/palantir/distgo/pkg/imports", projectDir): {
+					path.Join("github.com/palantir/distgo/distgo/build/imports", projectDir): {
 						path.Join(absPkgDir, "main.go"),
 						path.Join(absPkgDir, "main_helper.go"),
 					},
@@ -95,7 +95,7 @@ func TestAllFilesGoModOff(t *testing.T) {
 				absPkgDir, err := filepath.Abs(projectDir)
 				require.NoError(t, err)
 				return map[string][]string{
-					path.Join("github.com/palantir/distgo/pkg/imports", projectDir): {
+					path.Join("github.com/palantir/distgo/distgo/build/imports", projectDir): {
 						path.Join(absPkgDir, "main.go"),
 					},
 				}
@@ -122,10 +122,10 @@ func TestAllFilesGoModOff(t *testing.T) {
 				absPkgDir, err := filepath.Abs(projectDir)
 				require.NoError(t, err)
 				return map[string][]string{
-					path.Join("github.com/palantir/distgo/pkg/imports", projectDir): {
+					path.Join("github.com/palantir/distgo/distgo/build/imports", projectDir): {
 						path.Join(absPkgDir, "main.go"),
 					},
-					path.Join("github.com/palantir/distgo/pkg/imports", projectDir, "foo"): {
+					path.Join("github.com/palantir/distgo/distgo/build/imports", projectDir, "foo"): {
 						path.Join(absPkgDir, "foo", "foo.go"),
 						path.Join(absPkgDir, "foo", "foo_helper.go"),
 					},
@@ -153,10 +153,10 @@ func TestAllFilesGoModOff(t *testing.T) {
 				absPkgDir, err := filepath.Abs(projectDir)
 				require.NoError(t, err)
 				return map[string][]string{
-					path.Join("github.com/palantir/distgo/pkg/imports", projectDir): {
+					path.Join("github.com/palantir/distgo/distgo/build/imports", projectDir): {
 						path.Join(absPkgDir, "main.go"),
 					},
-					path.Join("github.com/palantir/distgo/pkg/imports", projectDir, "vendor/github.com/foo"): {
+					path.Join("github.com/palantir/distgo/distgo/build/imports", projectDir, "vendor/github.com/foo"): {
 						path.Join(absPkgDir, "vendor/github.com/foo", "foo.go"),
 					},
 				}
