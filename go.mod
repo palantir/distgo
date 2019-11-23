@@ -8,7 +8,7 @@ require (
 	github.com/mholt/archiver/v3 v3.3.0
 	github.com/nmiyake/pkg/dirs v1.0.0
 	github.com/nmiyake/pkg/gofiles v1.0.0
-	github.com/palantir/distgo/pkg/git v0.0.0-00010101000000-000000000000
+	github.com/palantir/distgo/pkg/git v1.0.0
 	github.com/palantir/godel/v2 v2.22.0
 	github.com/palantir/pkg/cobracli v1.0.0
 	github.com/palantir/pkg/gittest v1.0.0
@@ -31,5 +31,3 @@ require (
 replace github.com/nmiyake/pkg => github.com/nmiyake/pkg v0.0.0
 
 replace github.com/palantir/pkg => github.com/palantir/pkg v1.0.0
-
-replace github.com/palantir/distgo/pkg/git => ./pkg/git
