@@ -49,7 +49,7 @@ github.com/nmiyake/pkg/errorstringer
 github.com/nmiyake/pkg/gofiles
 # github.com/nwaples/rardecode v1.0.0
 github.com/nwaples/rardecode
-# github.com/palantir/distgo/pkg/git v0.0.0-00010101000000-000000000000 => ./pkg/git
+# github.com/palantir/distgo/pkg/git v1.0.0
 github.com/palantir/distgo/pkg/git
 # github.com/palantir/godel/v2 v2.22.0
 github.com/palantir/godel/v2/framework/artifactresolver
