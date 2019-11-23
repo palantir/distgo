@@ -16,4 +16,3 @@ exclude:
     - "vendor"
   paths:
     - "godel"
-    - "pkg/git"
