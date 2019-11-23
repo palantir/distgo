@@ -14,8 +14,8 @@ excutor: &executor
 version: 2.1
 
 orbs:
-  go: palantir/go@0.0.14
-  godel: palantir/godel@0.0.14
+  go: palantir/go@0.0.13
+  godel: palantir/godel@0.0.11
 
 all-tags-filter: &all-tags-filter
   filters:
@@ -38,15 +38,6 @@ workflows:
           name: dist
           <<: *executor
           <<: *all-tags-filter
-      - godel/verify:
-          name: pkg-git-verify-test
-          checkout-path: /go/src/github.com/palantir/distgo
-          include-tests: true
-          executor:
-            name: go/golang
-            version: 1.13.4
-            owner-repo: palantir/distgo/pkg/git
-          <<: *all-tags-filter
       - godel/bintray-publish:
           name: publish
           <<: *executor
@@ -57,7 +48,6 @@ workflows:
             - verify
             - test
             - dist
-            - pkg-git-verify-test
           filters:
             tags:
               only: /^v?[0-9]+(\.[0-9]+)+(-rc[0-9]+)?(-alpha[0-9]+)?$/
