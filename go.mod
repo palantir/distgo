@@ -9,11 +9,10 @@ require (
 	github.com/nmiyake/pkg/dirs v1.0.0
 	github.com/nmiyake/pkg/gofiles v1.0.0
 	github.com/palantir/distgo/pkg/git v1.0.0
-	github.com/palantir/godel/v2 v2.22.0
+	github.com/palantir/godel/v2 v2.22.1
 	github.com/palantir/pkg/cobracli v1.0.0
 	github.com/palantir/pkg/gittest v1.0.0
 	github.com/palantir/pkg/matcher v1.0.0
-	github.com/palantir/pkg/pkgpath v1.0.0 // indirect
 	github.com/palantir/pkg/signals v1.0.0
 	github.com/palantir/pkg/specdir v1.0.0
 	github.com/pkg/errors v0.8.1
@@ -27,7 +26,3 @@ require (
 	gopkg.in/cheggaaa/pb.v1 v1.0.22
 	gopkg.in/yaml.v2 v2.2.5
 )
-
-replace github.com/nmiyake/pkg => github.com/nmiyake/pkg v0.0.0
-
-replace github.com/palantir/pkg => github.com/palantir/pkg v1.0.0
