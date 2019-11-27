@@ -64,6 +64,8 @@ github.com/nwaples/rardecode v1.0.0 h1:r7vGuS5akxOnR4JQSkko62RJ1ReCMXxQRPtxsiFMB
 github.com/nwaples/rardecode v1.0.0/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
 github.com/palantir/distgo/pkg/git v1.0.0 h1:bryRJ9ZdJapz5tGzd/snv6U66tLxyb1b4PbPya/aqD4=
 github.com/palantir/distgo/pkg/git v1.0.0/go.mod h1:eXrr3SOmf/sWTYmtiubYVxSaVegTlMGgRgBUFMFFedw=
+github.com/palantir/godel/pkg/products/v2 v2.0.0 h1:E3DuAEA1yotLLDQt7vIrYRapRwXRyW6u8Yuq2p/qyLs=
+github.com/palantir/godel/pkg/products/v2 v2.0.0/go.mod h1:SaLUycZLVP5qV6mL9MWG3jkX4dS23lJnzpubTGAV4FU=
 github.com/palantir/godel/v2 v2.22.1 h1:LqRLMcOLDPKVMIj3dF5wMxxFZNhPsMBOAMg9cekVGMw=
 github.com/palantir/godel/v2 v2.22.1/go.mod h1:l4f2HzulfvNjH37dBVLFB99OGmrIQDVMTl6UuUm6Fhw=
 github.com/palantir/pkg/cobracli v1.0.0 h1:hhkWxrqRdsXM6mMbXovVnUrZRitmKNu8SgC+XQP9kzI=
