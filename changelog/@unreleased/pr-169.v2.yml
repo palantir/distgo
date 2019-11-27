@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Update module dependency for godel
+  links:
+  - https://github.com/palantir/distgo/pull/169
