@@ -32,7 +32,13 @@ const pomTemplate = `<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xs
 </project>
 `
 
-func POM(groupID, packaging string, outputInfo distgo.ProductTaskOutputInfo) (string, string, error) {
+// POM produces a POM file name and content for a product. It fails if that product has multiple distributions with
+// distinct packaging extensions.
+func POM(groupID string, outputInfo distgo.ProductTaskOutputInfo) (string, string, error) {
+	packaging, err := getSinglePackagingExtensionForProduct(outputInfo)
+	if err != nil {
+		return "", "", err
+	}
 	pomName := fmt.Sprintf("%s-%s.pom", outputInfo.Product.ID, outputInfo.Project.Version)
 
 	pomContent, err := renderPOM(outputInfo.Product.ID, outputInfo.Project.Version, groupID, packaging)
@@ -40,6 +46,21 @@ func POM(groupID, packaging string, outputInfo distgo.ProductTaskOutputInfo) (st
 		return "", "", err
 	}
 	return pomName, pomContent, nil
+}
+
+func getSinglePackagingExtensionForProduct(outputInfo distgo.ProductTaskOutputInfo) (string, error) {
+	var packaging = ""
+	if outputInfo.Product.DistOutputInfos != nil {
+		for _, currDistID := range outputInfo.Product.DistOutputInfos.DistIDs {
+			if packagingForDist := Packaging(currDistID, outputInfo); packagingForDist != "" {
+				if packaging != "" && packaging != packagingForDist {
+					return "", fmt.Errorf("product %s has dists with different packaging extensions", outputInfo.Product.ID)
+				}
+				packaging = packagingForDist
+			}
+		}
+	}
+	return packaging, nil
 }
 
 func Packaging(distID distgo.DistID, outputInfo distgo.ProductTaskOutputInfo) string {
