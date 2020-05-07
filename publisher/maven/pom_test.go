@@ -70,3 +70,106 @@ func TestRenderPOM(t *testing.T) {
 		assert.Equal(t, tc.want, got, "Case %d: %s\nOutput:\n%s", i, tc.name, got)
 	}
 }
+
+func TestGetSinglePackagingExtensionForProduct(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		outputInfo   distgo.ProductTaskOutputInfo
+		wantErrorStr string
+	}{
+		{
+			"succeed if there is no dist output",
+			distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID:              "ProdID",
+					DistOutputInfos: nil,
+				},
+			},
+			"",
+		},
+		{
+			"succeed if there is only a single dist",
+			distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID: "ProdID",
+					DistOutputInfos: &distgo.DistOutputInfos{
+						DistIDs: []distgo.DistID{"A"},
+						DistInfos: map[distgo.DistID]distgo.DistOutputInfo{
+							"A": {
+								PackagingExtension: "tgz",
+							},
+						},
+					},
+				},
+			},
+			"",
+		},
+		{
+			"succeed if there are multiple dists with the same packaging extension",
+			distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID: "ProdID",
+					DistOutputInfos: &distgo.DistOutputInfos{
+						DistIDs: []distgo.DistID{"A", "B"},
+						DistInfos: map[distgo.DistID]distgo.DistOutputInfo{
+							"A": {
+								PackagingExtension: "tgz",
+							},
+							"B": {
+								PackagingExtension: "tgz",
+							},
+						},
+					},
+				},
+			},
+			"",
+		},
+		{
+			"fail if there are multiple dists with different packaging extensions",
+			distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID: "ProdID",
+					DistOutputInfos: &distgo.DistOutputInfos{
+						DistIDs: []distgo.DistID{"A", "B"},
+						DistInfos: map[distgo.DistID]distgo.DistOutputInfo{
+							"A": {
+								PackagingExtension: "tgz",
+							},
+							"B": {
+								PackagingExtension: "json",
+							},
+						},
+					},
+				},
+			},
+			"product ProdID has dists with different packaging extensions: distID A with packaging: tgz vs. distID B with packaging: json",
+		},
+		{
+			"succeed if there are multiple dists but only one has a packaging extensions",
+			distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID: "ProdID",
+					DistOutputInfos: &distgo.DistOutputInfos{
+						DistIDs: []distgo.DistID{"A", "B"},
+						DistInfos: map[distgo.DistID]distgo.DistOutputInfo{
+							"A": {
+								PackagingExtension: "tgz",
+							},
+							"B": {
+								PackagingExtension: "",
+							},
+						},
+					},
+				},
+			},
+			"",
+		},
+	} {
+		_, err := getSinglePackagingExtensionForProduct(tc.outputInfo)
+		if tc.wantErrorStr == "" {
+			require.NoError(t, err)
+		} else {
+			assert.EqualError(t, err, tc.wantErrorStr)
+		}
+	}
+}

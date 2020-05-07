@@ -127,14 +127,12 @@ func (p *bintrayPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOu
 	}
 
 	if !cfg.NoPOM {
-		for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
-			pomName, pomContent, err := maven.POM(groupID, maven.Packaging(currDistID, productTaskOutputInfo), productTaskOutputInfo)
-			if err != nil {
-				return err
-			}
-			if _, err := cfg.UploadFile(publisher.NewFileInfoFromBytes([]byte(pomContent)), baseURL, pomName, nil, dryRun, stdout); err != nil {
-				return err
-			}
+		pomName, pomContent, err := maven.POM(groupID, productTaskOutputInfo)
+		if err != nil {
+			return err
+		}
+		if _, err := cfg.UploadFile(publisher.NewFileInfoFromBytes([]byte(pomContent)), baseURL, pomName, nil, dryRun, stdout); err != nil {
+			return err
 		}
 	}
 

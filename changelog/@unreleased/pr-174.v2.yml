@@ -1,0 +1,7 @@
+type: fix
+fix:
+  description: Updates publishers that write POM files as part of the publish operations such that only a single POM file 
+    is written per product, even if that product has multiple distributions. The publish operation will fail if the product
+    has multiple dists that have packaging extensions that are non-empty and differ.
+  links:
+  - https://github.com/palantir/distgo/pull/174

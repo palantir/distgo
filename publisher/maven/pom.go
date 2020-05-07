@@ -32,7 +32,14 @@ const pomTemplate = `<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xs
 </project>
 `
 
-func POM(groupID, packaging string, outputInfo distgo.ProductTaskOutputInfo) (string, string, error) {
+// POM produces a POM file name and content for a product. Returns an error if the provided outputInfo has multiple
+// distributions with differing non-empty packaging extensions, since there is no well-defined way to generate a POM
+// for such distributions.
+func POM(groupID string, outputInfo distgo.ProductTaskOutputInfo) (string, string, error) {
+	packaging, err := getSinglePackagingExtensionForProduct(outputInfo)
+	if err != nil {
+		return "", "", err
+	}
 	pomName := fmt.Sprintf("%s-%s.pom", outputInfo.Product.ID, outputInfo.Project.Version)
 
 	pomContent, err := renderPOM(outputInfo.Product.ID, outputInfo.Project.Version, groupID, packaging)
@@ -40,6 +47,32 @@ func POM(groupID, packaging string, outputInfo distgo.ProductTaskOutputInfo) (st
 		return "", "", err
 	}
 	return pomName, pomContent, nil
+}
+
+func getSinglePackagingExtensionForProduct(outputInfo distgo.ProductTaskOutputInfo) (string, error) {
+	if outputInfo.Product.DistOutputInfos == nil {
+		return "", nil
+	}
+	var packaging string
+	var usedDistID distgo.DistID
+	for _, currDistID := range outputInfo.Product.DistOutputInfos.DistIDs {
+		packagingForDist := Packaging(currDistID, outputInfo)
+		if packagingForDist == "" {
+			continue
+		}
+		if packaging != "" && packaging != packagingForDist {
+			return "", fmt.Errorf("product %s has dists with different packaging extensions: distID %s with packaging: %s vs. distID %s with packaging: %s",
+				outputInfo.Product.ID,
+				usedDistID,
+				packaging,
+				currDistID,
+				packagingForDist,
+			)
+		}
+		packaging = packagingForDist
+		usedDistID = currDistID
+	}
+	return packaging, nil
 }
 
 func Packaging(distID distgo.DistID, outputInfo distgo.ProductTaskOutputInfo) string {

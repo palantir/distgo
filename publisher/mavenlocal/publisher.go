@@ -93,21 +93,20 @@ func (p *mavenLocalPublisher) RunPublish(productTaskOutputInfo distgo.ProductTas
 
 	// if error is non-nil, wd will be empty
 	wd, _ := os.Getwd()
-	for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
-		if !cfg.NoPOM {
-			pomName, pomContent, err := maven.POM(groupID, maven.Packaging(currDistID, productTaskOutputInfo), productTaskOutputInfo)
-			if err != nil {
-				return err
-			}
-			pomPath := path.Join(productPath, pomName)
-			distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing POM to %s", pomPath), dryRun)
-			if !dryRun {
-				if err := ioutil.WriteFile(pomPath, []byte(pomContent), 0644); err != nil {
-					return errors.Wrapf(err, "failed to write POM")
-				}
+	if !cfg.NoPOM {
+		pomName, pomContent, err := maven.POM(groupID, productTaskOutputInfo)
+		if err != nil {
+			return err
+		}
+		pomPath := path.Join(productPath, pomName)
+		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing POM to %s", pomPath), dryRun)
+		if !dryRun {
+			if err := ioutil.WriteFile(pomPath, []byte(pomContent), 0644); err != nil {
+				return errors.Wrapf(err, "failed to write POM")
 			}
 		}
-
+	}
+	for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
 		for _, currArtifactPath := range productTaskOutputInfo.ProductDistArtifactPaths()[currDistID] {
 			if _, err := copyArtifact(currArtifactPath, productPath, wd, dryRun, stdout); err != nil {
 				return errors.Wrapf(err, "failed to copy artifact")
