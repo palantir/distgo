@@ -32,8 +32,9 @@ const pomTemplate = `<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xs
 </project>
 `
 
-// POM produces a POM file name and content for a product. It fails if that product has multiple distributions with
-// distinct packaging extensions.
+// POM produces a POM file name and content for a product. Returns an error if the provided outputInfo has multiple
+// distributions with differing non-empty packaging extensions, since there is no well-defined way to generate a POM
+// for such distributions.
 func POM(groupID string, outputInfo distgo.ProductTaskOutputInfo) (string, string, error) {
 	packaging, err := getSinglePackagingExtensionForProduct(outputInfo)
 	if err != nil {
@@ -49,16 +50,27 @@ func POM(groupID string, outputInfo distgo.ProductTaskOutputInfo) (string, strin
 }
 
 func getSinglePackagingExtensionForProduct(outputInfo distgo.ProductTaskOutputInfo) (string, error) {
-	var packaging = ""
-	if outputInfo.Product.DistOutputInfos != nil {
-		for _, currDistID := range outputInfo.Product.DistOutputInfos.DistIDs {
-			if packagingForDist := Packaging(currDistID, outputInfo); packagingForDist != "" {
-				if packaging != "" && packaging != packagingForDist {
-					return "", fmt.Errorf("product %s has dists with different packaging extensions", outputInfo.Product.ID)
-				}
-				packaging = packagingForDist
-			}
+	if outputInfo.Product.DistOutputInfos == nil {
+		return "", nil
+	}
+	var packaging string
+	var usedDistID distgo.DistID
+	for _, currDistID := range outputInfo.Product.DistOutputInfos.DistIDs {
+		packagingForDist := Packaging(currDistID, outputInfo)
+		if packagingForDist == "" {
+			continue
 		}
+		if packaging != "" && packaging != packagingForDist {
+			return "", fmt.Errorf("product %s has dists with different packaging extensions: distID %s with packaging: %s vs. distID %s with packaging: %s",
+				outputInfo.Product.ID,
+				usedDistID,
+				packaging,
+				currDistID,
+				packagingForDist,
+			)
+		}
+		packaging = packagingForDist
+		usedDistID = currDistID
 	}
 	return packaging, nil
 }
