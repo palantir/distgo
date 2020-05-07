@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Resolve pom publishing inconsistency
+  links:
+  - https://github.com/palantir/distgo/pull/174
