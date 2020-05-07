@@ -81,7 +81,7 @@ func TestGetSinglePackagingExtensionForProduct(t *testing.T) {
 			"succeed if there is no dist output",
 			distgo.ProductTaskOutputInfo{
 				Product: distgo.ProductOutputInfo{
-					ID: "ProdID",
+					ID:              "ProdID",
 					DistOutputInfos: nil,
 				},
 			},
