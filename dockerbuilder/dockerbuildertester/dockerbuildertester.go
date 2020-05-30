@@ -44,6 +44,11 @@ type TestCase struct {
 
 var builtinSpecs = []gofiles.GoFileSpec{
 	{
+		RelPath: "go.mod",
+		Src: `module dockerbuildertester
+`,
+	},
+	{
 		RelPath: "godelw",
 		Src:     `// placeholder`,
 	},
