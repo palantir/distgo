@@ -1,5 +1,5 @@
 type: fix
 fix:
-  description: Ensures that tests run by this harness work properly with Go modules.
+  description: Ensures that tests run by the dockerbuildertester harness work properly with Go modules.
   links:
   - https://github.com/palantir/distgo/pull/179
