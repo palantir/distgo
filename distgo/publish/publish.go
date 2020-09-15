@@ -77,6 +77,13 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publi
 	var publishCfgBytes []byte
 	if productParam.Publish != nil {
 		publishCfgBytes = productParam.Publish.PublishInfo[distgo.PublisherTypeID(publisherType)].ConfigBytes
+
+		if len(productParam.Publish.AllowedDestinations) > 0 {
+			if _, ok := productParam.Publish.AllowedDestinations[distgo.PublisherTypeID(publisherType)]; !ok {
+				distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("%s does not allow publishing to %s; skipping publish step", productParam.ID, publisherType), dryRun)
+				return nil
+			}
+		}
 	}
 	if err := publisher.RunPublish(productTaskOutputInfo, publishCfgBytes, flagVals, dryRun, stdout); err != nil {
 		return errors.Wrapf(err, "failed to publish %s using %s publisher", productParam.ID, publisherType)

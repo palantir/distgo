@@ -28,6 +28,9 @@ type PublishParam struct {
 
 	// PublishInfo contains extra configuration for the publish operation. The key is the type of publish.
 	PublishInfo map[PublisherTypeID]PublisherParam
+
+	// AllowedDestinations contains the output destinations that are allowed to be published to
+	AllowedDestinations map[PublisherTypeID]struct{}
 }
 
 type PublisherParam struct {
