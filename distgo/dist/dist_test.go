@@ -473,7 +473,7 @@ func TestDistOverwrites(t *testing.T) {
 	defer cleanup()
 	require.NoError(t, err)
 
-	for i, tc := range []struct {
+	for _, tc := range []struct {
 		name       string
 		distersCfg *distgoconfig.DistersConfig
 	}{
@@ -496,7 +496,7 @@ func TestDistOverwrites(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			projectDir, err := ioutil.TempDir(tmp, "")
-			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			require.NoError(t, err)
 
 			gittest.InitGitDir(t, projectDir)
 			err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
@@ -514,7 +514,7 @@ func TestDistOverwrites(t *testing.T) {
 				}),
 			}
 
-			projectParam := testfuncs.NewProjectParam(t, projectCfg, projectDir, fmt.Sprintf("Case %d: %s", i, tc.name))
+			projectParam := testfuncs.NewProjectParam(t, projectCfg, projectDir, tc.name)
 			projectInfo, err := projectParam.ProjectInfo(projectDir)
 			require.NoError(t, err)
 
