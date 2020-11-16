@@ -77,7 +77,7 @@ func (d *Dister) RunDist(distID distgo.DistID, productTaskOutputInfo distgo.Prod
 func (d *Dister) GenerateDistArtifacts(distID distgo.DistID, productTaskOutputInfo distgo.ProductTaskOutputInfo, runDistResult []byte) error {
 	distWorkDir := productTaskOutputInfo.ProductDistWorkDirs()[distID]
 	dstPath := productTaskOutputInfo.ProductDistArtifactPaths()[distID][0]
-	tarGZ := archiver.DefaultTarGz
+	tarGZ := archiver.NewTarGz()
 	tarGZ.OverwriteExisting = true
 	if err := tarGZ.Archive([]string{distWorkDir}, dstPath); err != nil {
 		return errors.Wrapf(err, "failed to create TGZ archive")

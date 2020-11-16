@@ -24,6 +24,7 @@ import (
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
+	"github.com/palantir/distgo/dister/bin"
 	"github.com/palantir/distgo/dister/disterfactory"
 	"github.com/palantir/distgo/dister/osarchbin"
 	"github.com/palantir/distgo/distgo"
@@ -463,6 +464,65 @@ func main() {}
 		if tc.validate != nil {
 			tc.validate(i, tc.name, projectDir)
 		}
+	}
+}
+
+// TestDistOverwrites verifies that subsequent runs of the dist task will overwrite the artifacts.
+func TestDistOverwrites(t *testing.T) {
+	tmp, cleanup, err := dirs.TempDir("", "")
+	defer cleanup()
+	require.NoError(t, err)
+
+	for i, tc := range []struct {
+		name       string
+		distersCfg *distgoconfig.DistersConfig
+	}{
+		{
+			name: "os-arch-bin",
+			distersCfg: &distgoconfig.DistersConfig{
+				osarchbin.TypeName: {
+					Type: stringPtr(osarchbin.TypeName),
+				},
+			},
+		},
+		{
+			name: "bin",
+			distersCfg: &distgoconfig.DistersConfig{
+				bin.TypeName: {
+					Type: stringPtr(bin.TypeName),
+				},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, err := ioutil.TempDir(tmp, "")
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+
+			gittest.InitGitDir(t, projectDir)
+			err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
+			require.NoError(t, err)
+			err = ioutil.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
+			require.NoError(t, err)
+			err = ioutil.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
+			require.NoError(t, err)
+
+			projectCfg := distgoconfig.ProjectConfig{
+				ProductDefaults: *distgoconfig.ToProductConfig(&distgoconfig.ProductConfig{
+					Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+						Disters: distgoconfig.ToDistersConfig(tc.distersCfg),
+					}),
+				}),
+			}
+
+			projectParam := testfuncs.NewProjectParam(t, projectCfg, projectDir, fmt.Sprintf("Case %d: %s", i, tc.name))
+			projectInfo, err := projectParam.ProjectInfo(projectDir)
+			require.NoError(t, err)
+
+			for i := 0; i < 2; i++ {
+				err = dist.Products(projectInfo, projectParam, nil, nil, false, ioutil.Discard)
+				require.NoError(t, err)
+			}
+		})
 	}
 }
 
