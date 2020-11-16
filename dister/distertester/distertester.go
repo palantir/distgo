@@ -150,3 +150,97 @@ func RunAssetDistTest(t *testing.T,
 		}()
 	}
 }
+
+// run build/dist N number of times.
+func RunAssetBuildAndDist(t *testing.T,
+	pluginProvider pluginapitester.PluginProvider,
+	assetProvider pluginapitester.AssetProvider,
+	testCase TestCase,
+	numOfTimes int,
+) {
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+
+	tmpDir, cleanup, err := dirs.TempDir("", "")
+	require.NoError(t, err)
+	if !filepath.IsAbs(tmpDir) {
+		tmpDir = path.Join(wd, tmpDir)
+	}
+	defer cleanup()
+
+	tmpDir, err = filepath.EvalSymlinks(tmpDir)
+	require.NoError(t, err)
+
+	projectDir, err := ioutil.TempDir(tmpDir, "")
+	require.NoError(t, err)
+
+	gittest.InitGitDir(t, projectDir)
+	require.NoError(t, err)
+
+	var sortedKeys []string
+	for k := range testCase.ConfigFiles {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+
+	for _, k := range sortedKeys {
+		err = os.MkdirAll(path.Dir(path.Join(projectDir, k)), 0755)
+		require.NoError(t, err)
+		err = ioutil.WriteFile(path.Join(projectDir, k), []byte(testCase.ConfigFiles[k]), 0644)
+		require.NoError(t, err)
+	}
+
+	// write files required for test framework
+	_, err = gofiles.Write(projectDir, builtinSpecs)
+	require.NoError(t, err)
+	// write provided specs
+	_, err = gofiles.Write(projectDir, testCase.Specs)
+	require.NoError(t, err)
+
+	// commit all files and tag project as v1.0.0
+	gittest.CommitAllFiles(t, projectDir, "Commit all files")
+	gittest.CreateGitTag(t, projectDir, "v1.0.0")
+
+	for i := 0; i < numOfTimes; i++ {
+		// start running the steps
+		outputBuf := &bytes.Buffer{}
+		func() {
+			wantWd := projectDir
+			err = os.Chdir(wantWd)
+			require.NoError(t, err)
+			defer func() {
+				err = os.Chdir(wd)
+				require.NoError(t, err)
+			}()
+
+			var assetProviders []pluginapitester.AssetProvider
+			if assetProvider != nil {
+				assetProviders = append(assetProviders, assetProvider)
+			}
+
+			// run build task first
+			func() {
+				runPluginCleanup, err := pluginapitester.RunPlugin(
+					pluginProvider,
+					assetProviders,
+					"build", nil,
+					projectDir, false, outputBuf)
+				defer runPluginCleanup()
+				require.NoError(t, err, "Case %d: %s\nBuild operation failed with output:\n%s", i, testCase.Name, outputBuf.String())
+				outputBuf = &bytes.Buffer{}
+			}()
+
+			runPluginCleanup, err := pluginapitester.RunPlugin(
+				pluginProvider,
+				assetProviders,
+				"dist", nil,
+				projectDir, false, outputBuf)
+			defer runPluginCleanup()
+			if testCase.WantError {
+				require.EqualError(t, err, "", "Case %d: %s", i, testCase.Name)
+			} else {
+				require.NoError(t, err, "Case %d: %s\nOutput:\n%s", i, testCase.Name, outputBuf.String())
+			}
+		}()
+	}
+}

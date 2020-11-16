@@ -112,7 +112,9 @@ func (d *Dister) GenerateDistArtifacts(distID distgo.DistID, productTaskOutputIn
 		for i, item := range items {
 			itemPaths[i] = filepath.Join(workDir, item.Name())
 		}
-		if err := archiver.DefaultTarGz.Archive(itemPaths, artifactPath); err != nil {
+		tarGZ := archiver.DefaultTarGz
+		tarGZ.OverwriteExisting = true
+		if err := tarGZ.Archive(itemPaths, artifactPath); err != nil {
 			return errors.Wrapf(err, "failed to create TGZ archive")
 		}
 	}

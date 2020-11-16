@@ -29,6 +29,57 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestBuildDistTwice(t *testing.T) {
+	const godelYML = `exclude:
+  names:
+    - "\\..+"
+    - "vendor"
+  paths:
+    - "godel"
+`
+
+	pluginPath, err := products.Bin("dist-plugin")
+	require.NoError(t, err)
+
+	distertester.RunAssetBuildAndDist(t,
+		pluginapitester.NewPluginProvider(pluginPath),
+		nil,
+		distertester.TestCase{
+			WantError: false,
+			Name:      "race-condition when running build-dist-build-dist",
+			Specs: []gofiles.GoFileSpec{
+				{
+					RelPath: "go.mod",
+					Src: `module foo
+
+go 1.15
+`,
+				},
+				{
+					RelPath: "foo/foo.go",
+					Src:     `package main; func main() {}`,
+				},
+			},
+			ConfigFiles: map[string]string{
+				"godel/config/godel.yml": godelYML,
+				"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+      os-archs:
+        - os: darwin
+          arch: amd64
+        - os: linux
+          arch: amd64
+    dist:
+      disters:
+        type: bin
+`,
+			},
+		}, 2)
+}
+
 func TestBinDist(t *testing.T) {
 	const godelYML = `exclude:
   names:
