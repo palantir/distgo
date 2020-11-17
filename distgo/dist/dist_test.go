@@ -470,32 +470,34 @@ func main() {}
 
 // TestDistOverwrites verifies that subsequent runs of the dist task will overwrite the artifacts.
 func TestDistOverwrites(t *testing.T) {
+	const distRuns = 2
+
 	tmp, cleanup, err := dirs.TempDir("", "")
 	defer cleanup()
 	require.NoError(t, err)
 
 	for _, tc := range []struct {
-		name       string
-		distersCfg *distgoconfig.DistersConfig
+		disterType  string
+		distModTime func(tt *testing.T, projectDir string) time.Time
 	}{
 		{
-			name: "os-arch-bin",
-			distersCfg: &distgoconfig.DistersConfig{
-				osarchbin.TypeName: {
-					Type: stringPtr(osarchbin.TypeName),
-				},
+			disterType: osarchbin.TypeName,
+			distModTime: func(tt *testing.T, projectDir string) time.Time {
+				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "unspecified", osarchbin.TypeName, fmt.Sprintf("foo-unspecified-%s.tgz", osarch.Current().String())))
+				require.NoError(t, err)
+				return info.ModTime()
 			},
 		},
 		{
-			name: "bin",
-			distersCfg: &distgoconfig.DistersConfig{
-				bin.TypeName: {
-					Type: stringPtr(bin.TypeName),
-				},
+			disterType: bin.TypeName,
+			distModTime: func(tt *testing.T, projectDir string) time.Time {
+				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "unspecified", bin.TypeName, "foo-unspecified.tgz"))
+				require.NoError(t, err)
+				return info.ModTime()
 			},
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.disterType, func(t *testing.T) {
 			projectDir, err := ioutil.TempDir(tmp, "")
 			require.NoError(t, err)
 			err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
@@ -508,27 +510,27 @@ func TestDistOverwrites(t *testing.T) {
 			projectCfg := distgoconfig.ProjectConfig{
 				ProductDefaults: *distgoconfig.ToProductConfig(&distgoconfig.ProductConfig{
 					Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
-						Disters: distgoconfig.ToDistersConfig(tc.distersCfg),
+						Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+							distgo.DistID(tc.disterType): {
+								Type: stringPtr(tc.disterType),
+							},
+						}),
 					}),
 				}),
 			}
 
-			projectParam := testfuncs.NewProjectParam(t, projectCfg, projectDir, tc.name)
+			projectParam := testfuncs.NewProjectParam(t, projectCfg, projectDir, fmt.Sprintf(""))
 			projectInfo, err := projectParam.ProjectInfo(projectDir)
 			require.NoError(t, err)
 
-			var (
-				distRuns = 2
-				modTime  time.Time
-			)
+			var modTime time.Time
 			for i := 0; i < distRuns; i++ {
 				err = dist.Products(projectInfo, projectParam, nil, nil, false, ioutil.Discard)
 				require.NoError(t, err)
 
-				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "unspecified", "os-arch-bin", fmt.Sprintf("foo-unspecified-%s.tgz", osarch.Current().String())))
-				require.NoError(t, err)
-				require.True(t, info.ModTime().After(modTime))
-				modTime = info.ModTime()
+				distModTime := tc.distModTime(t, projectDir)
+				require.True(t, distModTime.After(modTime))
+				modTime = distModTime
 			}
 		})
 	}
