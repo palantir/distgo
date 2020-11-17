@@ -482,7 +482,7 @@ func TestDistOverwrites(t *testing.T) {
 	}{
 		{
 			disterType: osarchbin.TypeName,
-			distModTime: func(tt *testing.T, projectDir string) time.Time {
+			distModTime: func(t *testing.T, projectDir string) time.Time {
 				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "unspecified", osarchbin.TypeName, fmt.Sprintf("foo-unspecified-%s.tgz", osarch.Current().String())))
 				require.NoError(t, err)
 				return info.ModTime()
@@ -490,7 +490,7 @@ func TestDistOverwrites(t *testing.T) {
 		},
 		{
 			disterType: bin.TypeName,
-			distModTime: func(tt *testing.T, projectDir string) time.Time {
+			distModTime: func(t *testing.T, projectDir string) time.Time {
 				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "unspecified", bin.TypeName, "foo-unspecified.tgz"))
 				require.NoError(t, err)
 				return info.ModTime()
@@ -519,7 +519,7 @@ func TestDistOverwrites(t *testing.T) {
 				}),
 			}
 
-			projectParam := testfuncs.NewProjectParam(t, projectCfg, projectDir, fmt.Sprintf(""))
+			projectParam := testfuncs.NewProjectParam(t, projectCfg, projectDir, tc.disterType)
 			projectInfo, err := projectParam.ProjectInfo(projectDir)
 			require.NoError(t, err)
 
