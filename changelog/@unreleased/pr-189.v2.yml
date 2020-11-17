@@ -1,6 +1,7 @@
 type: fix
 fix:
   description: |
-    overwrite existing dists
+    Make it so the os-arch-bin and bin disters will overwrite the destination file if it exists.
+    Fixes https://github.com/palantir/distgo/issues/190
   links:
   - https://github.com/palantir/distgo/pull/180
