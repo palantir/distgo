@@ -21,6 +21,7 @@ import (
 	"path"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
@@ -497,8 +498,6 @@ func TestDistOverwrites(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			projectDir, err := ioutil.TempDir(tmp, "")
 			require.NoError(t, err)
-
-			gittest.InitGitDir(t, projectDir)
 			err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
 			require.NoError(t, err)
 			err = ioutil.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
@@ -518,9 +517,18 @@ func TestDistOverwrites(t *testing.T) {
 			projectInfo, err := projectParam.ProjectInfo(projectDir)
 			require.NoError(t, err)
 
-			for i := 0; i < 2; i++ {
+			var (
+				distRuns = 2
+				modTime  time.Time
+			)
+			for i := 0; i < distRuns; i++ {
 				err = dist.Products(projectInfo, projectParam, nil, nil, false, ioutil.Discard)
 				require.NoError(t, err)
+
+				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "unspecified", "os-arch-bin", fmt.Sprintf("foo-unspecified-%s.tgz", osarch.Current().String())))
+				require.NoError(t, err)
+				require.True(t, info.ModTime().After(modTime))
+				modTime = info.ModTime()
 			}
 		})
 	}
