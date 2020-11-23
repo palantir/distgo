@@ -16,13 +16,13 @@ package distertester
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"sort"
 	"testing"
-	"time"
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
@@ -161,22 +161,21 @@ func RunAssetDistTest(t *testing.T,
 func RunDistOverwritesTest(t *testing.T,
 	pluginProvider pluginapitester.PluginProvider,
 	assetProvider pluginapitester.AssetProvider,
-	distType string,
+	distersCfg distgoconfig.DistersConfig,
 ) {
-	osarches := []osarch.OSArch{osarch.Current()}
+	var (
+		productName = "dist-overwrite-test-product"
+		osarches    = []osarch.OSArch{osarch.Current()}
+	)
+
 	projectCfg := distgoconfig.ProjectConfig{
 		Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
-			"foo": {
+			distgo.ProductID(productName): {
 				Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-					MainPkg: stringPtr("foo"),
 					OSArchs: &osarches,
 				}),
 				Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
-					Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
-						distgo.DistID(distType): {
-							Type: stringPtr(distType),
-						},
-					}),
+					Disters: distgoconfig.ToDistersConfig(&distersCfg),
 				}),
 			},
 		}),
@@ -185,10 +184,8 @@ func RunDistOverwritesTest(t *testing.T,
 	require.NoError(t, err)
 	internalFiles := map[string][]byte{
 		"godel/config/dist-plugin.yml": projectCfgBytes,
-		"foo/foo.go":                   []byte(`package main; func main() {}`),
-		"go.mod": []byte(`module foo
-go 1.15
-`),
+		"main.go":                      []byte(`package main; func main() {}`),
+		"go.mod":                       []byte(fmt.Sprintf("module %s\ngo 1.15", productName)),
 	}
 	wd, err := os.Getwd()
 	require.NoError(t, err)
@@ -229,32 +226,23 @@ go 1.15
 		assetProviders = append(assetProviders, assetProvider)
 	}
 
-	for j := 0; j < 2; j++ {
-		// run build task
-		buildBuf := new(bytes.Buffer)
-		_, err := pluginapitester.RunPlugin(
-			pluginProvider,
-			assetProviders,
-			"build", nil,
-			projectDir, false, buildBuf)
-		require.NoError(t, err, buildBuf.String())
+	// run build task once
+	buildBuf := new(bytes.Buffer)
+	_, err = pluginapitester.RunPlugin(
+		pluginProvider,
+		assetProviders,
+		"build", nil,
+		projectDir, false, buildBuf)
+	require.NoError(t, err, buildBuf.String())
 
-		// run dist task
+	for j := 0; j < 2; j++ {
+		// run dist task twice and ensure no errors
 		distBuf := new(bytes.Buffer)
 		_, err = pluginapitester.RunPlugin(
 			pluginProvider,
 			assetProviders,
-			"dist", nil,
+			"dist", []string{"--force"}, // use --force to skip build caching
 			projectDir, false, distBuf)
 		require.NoError(t, err, distBuf.String())
-
-		if j == 0 {
-			// wait some time before regeneration
-			time.Sleep(time.Second)
-		}
 	}
-}
-
-func stringPtr(s string) *string {
-	return &s
 }
