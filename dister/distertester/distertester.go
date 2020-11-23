@@ -166,7 +166,7 @@ func RunRepeatedDistTest(t *testing.T,
 	distersCfg distgoconfig.DistersConfig,
 ) {
 	const productName = "dist-overwrite-test-product"
-	osarches    := []osarch.OSArch{osarch.Current()}
+	osarches := []osarch.OSArch{osarch.Current()}
 
 	projectCfg := distgoconfig.ProjectConfig{
 		Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
