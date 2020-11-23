@@ -156,8 +156,8 @@ func RunAssetDistTest(t *testing.T,
 	}
 }
 
-// RunDistOverwritesTest verifies that running build+dist multiple times, for the provided distType,
-// will succeed without error.
+// RunDistOverwritesTest verifies that running the "dist" task multiple times with
+// the provided DistersConfig will succeed without error.
 func RunDistOverwritesTest(t *testing.T,
 	pluginProvider pluginapitester.PluginProvider,
 	assetProvider pluginapitester.AssetProvider,
