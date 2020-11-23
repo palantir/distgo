@@ -156,21 +156,21 @@ func RunAssetDistTest(t *testing.T,
 	}
 }
 
-// RunDistOverwritesTest verifies that running the "dist" task multiple times with
+// RunRepeatedDistTest verifies that running the "dist" task multiple times with
 // the provided DistersConfig will succeed without error.
-func RunDistOverwritesTest(t *testing.T,
+// This test generates a single build artifact and runs the "dist" task in a way that ignores the build cache
+// to verify the behavior of strictly running "dist" multiple times.
+func RunRepeatedDistTest(t *testing.T,
 	pluginProvider pluginapitester.PluginProvider,
 	assetProvider pluginapitester.AssetProvider,
 	distersCfg distgoconfig.DistersConfig,
 ) {
-	var (
-		productName = "dist-overwrite-test-product"
-		osarches    = []osarch.OSArch{osarch.Current()}
-	)
+	const productName = "dist-overwrite-test-product"
+	osarches    := []osarch.OSArch{osarch.Current()}
 
 	projectCfg := distgoconfig.ProjectConfig{
 		Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
-			distgo.ProductID(productName): {
+			productName: {
 				Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
 					OSArchs: &osarches,
 				}),
