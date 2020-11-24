@@ -16,6 +16,7 @@ package distertester
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -25,10 +26,14 @@ import (
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
+	"github.com/palantir/distgo/distgo"
+	distgoconfig "github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/godel/v2/framework/pluginapitester"
+	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/gittest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 )
 
 type TestCase struct {
@@ -148,5 +153,96 @@ func RunAssetDistTest(t *testing.T,
 				tc.Validate(projectDir)
 			}
 		}()
+	}
+}
+
+// RunRepeatedDistTest verifies that running the "dist" task multiple times with
+// the provided DistersConfig will succeed without error.
+// This test generates a single build artifact and runs the "dist" task in a way that ignores the build cache
+// to verify the behavior of strictly running "dist" multiple times.
+func RunRepeatedDistTest(t *testing.T,
+	pluginProvider pluginapitester.PluginProvider,
+	assetProvider pluginapitester.AssetProvider,
+	distersCfg distgoconfig.DistersConfig,
+) {
+	const productName = "dist-overwrite-test-product"
+	osarches := []osarch.OSArch{osarch.Current()}
+
+	projectCfg := distgoconfig.ProjectConfig{
+		Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
+			productName: {
+				Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
+					OSArchs: &osarches,
+				}),
+				Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+					Disters: distgoconfig.ToDistersConfig(&distersCfg),
+				}),
+			},
+		}),
+	}
+	projectCfgBytes, err := yaml.Marshal(projectCfg)
+	require.NoError(t, err)
+	internalFiles := map[string][]byte{
+		"godel/config/dist-plugin.yml": projectCfgBytes,
+		"main.go":                      []byte(`package main; func main() {}`),
+		"go.mod":                       []byte(fmt.Sprintf("module %s\ngo 1.15", productName)),
+	}
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+
+	tmpDir, cleanup, err := dirs.TempDir("", "")
+	require.NoError(t, err)
+	if !filepath.IsAbs(tmpDir) {
+		tmpDir = path.Join(wd, tmpDir)
+	}
+	defer cleanup()
+
+	tmpDir, err = filepath.EvalSymlinks(tmpDir)
+	require.NoError(t, err)
+
+	projectDir, err := ioutil.TempDir(tmpDir, "")
+	require.NoError(t, err)
+
+	for filename, contents := range internalFiles {
+		err = os.MkdirAll(path.Dir(path.Join(projectDir, filename)), 0755)
+		require.NoError(t, err)
+		err = ioutil.WriteFile(path.Join(projectDir, filename), contents, 0644)
+		require.NoError(t, err)
+	}
+	// write files required for test framework
+	_, err = gofiles.Write(projectDir, builtinSpecs)
+	require.NoError(t, err)
+
+	wantWd := projectDir
+	err = os.Chdir(wantWd)
+	require.NoError(t, err)
+	defer func() {
+		err = os.Chdir(wd)
+		require.NoError(t, err)
+	}()
+
+	var assetProviders []pluginapitester.AssetProvider
+	if assetProvider != nil {
+		assetProviders = append(assetProviders, assetProvider)
+	}
+
+	// run build task once
+	buildBuf := new(bytes.Buffer)
+	_, err = pluginapitester.RunPlugin(
+		pluginProvider,
+		assetProviders,
+		"build", nil,
+		projectDir, false, buildBuf)
+	require.NoError(t, err, buildBuf.String())
+
+	for j := 0; j < 2; j++ {
+		// run dist task twice and ensure no errors
+		distBuf := new(bytes.Buffer)
+		_, err = pluginapitester.RunPlugin(
+			pluginProvider,
+			assetProviders,
+			"dist", []string{"--force"}, // use --force to skip build caching
+			projectDir, false, distBuf)
+		require.NoError(t, err, distBuf.String())
 	}
 }

@@ -1,0 +1,7 @@
+type: improvement
+improvement:
+  description: |
+    Adds the distertester.RunDistOverwritesTest function.
+    This function can be used by custom dister implementations to verify that the "dist" operation does not fail when it has to overwrite previous output.
+  links:
+  - https://github.com/palantir/distgo/pull/191
