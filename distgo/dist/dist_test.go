@@ -21,22 +21,26 @@ import (
 	"path"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/distgo/dister/bin"
 	"github.com/palantir/distgo/dister/disterfactory"
+	"github.com/palantir/distgo/dister/distertester"
+	"github.com/palantir/distgo/dister/manual"
 	"github.com/palantir/distgo/dister/osarchbin"
 	"github.com/palantir/distgo/distgo"
 	distgoconfig "github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/distgo/dist"
 	"github.com/palantir/distgo/distgo/testfuncs"
+	"github.com/palantir/godel/pkg/products/v2"
+	"github.com/palantir/godel/v2/framework/pluginapitester"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/gittest"
 	"github.com/palantir/pkg/matcher"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -468,70 +472,53 @@ func main() {}
 	}
 }
 
-// TestDistOverwrites verifies that subsequent runs of the dist task will overwrite the artifacts.
-func TestDistOverwrites(t *testing.T) {
-	const distRuns = 2
-
-	tmp, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
-
+// TestRepeatedDist verifies that subsequent runs of the dist task will succeed without error for all built-in disters.
+func TestRepeatedDist(t *testing.T) {
 	for _, tc := range []struct {
-		disterType  string
-		distModTime func(tt *testing.T, projectDir string) time.Time
+		disterType string
+		distersCfg distgoconfig.DistersConfig
 	}{
 		{
 			disterType: osarchbin.TypeName,
-			distModTime: func(t *testing.T, projectDir string) time.Time {
-				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "unspecified", osarchbin.TypeName, fmt.Sprintf("foo-unspecified-%s.tgz", osarch.Current().String())))
-				require.NoError(t, err)
-				return info.ModTime()
+			distersCfg: distgoconfig.DistersConfig{
+				osarchbin.TypeName: {
+					Type: stringPtr(osarchbin.TypeName),
+				},
 			},
 		},
 		{
 			disterType: bin.TypeName,
-			distModTime: func(t *testing.T, projectDir string) time.Time {
-				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "unspecified", bin.TypeName, "foo-unspecified.tgz"))
-				require.NoError(t, err)
-				return info.ModTime()
+			distersCfg: distgoconfig.DistersConfig{
+				bin.TypeName: {
+					Type: stringPtr(bin.TypeName),
+				},
+			},
+		},
+		{
+			disterType: manual.TypeName,
+			distersCfg: distgoconfig.DistersConfig{
+				manual.TypeName: {
+					Type: stringPtr(manual.TypeName),
+					Config: &yaml.MapSlice{
+						{
+							Key:   "extension",
+							Value: "tar",
+						},
+					},
+					Script: stringPtr(`
+#!/usr/bin/env bash
+echo "hello" > $DIST_WORK_DIR/out.txt
+tar -cf "$DIST_DIR/$DIST_NAME".tar -C "$DIST_WORK_DIR" out.txt
+`),
+				},
 			},
 		},
 	} {
 		t.Run(tc.disterType, func(t *testing.T) {
-			projectDir, err := ioutil.TempDir(tmp, "")
+			pluginPath, err := products.Bin("dist-plugin")
 			require.NoError(t, err)
-			err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
-			require.NoError(t, err)
-			err = ioutil.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
-			require.NoError(t, err)
-			err = ioutil.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
-			require.NoError(t, err)
-
-			projectCfg := distgoconfig.ProjectConfig{
-				ProductDefaults: *distgoconfig.ToProductConfig(&distgoconfig.ProductConfig{
-					Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
-						Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
-							distgo.DistID(tc.disterType): {
-								Type: stringPtr(tc.disterType),
-							},
-						}),
-					}),
-				}),
-			}
-
-			projectParam := testfuncs.NewProjectParam(t, projectCfg, projectDir, tc.disterType)
-			projectInfo, err := projectParam.ProjectInfo(projectDir)
-			require.NoError(t, err)
-
-			var modTime time.Time
-			for i := 0; i < distRuns; i++ {
-				err = dist.Products(projectInfo, projectParam, nil, nil, false, ioutil.Discard)
-				require.NoError(t, err)
-
-				distModTime := tc.distModTime(t, projectDir)
-				require.True(t, distModTime.After(modTime))
-				modTime = distModTime
-			}
+			pluginProvider := pluginapitester.NewPluginProvider(pluginPath)
+			distertester.RunRepeatedDistTest(t, pluginProvider, nil, tc.distersCfg)
 		})
 	}
 }
