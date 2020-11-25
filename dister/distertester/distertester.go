@@ -178,7 +178,7 @@ func RunRepeatedDistTest(t *testing.T,
 					Disters: distgoconfig.ToDistersConfig(&distersCfg),
 				}),
 				Publish: distgoconfig.ToPublishConfig(&distgoconfig.PublishConfig{
-					GroupID:  stringPtr("com.palantir.test"),
+					GroupID: stringPtr("com.palantir.test"),
 				}),
 			},
 		}),
