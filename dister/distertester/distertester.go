@@ -177,6 +177,9 @@ func RunRepeatedDistTest(t *testing.T,
 				Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 					Disters: distgoconfig.ToDistersConfig(&distersCfg),
 				}),
+				Publish: distgoconfig.ToPublishConfig(&distgoconfig.PublishConfig{
+					GroupID: stringPtr("com.palantir.test"),
+				}),
 			},
 		}),
 	}
@@ -245,4 +248,8 @@ func RunRepeatedDistTest(t *testing.T,
 			projectDir, false, distBuf)
 		require.NoError(t, err, distBuf.String())
 	}
+}
+
+func stringPtr(s string) *string {
+	return &s
 }
