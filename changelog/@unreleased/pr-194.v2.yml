@@ -1,0 +1,6 @@
+type: improvement
+improvement:
+  description: Adds the RunMultipleAssetDockerBuilderTest function to allow testing
+    a Docker builder asset in conjunction with other assets.
+  links:
+  - https://github.com/palantir/distgo/pull/194
