@@ -66,6 +66,20 @@ func RunAssetDockerBuilderTest(t *testing.T,
 	assetProvider pluginapitester.AssetProvider,
 	testCases []TestCase,
 ) {
+	var assetProviders []pluginapitester.AssetProvider
+	if assetProvider != nil {
+		assetProviders = append(assetProviders, assetProvider)
+	}
+	RunMultipleAssetDockerBuilderTest(t, pluginProvider, assetProviders, testCases)
+}
+
+// RunMultipleAssetDockerBuilderTest tests the "docker" operation using the provided assets. Uses the provided plugin
+// provider and asset providers to resolve the plugin and assets and invokes the "docker" command.
+func RunMultipleAssetDockerBuilderTest(t *testing.T,
+	pluginProvider pluginapitester.PluginProvider,
+	assetProviders []pluginapitester.AssetProvider,
+	testCases []TestCase,
+) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
@@ -119,11 +133,6 @@ func RunAssetDockerBuilderTest(t *testing.T,
 				err = os.Chdir(wd)
 				require.NoError(t, err)
 			}()
-
-			var assetProviders []pluginapitester.AssetProvider
-			if assetProvider != nil {
-				assetProviders = append(assetProviders, assetProvider)
-			}
 
 			// dist artifacts are considered stale if the generation time of the oldest artifact matches the
 			// modification time of the configuration file (at second granularity). Wait until values are different to
