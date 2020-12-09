@@ -1044,6 +1044,34 @@ products:
 				},
 			},
 		},
+		{
+			"mainPkg rendered",
+			`
+products:
+  test-one:
+    build:
+      main-pkg: "./main"
+`,
+			map[distgo.ProductID]distgo.ProductTaskOutputInfo{
+				"test-one": {
+					Project: distgo.ProjectInfo{
+						ProjectDir: projectDir,
+						Version:    "1.0.0",
+					},
+					Product: distgo.ProductOutputInfo{
+						ID: "test-one",
+						BuildOutputInfo: &distgo.BuildOutputInfo{
+							BuildNameTemplateRendered: "test-one",
+							BuildOutputDir:            "out/build",
+							MainPkg:                   "./main",
+							OSArchs: []osarch.OSArch{
+								osarch.Current(),
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		var gotCfg distgoconfig.ProjectConfig
 		err := yaml.Unmarshal([]byte(tc.yml), &gotCfg)

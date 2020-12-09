@@ -80,6 +80,7 @@ type BuildParam struct {
 type BuildOutputInfo struct {
 	BuildNameTemplateRendered string          `json:"buildNameTemplateRendered"`
 	BuildOutputDir            string          `json:"buildOutputDir"`
+	MainPkg                   string          `json:"mainPkg"`
 	OSArchs                   []osarch.OSArch `json:"osArchs"`
 }
 
@@ -91,6 +92,7 @@ func (p *BuildParam) ToBuildOutputInfo(productID ProductID, version string) (Bui
 	return BuildOutputInfo{
 		BuildNameTemplateRendered: renderedName,
 		BuildOutputDir:            p.OutputDir,
+		MainPkg:                   p.MainPkg,
 		OSArchs:                   p.OSArchs,
 	}, nil
 }
