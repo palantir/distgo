@@ -86,6 +86,50 @@ products:
 `, projectDir, osarch.Current().String())
 				},
 			},
+			{
+				Name: "adds a 'v' prefix to version if specified in configuration",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+    dist:
+      disters:
+        type: os-arch-bin
+    publish:
+      group-id: com.test.group
+      info:
+        github:
+          config:
+            api-url: http://github.domain.com
+            user: testUser
+            token: testToken
+            owner: testOwner
+            repository: testRepo
+            add-v-prefix: true
+`,
+				},
+				Args: []string{
+					"--dry-run",
+				},
+				WantOutput: func(projectDir string) string {
+					return fmt.Sprintf(`[DRY RUN] Creating GitHub release v1.0.0 for testOwner/testRepo...done
+[DRY RUN] Uploading %s/out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to GitHub (destination URL cannot be computed in dry run)
+`, projectDir, osarch.Current().String())
+				},
+			},
 		},
 	)
 }

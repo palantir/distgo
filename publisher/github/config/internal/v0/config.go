@@ -25,6 +25,7 @@ type Config struct {
 	Token      string `yaml:"token,omitempty"`
 	Owner      string `yaml:"owner,omitempty"`
 	Repository string `yaml:"repository,omitempty"`
+	AddVPrefix bool   `yaml:"add-v-prefix,omitempty"`
 }
 
 func UpgradeConfig(cfgBytes []byte) ([]byte, error) {

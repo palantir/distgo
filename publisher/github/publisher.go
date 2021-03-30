@@ -76,6 +76,11 @@ var (
 		Description: "GitHub owner of the destination repository for the publish (if unspecified, user will be used)",
 		Type:        distgo.StringFlag,
 	}
+	githubAddVPrefixFlag = distgo.PublisherFlag{
+		Name:        "add-v-prefix",
+		Description: "If true, adds 'v' as a prefix to the version (for example, \"v1.2.3\")",
+		Type:        distgo.BoolFlag,
+	}
 )
 
 func (p *githubPublisher) Flags() ([]distgo.PublisherFlag, error) {
@@ -85,6 +90,7 @@ func (p *githubPublisher) Flags() ([]distgo.PublisherFlag, error) {
 		githubPublisherTokenFlag,
 		githubPublisherRepositoryFlag,
 		githubPublisherOwnerFlag,
+		githubAddVPrefixFlag,
 	}, nil
 }
 
@@ -109,6 +115,10 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 		cfg.Owner = cfg.User
 	}
 
+	if err := publisher.SetConfigValue(flagVals, githubAddVPrefixFlag, &cfg.AddVPrefix); err != nil {
+		return err
+	}
+
 	client := github.NewClient(oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: cfg.Token},
 	)))
@@ -124,12 +134,17 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 	}
 	client.BaseURL = apiURL
 
-	distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Creating GitHub release %s for %s/%s...", productTaskOutputInfo.Project.Version, cfg.Owner, cfg.Repository), dryRun)
+	releaseVersion := productTaskOutputInfo.Project.Version
+	if cfg.AddVPrefix {
+		releaseVersion = "v" + releaseVersion
+	}
+
+	distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Creating GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository), dryRun)
 
 	var releaseRes *github.RepositoryRelease
 	if !dryRun {
 		releaseRes, _, err = client.Repositories.CreateRelease(context.Background(), cfg.Owner, cfg.Repository, &github.RepositoryRelease{
-			TagName: github.String(productTaskOutputInfo.Project.Version),
+			TagName: github.String(releaseVersion),
 		})
 		if err != nil {
 			// newline to complement "..." output
@@ -138,10 +153,10 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 
 			if ghErr, ok := err.(*github.ErrorResponse); ok && len(ghErr.Errors) > 0 {
 				if ghErr.Errors[0].Code == "already_exists" {
-					return errors.Errorf("GitHub release %s already exists for %s/%s", productTaskOutputInfo.Project.Version, cfg.Owner, cfg.Repository)
+					return errors.Errorf("GitHub release %s already exists for %s/%s", releaseVersion, cfg.Owner, cfg.Repository)
 				}
 			}
-			return errors.Wrapf(err, "failed to create GitHub release %s for %s/%s...", productTaskOutputInfo.Project.Version, cfg.Owner, cfg.Repository)
+			return errors.Wrapf(err, "failed to create GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository)
 		}
 	}
 	// no need for dry run print because beginning of line has already been printed

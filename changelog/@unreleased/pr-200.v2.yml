@@ -1,0 +1,8 @@
+type: improvement
+improvement:
+  description: |-
+    Adds configuration and flag to github publisher that adds a 'v'
+    prefix to the version used for the tag/release created by the
+    publisher.
+  links:
+  - https://github.com/palantir/distgo/pull/200
