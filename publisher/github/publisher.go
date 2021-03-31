@@ -151,12 +151,17 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 			// no need for dry run print because beginning of line has already been printed
 			_, _ = fmt.Fprintln(stdout)
 
-			if ghErr, ok := err.(*github.ErrorResponse); ok && len(ghErr.Errors) > 0 {
-				if ghErr.Errors[0].Code == "already_exists" {
-					return errors.Errorf("GitHub release %s already exists for %s/%s", releaseVersion, cfg.Owner, cfg.Repository)
+			if ghErr, ok := err.(*github.ErrorResponse); ok && len(ghErr.Errors) > 0 && ghErr.Errors[0].Code == "already_exists" {
+				// release already exists: attempt to get it instead
+				gotRelease, _, err := client.Repositories.GetReleaseByTag(context.Background(), cfg.Owner, cfg.Repository, releaseVersion)
+				if err != nil {
+					return errors.Errorf("Failed to get GitHub release %s for %s/%s", releaseVersion, cfg.Owner, cfg.Repository)
 				}
+				// if release is found, use it and upload to the release
+				releaseRes = gotRelease
+			} else {
+				return errors.Wrapf(err, "failed to create GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository)
 			}
-			return errors.Wrapf(err, "failed to create GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository)
 		}
 	}
 	// no need for dry run print because beginning of line has already been printed
