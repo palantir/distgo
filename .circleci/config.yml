@@ -15,84 +15,12 @@ version: 2.1
 
 orbs:
   go: palantir/go@0.0.18
-  godel: palantir/godel@0.0.18
+  godel: palantir/godel@0.0.19
 
 all-tags-filter: &all-tags-filter
   filters:
     tags:
       only: /.*/
-
-jobs:
-  integration-test:
-    docker:
-      - image: palantirtechnologies/go:go-1.16-java-11-t71
-    working_directory: /go/src/github.com/palantir/distgo
-    steps:
-      - checkout
-      - run:
-          name: Delete unrelated tags
-          command: |
-            ALL_TAGS=$(git tag --points-at HEAD)
-
-            if [ -z "$ALL_TAGS" ]; then
-                echo "No-op as there are no tags on the current commit ($(git rev-parse HEAD))"
-                exit 0
-            fi
-
-            if [ -z "${CIRCLE_TAG:+x}" ]; then
-                echo "Non-tag build, deleting all tags which point to HEAD: [${ALL_TAGS/$'\n'/,}]"
-                echo "$ALL_TAGS" | while read -r TAG; do git tag -d "$TAG" 1>/dev/null; done
-                exit 0
-            fi
-
-            TAGS_TO_DELETE=$(echo "$ALL_TAGS" | grep -v "^$CIRCLE_TAG$" || :)
-            if [ -z "$TAGS_TO_DELETE" ]; then
-                echo "No-op as exactly one tag ($CIRCLE_TAG) points to HEAD"
-                exit 0
-            fi
-
-            echo "Detected tag build, deleting all tags except '$CIRCLE_TAG' which point to HEAD: [${TAGS_TO_DELETE/$'\n'/,}]"
-            echo "$TAGS_TO_DELETE" | while read -r TAG; do git tag -d "$TAG" 1>/dev/null; done
-      - run:
-          command: go version
-      - run:
-          command: go env
-      - restore_cache:
-          name: Restoring Go build cache
-          keys:
-            - go-build-cache-v4-/root/.cache/go-build-{{ .Branch }}-{{ .Revision }}
-            - go-build-cache-v4-/root/.cache/go-build-{{ .Branch }}-
-            - go-build-cache-v4-/root/.cache/go-build-
-      - restore_cache:
-          name: Restoring Go module cache
-          keys:
-            - go-mod-cache-v4-/go/pkg/mod-{{ .Branch }}-{{ .Revision }}-{{ checksum "go.mod" }}-{{ checksum "go.sum" }}
-            - go-mod-cache-v4-/go/pkg/mod-{{ .Branch }}-{{ .Revision }}-{{ checksum "go.mod" }}
-            - go-mod-cache-v4-/go/pkg/mod-{{ .Branch }}-{{ .Revision }}
-            - go-mod-cache-v4-/go/pkg/mod-{{ .Branch }}
-            - go-mod-cache-v4-/go/pkg/mod
-      - restore_cache:
-          name: Restoring godel cache
-          keys:
-            - godel-cache-v1-{{ checksum "godelw" }}-{{ checksum "godel/config/godel.yml" }}
-      - run:
-          command: ./godelw version
-      - save_cache:
-          name: Saving godel cache
-          key: godel-cache-v1-{{ checksum "godelw" }}-{{ checksum "godel/config/godel.yml" }}
-          paths:
-            - ~/.godel
-      - run:
-          command: echo 'export TESTS_DIR=/tmp/test-results' >> $BASH_ENV
-      - run:
-          command: mkdir -p "${TESTS_DIR}"
-      - run:
-          command: ./godelw test --tags=integration --junit-output="$TESTS_DIR/$CIRCLE_PROJECT_REPONAME-tests.xml" -- -p=2
-      - store_test_results:
-          path: /tmp/test-results
-      - store_artifacts:
-          path: /tmp/test-results
-          destination: test-results
 
 workflows:
   version: 2
@@ -107,12 +35,12 @@ workflows:
           <<: *executor
           <<: *all-tags-filter
           tags: none
-#      - godel/test:
-#          name: integration-test
-#          <<: *executor
-#          <<: *all-tags-filter
-#          tags: integration
-      - integration-test
+      - godel/test:
+          name: integration-test
+          <<: *executor
+          <<: *all-tags-filter
+          tags: integration
+          parallelism: 2
       - godel/dist:
           name: dist
           <<: *executor
