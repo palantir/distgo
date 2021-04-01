@@ -1,8 +1,5 @@
 name: publish-godel-artifacts
-on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+on: push
 jobs:
   run-godel-publish:
     runs-on: ubuntu-latest
@@ -25,6 +22,6 @@ jobs:
       - run: ./godelw dist
         env:
           GOPATH: "/home/runner/go"
-      - run: ./godelw publish github --add-v-prefix --api-url=$GITHUB_API_URL --user=palantir --repository=distgo --token=${{ secrets.GITHUB_TOKEN }}
+      - run: echo "test"
         env:
           GOPATH: "/home/runner/go"
