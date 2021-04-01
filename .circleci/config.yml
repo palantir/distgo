@@ -15,7 +15,7 @@ version: 2.1
 
 orbs:
   go: palantir/go@0.0.18
-  godel: palantir/godel@0.0.18
+  godel: palantir/godel@0.0.21
 
 all-tags-filter: &all-tags-filter
   filters:
@@ -34,11 +34,13 @@ workflows:
           name: test
           <<: *executor
           <<: *all-tags-filter
+          tags: none
       - godel/test:
           name: integration-test
           <<: *executor
           <<: *all-tags-filter
           tags: integration
+          parallelism: "2"
       - godel/dist:
           name: dist
           <<: *executor
