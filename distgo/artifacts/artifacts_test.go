@@ -159,15 +159,15 @@ func TestBuildArtifacts(t *testing.T) {
 			params: []distgo.ProductParam{
 				createBuildSpec("foo", []osarch.OSArch{
 					{OS: "darwin", Arch: "amd64"},
-					{OS: "darwin", Arch: "386"},
+					{OS: "darwin", Arch: "arm64"},
 					{OS: "linux", Arch: "amd64"},
 				}),
 			},
 			want: func(projectDir string) map[distgo.ProductID][]string {
 				return map[distgo.ProductID][]string{
 					"foo": {
-						path.Join(projectDir, "out", "build", "foo", "0.1.0", "darwin-386", "foo"),
 						path.Join(projectDir, "out", "build", "foo", "0.1.0", "darwin-amd64", "foo"),
+						path.Join(projectDir, "out", "build", "foo", "0.1.0", "darwin-arm64", "foo"),
 						path.Join(projectDir, "out", "build", "foo", "0.1.0", "linux-amd64", "foo"),
 					},
 				}
@@ -225,15 +225,15 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 			params: []distgo.ProductParam{
 				createBuildSpec("foo", []osarch.OSArch{
 					{OS: "darwin", Arch: "amd64"},
-					{OS: "darwin", Arch: "386"},
+					{OS: "darwin", Arch: "arm64"},
 					{OS: "linux", Arch: "amd64"},
 				}),
 			},
 			want: func(projectDir string) map[distgo.ProductID][]string {
 				return map[distgo.ProductID][]string{
 					"foo": {
-						path.Join(projectDir, "out", "build", "foo", "0.1.0", "darwin-386", "foo"),
 						path.Join(projectDir, "out", "build", "foo", "0.1.0", "darwin-amd64", "foo"),
+						path.Join(projectDir, "out", "build", "foo", "0.1.0", "darwin-arm64", "foo"),
 						path.Join(projectDir, "out", "build", "foo", "0.1.0", "linux-amd64", "foo"),
 					},
 				}
@@ -244,7 +244,7 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 			params: []distgo.ProductParam{
 				createBuildSpec("foo", []osarch.OSArch{
 					{OS: "darwin", Arch: "amd64"},
-					{OS: "darwin", Arch: "386"},
+					{OS: "darwin", Arch: "arm64"},
 					{OS: "linux", Arch: "amd64"},
 				}),
 			},
@@ -264,7 +264,7 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 			params: []distgo.ProductParam{
 				createBuildSpec("foo", []osarch.OSArch{
 					{OS: "darwin", Arch: "amd64"},
-					{OS: "darwin", Arch: "386"},
+					{OS: "darwin", Arch: "arm64"},
 					{OS: "linux", Arch: "amd64"},
 				}),
 			},
@@ -285,8 +285,8 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 			want: func(projectDir string) map[distgo.ProductID][]string {
 				return map[distgo.ProductID][]string{
 					"foo": {
-						path.Join(projectDir, "out", "build", "foo", "0.1.0", "darwin-386", "foo"),
 						path.Join(projectDir, "out", "build", "foo", "0.1.0", "darwin-amd64", "foo"),
+						path.Join(projectDir, "out", "build", "foo", "0.1.0", "darwin-arm64", "foo"),
 						path.Join(projectDir, "out", "build", "foo", "0.1.0", "linux-amd64", "foo"),
 					},
 				}
