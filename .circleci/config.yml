@@ -35,10 +35,10 @@ workflows:
           <<: *executor
           <<: *all-tags-filter
       - godel/test:
-          name: test
+          name: integration-test
           <<: *executor
           <<: *all-tags-filter
-          tags: integration_test
+          tags: integration
       - godel/dist:
           name: dist
           <<: *executor
