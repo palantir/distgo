@@ -418,10 +418,10 @@ func main() {}
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
 			validate: func(caseNum int, name, projectDir string) {
-				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "foo", ".gitkeep"))
+				_, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "foo", ".gitkeep"))
 				assert.True(t, os.IsNotExist(err), "Case %d: %s", caseNum, name)
 
-				info, err = os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "foo", "bar", "bar.txt"))
+				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "foo", "bar", "bar.txt"))
 				require.NoError(t, err)
 				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
 
