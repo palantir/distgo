@@ -51,21 +51,29 @@ func getGodelVersion(projectDir string) (godelVersion, error) {
 		return godelVersion{}, errors.Wrapf(err, "failed to execute command %v: %s", cmd.Args, string(output))
 	}
 
-	// split input on newlines and only consider final line. Do this in case invoking "godelw" causes assets to be
+	// split input on line breaks and only consider final line. Do this in case invoking "godelw" causes assets to be
 	// downloaded (in which case download messages will be in output before version is printed).
-	outputLines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	if len(outputLines) == 0 {
-		return godelVersion{}, errors.Wrapf(err, "no elements found when splitting output %q on newlines", string(output))
+	outputString, err := getLastLine(string(output))
+	if err != nil {
+		return godelVersion{}, err
 	}
-	outputString := outputLines[len(outputLines)-1]
 
 	parts := strings.Split(outputString, " ")
 	if len(parts) != 3 {
-		return godelVersion{}, errors.Errorf(`expected output %s to have 3 parts when split by " ", but was %v`, outputString, parts)
+		return godelVersion{}, errors.Errorf(`expected output %q to have 3 parts when split by " ", but was %v`, outputString, parts)
 	}
 	v, err := newGodelVersion(parts[2])
 	if err != nil {
 		return godelVersion{}, errors.Wrapf(err, "failed to create version from output")
 	}
 	return v, nil
+}
+
+func getLastLine(in string) (string, error) {
+	outputLines := strings.Split(strings.Replace(strings.TrimSpace(in), "\r", "\n", -1), "\n")
+	if len(outputLines) == 0 {
+		return "", errors.Errorf("no elements found when splitting output %q on newlines", in)
+
+	}
+	return outputLines[len(outputLines)-1], nil
 }
