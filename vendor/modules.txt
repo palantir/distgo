@@ -67,7 +67,7 @@ github.com/palantir/distgo/pkg/git
 # github.com/palantir/godel/pkg/products/v2 v2.0.0
 ## explicit
 github.com/palantir/godel/pkg/products/v2
-# github.com/palantir/godel/v2 v2.38.0
+# github.com/palantir/godel/v2 v2.39.0
 ## explicit
 github.com/palantir/godel/v2/framework/artifactresolver
 github.com/palantir/godel/v2/framework/builtintasks
