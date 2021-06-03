@@ -309,6 +309,51 @@ products:
 `, osarch.Current().String(), osarch.Current().String())
 				},
 			},
+			{
+				Name: "URL encodes and appends properties to the publish URL",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+    dist:
+      disters:
+        type: os-arch-bin
+    publish:
+      group-id: com.test.group
+      info:
+        artifactory:
+          config:
+            url: http://artifactory.domain.com
+            username: testUsername
+            password: testPassword
+            repository: testRepo
+            properties:
+              key1: some/branch
+              key2: value2
+`,
+				},
+				Args: []string{
+					"--dry-run",
+				},
+				WantOutput: func(projectDir string) string {
+					return fmt.Sprintf(`[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://artifactory.domain.com/artifactory/testRepo;key1=some%%2Fbranch;key2=value2/com/test/group/foo/1.0.0/foo-1.0.0-%s.tgz
+[DRY RUN] Uploading to http://artifactory.domain.com/artifactory/testRepo;key1=some%%2Fbranch;key2=value2/com/test/group/foo/1.0.0/foo-1.0.0.pom
+`, osarch.Current().String(), osarch.Current().String())
+				},
+			},
 		},
 	)
 }

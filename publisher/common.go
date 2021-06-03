@@ -202,7 +202,7 @@ func (b *BasicConnectionInfo) UploadFile(fileInfo FileInfo, baseURL, artifactNam
 		uploadMsgParts = append(uploadMsgParts, filePath)
 	}
 	uploadMsgParts = append(uploadMsgParts, "to", rawUploadURL)
-	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf(strings.Join(uploadMsgParts, " ")), dryRun)
+	distgo.PrintlnOrDryRunPrintln(stdout, strings.Join(uploadMsgParts, " "), dryRun)
 
 	if !dryRun {
 		header := http.Header{}
