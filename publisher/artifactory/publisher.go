@@ -234,7 +234,7 @@ func (p *artifactoryPublisher) getDeploymentURL(cfg config.Artifactory) (string,
 
 // encodeProperties takes in a map[string]string of properties, renders each value as a Go template, and returns
 // the sorted slice of strings of the form `key=renderedVal`. The Go template can include the `env` function,
-// which fetches an environment variable.
+// which fetches an environment variable. All key and renderedVal fields will be properly URL encoded.
 func encodeProperties(properties map[string]string) ([]string, error) {
 	if len(properties) == 0 {
 		return nil, nil
@@ -258,7 +258,7 @@ func encodeProperties(properties map[string]string) ([]string, error) {
 			return nil, errors.Wrapf(err, "failed to execute template")
 		}
 		if outStr := output.String(); len(outStr) > 0 {
-			encoded = append(encoded, fmt.Sprintf("%s=%s", k, outStr))
+			encoded = append(encoded, fmt.Sprintf("%s=%s", url.PathEscape(k), url.PathEscape(outStr)))
 		}
 	}
 	sort.Strings(encoded)
