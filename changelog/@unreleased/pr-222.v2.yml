@@ -1,0 +1,8 @@
+type: fix
+fix:
+  description: |-
+    URL encode the Artifactory publisher property fields
+
+    Fixes a bug where the Artifactory properties were inserted into the URL without any encoding which caused failures when publishing. The properties will now be encoded before appending to the Artifactory URL.
+  links:
+  - https://github.com/palantir/distgo/pull/222
