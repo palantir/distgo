@@ -16,9 +16,8 @@ package layout
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -33,13 +32,13 @@ func AllPaths(dir string) (map[string]bool, error) {
 }
 
 func allPaths(paths map[string]bool, pathStack []string, dir string) error {
-	fis, err := ioutil.ReadDir(dir)
+	fis, err := os.ReadDir(dir)
 	if err != nil {
 		return err
 	}
 	for _, fi := range fis {
-		p := path.Join(dir, fi.Name())
-		key := path.Join(strings.Join(pathStack, "/"), fi.Name())
+		p := filepath.Join(dir, fi.Name())
+		key := filepath.Join(strings.Join(pathStack, "/"), fi.Name())
 		// record current path
 		paths[key] = fi.IsDir()
 		if fi.IsDir() {
@@ -59,7 +58,7 @@ func GodelDistLayout(version string, mode s.Mode) (s.SpecDir, error) {
 	}
 
 	values := s.TemplateValues{
-		godelHomeTemplate: path.Base(rootDir),
+		godelHomeTemplate: filepath.Base(rootDir),
 		versionTemplate:   version,
 	}
 	for key, value := range AppSpecTemplate(version) {
@@ -91,7 +90,7 @@ func GodelHomePath() (string, error) {
 	}
 	// if not present, create from home directory
 	if userHomeDir := os.Getenv("HOME"); userHomeDir != "" {
-		return path.Join(userHomeDir, defaultGodelHome), nil
+		return filepath.Join(userHomeDir, defaultGodelHome), nil
 	}
 	return "", fmt.Errorf("failed to get %s home directory", AppName)
 }
@@ -102,7 +101,7 @@ func GodelHomeSpecDir(mode s.Mode) (s.SpecDir, error) {
 		return nil, err
 	}
 	values := s.TemplateValues{
-		godelHomeTemplate: path.Base(rootDir),
+		godelHomeTemplate: filepath.Base(rootDir),
 	}
 
 	return s.New(rootDir, GodelHomeSpec(), values, mode)

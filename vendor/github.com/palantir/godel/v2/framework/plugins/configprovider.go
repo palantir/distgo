@@ -17,9 +17,8 @@ package plugins
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/palantir/godel/v2/framework/artifactresolver"
@@ -133,10 +132,10 @@ func resolveAndVerifyConfigProvider(
 	stdout io.Writer) (currLocator artifactresolver.Locator, ok bool) {
 
 	currLocator = currArtifact.LocatorWithChecksums.Locator
-	currDstPath := path.Join(dstBaseDir, pathsinternal.ConfigProviderFileName(currLocator))
+	currDstPath := filepath.Join(dstBaseDir, pathsinternal.ConfigProviderFileName(currLocator))
 
 	if _, err := os.Stat(currDstPath); os.IsNotExist(err) {
-		downloadDstPath := path.Join(downloadsDir, pathsinternal.ConfigProviderFileName(currLocator))
+		downloadDstPath := filepath.Join(downloadsDir, pathsinternal.ConfigProviderFileName(currLocator))
 		if err := artifactresolver.ResolveArtifact(currArtifact, defaultResolvers, osarch.Current(), downloadDstPath, artifactresolver.SHA256ChecksumFile, stdout); err != nil {
 			artifactErrors[currLocator] = err
 			return currLocator, false
@@ -181,9 +180,9 @@ func resolveAndVerifyConfigProvider(
 }
 
 func readConfigFromProvider(locator artifactresolver.Locator, configsDir string) (config.TasksConfig, error) {
-	cfgPath := path.Join(configsDir, pathsinternal.ConfigProviderFileName(locator))
+	cfgPath := filepath.Join(configsDir, pathsinternal.ConfigProviderFileName(locator))
 
-	cfgBytes, err := ioutil.ReadFile(cfgPath)
+	cfgBytes, err := os.ReadFile(cfgPath)
 	if err != nil {
 		return config.TasksConfig{}, errors.Wrapf(err, "failed to read %s", cfgPath)
 	}
