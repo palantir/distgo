@@ -18,10 +18,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -112,7 +111,7 @@ func downloadedTGZForVersion(version string) (string, string, error) {
 		return "", "", errors.Wrapf(err, "failed to create SpecDir for gödel home")
 	}
 	downloadsDirPath := godelHomeSpecDir.Path(layout.DownloadsDir)
-	downloadedTGZ := path.Join(downloadsDirPath, fmt.Sprintf("%s-%s.tgz", layout.AppName, version))
+	downloadedTGZ := filepath.Join(downloadsDirPath, fmt.Sprintf("%s-%s.tgz", layout.AppName, version))
 	if _, err := os.Stat(downloadedTGZ); err != nil {
 		return "", "", errors.Wrapf(err, "failed to stat downloaded TGZ file")
 	}
@@ -139,7 +138,7 @@ func latestGodelVersion(cacheExpiration time.Duration) (string, error) {
 	} else if resp.StatusCode != http.StatusOK {
 		return "", errors.Errorf("failed to determine latest release: received status code %d", resp.StatusCode)
 	}
-	latestVersion := path.Base(resp.Request.URL.String())
+	latestVersion := filepath.Base(resp.Request.URL.String())
 	if len(latestVersion) >= 2 && latestVersion[0] == 'v' && latestVersion[1] >= '0' && latestVersion[1] <= '9' {
 		// if version begins with 'v' and is followed by a digit, trim the leading 'v'
 		latestVersion = latestVersion[1:]
@@ -158,9 +157,9 @@ func readLatestCachedVersion() (versionConfig, error) {
 		return versionConfig{}, errors.Wrapf(err, "failed to create SpecDir for gödel home")
 	}
 	cacheDirPath := godelHomeSpecDir.Path(layout.CacheDir)
-	latestVersionFile := path.Join(cacheDirPath, latestVersionFileName)
+	latestVersionFile := filepath.Join(cacheDirPath, latestVersionFileName)
 
-	bytes, err := ioutil.ReadFile(latestVersionFile)
+	bytes, err := os.ReadFile(latestVersionFile)
 	if err != nil {
 		return versionConfig{}, errors.Wrapf(err, "failed to read version file")
 	}
@@ -177,7 +176,7 @@ func writeLatestCachedVersion(version string) error {
 		return errors.Wrapf(err, "failed to create SpecDir for gödel home")
 	}
 	cacheDirPath := godelHomeSpecDir.Path(layout.CacheDir)
-	latestVersionFile := path.Join(cacheDirPath, latestVersionFileName)
+	latestVersionFile := filepath.Join(cacheDirPath, latestVersionFileName)
 
 	bytes, err := json.Marshal(versionConfig{
 		LatestVersion: version,
@@ -187,7 +186,7 @@ func writeLatestCachedVersion(version string) error {
 		return errors.Wrapf(err, "failed to marshal version config as JSON")
 	}
 
-	if err := ioutil.WriteFile(latestVersionFile, bytes, 0644); err != nil {
+	if err := os.WriteFile(latestVersionFile, bytes, 0644); err != nil {
 		return errors.Wrap(err, "failed to write version file")
 	}
 	return nil
@@ -210,8 +209,8 @@ func setGodelPropertyKey(projectDir, key, val string) error {
 	}
 	configDir := wrapperSpec.Path(layout.WrapperConfigDir)
 
-	propsFilePath := path.Join(configDir, fmt.Sprintf("%s.properties", layout.AppName))
-	bytes, err := ioutil.ReadFile(propsFilePath)
+	propsFilePath := filepath.Join(configDir, fmt.Sprintf("%s.properties", layout.AppName))
+	bytes, err := os.ReadFile(propsFilePath)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read properties file")
 	}
@@ -223,7 +222,7 @@ func setGodelPropertyKey(projectDir, key, val string) error {
 		lines[i] = key + "=" + val
 	}
 	output := strings.Join(lines, "\n")
-	if err := ioutil.WriteFile(propsFilePath, []byte(output), 0644); err != nil {
+	if err := os.WriteFile(propsFilePath, []byte(output), 0644); err != nil {
 		return errors.Wrapf(err, "failed to write properties file")
 	}
 	return nil
@@ -238,7 +237,7 @@ func GodelPropsDistPkgInfo(projectDir string) (godelgetter.PkgSrc, error) {
 	}
 	configDir := wrapperSpec.Path(layout.WrapperConfigDir)
 
-	propsFilePath := path.Join(configDir, fmt.Sprintf("%s.properties", layout.AppName))
+	propsFilePath := filepath.Join(configDir, fmt.Sprintf("%s.properties", layout.AppName))
 	props, err := readPropertiesFile(propsFilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read properties file %s", propsFilePath)
@@ -279,7 +278,7 @@ func update(wrapperScriptDir string, pkg godelgetter.PkgSrc, newInstall bool, st
 
 	// copy new wrapper script to temp directory on same device and then move to destination
 	installedGodelWrapper := godelDist.Path(layout.WrapperScriptFile)
-	tmpGodelWrapper := path.Join(tmpDir, "godelw")
+	tmpGodelWrapper := filepath.Join(tmpDir, "godelw")
 	if err := layout.CopyFile(installedGodelWrapper, tmpGodelWrapper); err != nil {
 		return errors.Wrapf(err, "failed to copy %s to %s", installedGodelWrapper, tmpGodelWrapper)
 	}
@@ -302,14 +301,14 @@ func update(wrapperScriptDir string, pkg godelgetter.PkgSrc, newInstall bool, st
 
 	// overlay all directories except "config"
 	installedGodelWrapperDir := godelDist.Path(layout.WrapperAppDir)
-	wrapperDirFiles, err := ioutil.ReadDir(installedGodelWrapperDir)
+	wrapperDirFiles, err := os.ReadDir(installedGodelWrapperDir)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list files in directory %s", installedGodelWrapperDir)
 	}
 
 	for _, currWrapperFile := range wrapperDirFiles {
-		syncSrcPath := path.Join(installedGodelWrapperDir, currWrapperFile.Name())
-		syncDestPath := path.Join(wrapperScriptDir, layout.AppName, currWrapperFile.Name())
+		syncSrcPath := filepath.Join(installedGodelWrapperDir, currWrapperFile.Name())
+		syncDestPath := filepath.Join(wrapperScriptDir, layout.AppName, currWrapperFile.Name())
 
 		if currWrapperFile.IsDir() && currWrapperFile.Name() == layout.WrapperConfigDir {
 			// do not sync "config" directory
