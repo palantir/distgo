@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Update Go version to 1.17.3
+  links:
+  - https://github.com/palantir/distgo/pull/235
