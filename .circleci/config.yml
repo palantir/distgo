@@ -62,6 +62,7 @@ workflows:
           name: pkg-git-verify-test
           checkout-path: /home/circleci/go/src/palantir/distgo
           include-tests: true
+          go-version-file: ../../.palantir/go-version
           executor:
             name: circleci-go
             working_directory: /home/circleci/go/src/palantir/distgo/pkg/git
