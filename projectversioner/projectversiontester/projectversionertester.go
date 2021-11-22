@@ -26,6 +26,7 @@ import (
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
+	"github.com/palantir/distgo/internal/files"
 	"github.com/palantir/godel/v2/framework/pluginapitester"
 	"github.com/palantir/pkg/gittest"
 	"github.com/stretchr/testify/assert"
@@ -93,7 +94,7 @@ func RunAssetProjectVersionTest(t *testing.T,
 		}
 
 		// write files required for test framework
-		_, err = gofiles.Write(projectDir, builtinSpecs)
+		err = files.WriteGoFiles(projectDir, builtinSpecs)
 		require.NoError(t, err)
 
 		// commit all files

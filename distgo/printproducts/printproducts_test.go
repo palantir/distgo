@@ -27,6 +27,7 @@ import (
 	distgoconfig "github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/distgo/printproducts"
 	"github.com/palantir/distgo/distgo/testfuncs"
+	"github.com/palantir/distgo/internal/files"
 	"github.com/palantir/pkg/gittest"
 	"github.com/palantir/pkg/matcher"
 	"github.com/stretchr/testify/assert"
@@ -63,7 +64,7 @@ foo
 			"if param is empty, prints main packages",
 			distgoconfig.ProjectConfig{},
 			func(projectDir string) {
-				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
+				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "main.go",
 						Src:     `package main`,
@@ -95,7 +96,7 @@ foo
 				},
 			},
 			func(projectDir string) {
-				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
+				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "main.go",
 						Src:     `package main`,

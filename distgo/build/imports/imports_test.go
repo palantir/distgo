@@ -15,6 +15,7 @@
 package imports_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -25,6 +26,7 @@ import (
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/distgo/distgo/build/imports"
+	"github.com/palantir/distgo/internal/files"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -47,21 +49,23 @@ func TestAllFilesGoModOff(t *testing.T) {
 	for i, currCase := range []struct {
 		name    string
 		pkgPath string
-		files   []gofiles.GoFileSpec
+		filesFn func(projectDir string) []gofiles.GoFileSpec
 		want    func(projectDir string) imports.GoFiles
 	}{
 		{
 			name:    "returns files for primary package",
 			pkgPath: ".",
-			files: []gofiles.GoFileSpec{
-				{
-					RelPath: "main.go",
-					Src:     `package main; import "fmt"; func main() {}`,
-				},
-				{
-					RelPath: "main_helper.go",
-					Src:     `package main; func Helper() string { return "helper" }`,
-				},
+			filesFn: func(projectDir string) []gofiles.GoFileSpec {
+				return []gofiles.GoFileSpec{
+					{
+						RelPath: "main.go",
+						Src:     `package main; import "fmt"; func main() {}`,
+					},
+					{
+						RelPath: "main_helper.go",
+						Src:     `package main; func Helper() string { return "helper" }`,
+					},
+				}
 			},
 			want: func(projectDir string) imports.GoFiles {
 				absPkgDir, err := filepath.Abs(projectDir)
@@ -77,19 +81,21 @@ func TestAllFilesGoModOff(t *testing.T) {
 		{
 			name:    "test files are excluded",
 			pkgPath: ".",
-			files: []gofiles.GoFileSpec{
-				{
-					RelPath: "main.go",
-					Src:     `package main; import "fmt"; func main() {}`,
-				},
-				{
-					RelPath: "main_test.go",
-					Src:     `package main; import "testing"; func TestMain(t *testing.T) {}`,
-				},
-				{
-					RelPath: "another_test.go",
-					Src:     `package main_test; import "testing"; func TestMain(t *testing.T) {}`,
-				},
+			filesFn: func(projectDir string) []gofiles.GoFileSpec {
+				return []gofiles.GoFileSpec{
+					{
+						RelPath: "main.go",
+						Src:     `package main; import "fmt"; func main() {}`,
+					},
+					{
+						RelPath: "main_test.go",
+						Src:     `package main; import "testing"; func TestMain(t *testing.T) {}`,
+					},
+					{
+						RelPath: "another_test.go",
+						Src:     `package main_test; import "testing"; func TestMain(t *testing.T) {}`,
+					},
+				}
 			},
 			want: func(projectDir string) imports.GoFiles {
 				absPkgDir, err := filepath.Abs(projectDir)
@@ -104,19 +110,22 @@ func TestAllFilesGoModOff(t *testing.T) {
 		{
 			name:    "returns files for primary package and imported package",
 			pkgPath: ".",
-			files: []gofiles.GoFileSpec{
-				{
-					RelPath: "main.go",
-					Src:     `package main; import "fmt"; import "{{index . "foo/foo.go"}}"; func main() { fmt.Println(foo.Foo()) }`,
-				},
-				{
-					RelPath: "foo/foo.go",
-					Src:     `package foo; func Foo() string { return "foo" }`,
-				},
-				{
-					RelPath: "foo/foo_helper.go",
-					Src:     `package foo`,
-				},
+			filesFn: func(projectDir string) []gofiles.GoFileSpec {
+				fooImportPath := path.Join("github.com/palantir/distgo/distgo/build/imports", projectDir, "foo")
+				return []gofiles.GoFileSpec{
+					{
+						RelPath: "main.go",
+						Src:     fmt.Sprintf(`package main; import "fmt"; import "%s"; func main() { fmt.Println(foo.Foo()) }`, fooImportPath),
+					},
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package foo; func Foo() string { return "foo" }`,
+					},
+					{
+						RelPath: "foo/foo_helper.go",
+						Src:     `package foo`,
+					},
+				}
 			},
 			want: func(projectDir string) imports.GoFiles {
 				absPkgDir, err := filepath.Abs(projectDir)
@@ -135,19 +144,21 @@ func TestAllFilesGoModOff(t *testing.T) {
 		{
 			name:    "returns vendored dependency files",
 			pkgPath: ".",
-			files: []gofiles.GoFileSpec{
-				{
-					RelPath: "main.go",
-					Src:     `package main; import "fmt"; import "github.com/foo"; func main() { fmt.Println(foo.Foo()) }`,
-				},
-				{
-					RelPath: "vendor/github.com/foo/foo.go",
-					Src:     `package foo; func Foo() string { return "foo" }`,
-				},
-				{
-					RelPath: "vendor/github.com/foo/bar/bar.go",
-					Src:     `package bar`,
-				},
+			filesFn: func(projectDir string) []gofiles.GoFileSpec {
+				return []gofiles.GoFileSpec{
+					{
+						RelPath: "main.go",
+						Src:     `package main; import "fmt"; import "github.com/foo"; func main() { fmt.Println(foo.Foo()) }`,
+					},
+					{
+						RelPath: "vendor/github.com/foo/foo.go",
+						Src:     `package foo; func Foo() string { return "foo" }`,
+					},
+					{
+						RelPath: "vendor/github.com/foo/bar/bar.go",
+						Src:     `package bar`,
+					},
+				}
 			},
 			want: func(projectDir string) imports.GoFiles {
 				absPkgDir, err := filepath.Abs(projectDir)
@@ -167,7 +178,7 @@ func TestAllFilesGoModOff(t *testing.T) {
 			currProjectDir, err := ioutil.TempDir(tmpDir, "")
 			require.NoError(t, err, "Case %d", i)
 
-			_, err = gofiles.Write(currProjectDir, currCase.files)
+			err = files.WriteGoFiles(currProjectDir, currCase.filesFn(currProjectDir))
 			require.NoError(t, err, "Case %d", i)
 
 			got, err := imports.AllFiles(currProjectDir, "", "")
@@ -337,7 +348,7 @@ func TestAllFilesGoModOn(t *testing.T) {
 			currProjectDir, err := ioutil.TempDir(tmpDir, "")
 			require.NoError(t, err, "Case %d", i)
 
-			_, err = gofiles.Write(currProjectDir, currCase.files)
+			err = files.WriteGoFiles(currProjectDir, currCase.files)
 			require.NoError(t, err, "Case %d", i)
 
 			got, err := imports.AllFiles(currProjectDir, "", "")

@@ -34,6 +34,7 @@ import (
 	"github.com/palantir/distgo/distgo/testfuncs"
 	"github.com/palantir/distgo/dockerbuilder/defaultdockerbuilder"
 	"github.com/palantir/distgo/dockerbuilder/dockerbuilderfactory"
+	"github.com/palantir/distgo/internal/files"
 	"github.com/palantir/distgo/projectversioner/projectversionerfactory"
 	"github.com/palantir/distgo/publisher/publisherfactory"
 	"github.com/palantir/godel/v2/pkg/osarch"
@@ -58,7 +59,7 @@ func TestBuildArtifactsDefaultOutput(t *testing.T) {
 			"if param is empty, prints main packages in build output directory",
 			distgoconfig.ProjectConfig{},
 			func(projectDir string) {
-				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
+				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "go.mod",
 						Src:     `module foo`,

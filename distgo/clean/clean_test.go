@@ -31,6 +31,7 @@ import (
 	distgoconfig "github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/distgo/dist"
 	"github.com/palantir/distgo/distgo/testfuncs"
+	"github.com/palantir/distgo/internal/files"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/gittest"
 	"github.com/stretchr/testify/assert"
@@ -77,7 +78,7 @@ func TestClean(t *testing.T) {
 				}),
 			},
 			func(projectDir string) {
-				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
+				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "go.mod",
 						Src:     `module foo`,
@@ -128,7 +129,7 @@ func TestClean(t *testing.T) {
 				}),
 			},
 			func(projectDir string) {
-				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
+				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "go.mod",
 						Src:     `module foo`,
@@ -195,7 +196,7 @@ func TestClean(t *testing.T) {
 				}),
 			},
 			func(projectDir string) {
-				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
+				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "go.mod",
 						Src:     `module foo`,
@@ -257,7 +258,7 @@ func TestClean(t *testing.T) {
 				}),
 			},
 			func(projectDir string) {
-				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
+				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "go.mod",
 						Src:     `module foo`,
@@ -333,7 +334,7 @@ func TestClean(t *testing.T) {
 				}),
 			},
 			func(projectDir string) {
-				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
+				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "go.mod",
 						Src:     `module foo`,
