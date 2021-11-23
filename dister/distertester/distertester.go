@@ -28,6 +28,7 @@ import (
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/distgo/distgo"
 	distgoconfig "github.com/palantir/distgo/distgo/config"
+	"github.com/palantir/distgo/internal/files"
 	"github.com/palantir/godel/v2/framework/pluginapitester"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/gittest"
@@ -98,10 +99,10 @@ func RunAssetDistTest(t *testing.T,
 		}
 
 		// write files required for test framework
-		_, err = gofiles.Write(projectDir, builtinSpecs)
+		err = files.WriteGoFiles(projectDir, builtinSpecs)
 		require.NoError(t, err)
 		// write provided specs
-		_, err = gofiles.Write(projectDir, tc.Specs)
+		err = files.WriteGoFiles(projectDir, tc.Specs)
 		require.NoError(t, err)
 
 		// commit all files and tag project as v1.0.0
@@ -213,7 +214,7 @@ func RunRepeatedDistTest(t *testing.T,
 		require.NoError(t, err)
 	}
 	// write files required for test framework
-	_, err = gofiles.Write(projectDir, builtinSpecs)
+	err = files.WriteGoFiles(projectDir, builtinSpecs)
 	require.NoError(t, err)
 
 	wantWd := projectDir

@@ -25,6 +25,7 @@ import (
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
+	"github.com/palantir/distgo/internal/files"
 	"github.com/palantir/godel/pkg/products/v2"
 	"github.com/palantir/godel/v2/framework/pluginapitester"
 	"github.com/stretchr/testify/assert"
@@ -148,7 +149,7 @@ products:
 		projectDir, err := ioutil.TempDir(tmpDir, "")
 		require.NoError(t, err)
 
-		_, err = gofiles.Write(projectDir, tc.filesToCreate)
+		err = files.WriteGoFiles(projectDir, tc.filesToCreate)
 		require.NoError(t, err, "Case %d", i)
 
 		configFile := path.Join(projectDir, "config.yml")
@@ -225,7 +226,7 @@ products:
 
 	stdInContent := "output passed to stdin\n"
 
-	_, err = gofiles.Write(projectDir, filesToCreate)
+	err = files.WriteGoFiles(projectDir, filesToCreate)
 	require.NoError(t, err)
 
 	configFile := path.Join(projectDir, "config.yml")

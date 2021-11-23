@@ -33,6 +33,7 @@ import (
 	distgoconfig "github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/distgo/dist"
 	"github.com/palantir/distgo/distgo/testfuncs"
+	"github.com/palantir/distgo/internal/files"
 	"github.com/palantir/godel/pkg/products/v2"
 	"github.com/palantir/godel/v2/framework/pluginapitester"
 	"github.com/palantir/godel/v2/pkg/osarch"
@@ -233,7 +234,7 @@ echo $DEP_PRODUCT_ID_0_DIST_ID_0_DIST_ARTIFACT_0 > $DIST_DIR/bar-dist-artifacts.
 				}),
 			},
 			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
-				_, err := gofiles.Write(projectDir, []gofiles.GoFileSpec{
+				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "bar/main.go",
 						Src: `package main
@@ -395,7 +396,7 @@ func main() {}
 				err = os.MkdirAll(path.Dir(inputDir), 0755)
 				require.NoError(t, err)
 
-				_, err = gofiles.Write(inputDir, []gofiles.GoFileSpec{
+				err = files.WriteGoFiles(inputDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "foo/.gitkeep",
 					},

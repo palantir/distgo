@@ -29,6 +29,7 @@ import (
 	distgoconfig "github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/distgo/testfuncs"
 	"github.com/palantir/distgo/dockerbuilder/defaultdockerbuilder"
+	"github.com/palantir/distgo/internal/files"
 	"github.com/palantir/distgo/projectversioner/git"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/gittest"
@@ -874,7 +875,7 @@ product-defaults:
 		currProjectDir, err := ioutil.TempDir(tmpDir, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		_, err = gofiles.Write(currProjectDir, tc.gofiles)
+		err = files.WriteGoFiles(currProjectDir, tc.gofiles)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		var gotCfg distgoconfig.ProjectConfig
