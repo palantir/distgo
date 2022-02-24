@@ -56,6 +56,8 @@ var (
 
 func (p *mavenLocalPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	return []distgo.PublisherFlag{
+		publisher.ArtifactNamesFilterFlag,
+		publisher.ArtifactNamesExcludeFlag,
 		publisher.GroupIDFlag,
 		maven.NoPOMFlag,
 		mavenLocalPublisherBaseDirFlag,
@@ -77,6 +79,16 @@ func (p *mavenLocalPublisher) RunPublish(productTaskOutputInfo distgo.ProductTas
 	if err := publisher.SetConfigValue(flagVals, maven.NoPOMFlag, &cfg.NoPOM); err != nil {
 		return err
 	}
+
+	filterRegexp, err := publisher.GetArtifactNamesFilterFlagValue(flagVals)
+	if err != nil {
+		return err
+	}
+	excludeRegexp, err := publisher.GetArtifactNamesExcludeFlagValue(flagVals)
+	if err != nil {
+		return err
+	}
+	publisher.FilterProductTaskOutputInfoArtifactNames(&productTaskOutputInfo, filterRegexp, excludeRegexp)
 
 	baseDir := cfg.BaseDir
 	if baseDir == "" {
