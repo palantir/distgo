@@ -81,6 +81,8 @@ func (p *bintrayPublisher) Flags() ([]distgo.PublisherFlag, error) {
 		bintrayPublisherProductFlag,
 		bintrayPublisherPublishFlag,
 		bintrayPublisherDownloadsListFlag,
+		publisher.ArtifactNamesFilterFlag,
+		publisher.ArtifactNamesExcludeFlag,
 		publisher.GroupIDFlag,
 		maven.NoPOMFlag,
 	), nil
@@ -119,6 +121,16 @@ func (p *bintrayPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOu
 	); err != nil {
 		return err
 	}
+
+	filterRegexp, err := publisher.GetArtifactNamesFilterFlagValue(flagVals)
+	if err != nil {
+		return err
+	}
+	excludeRegexp, err := publisher.GetArtifactNamesExcludeFlagValue(flagVals)
+	if err != nil {
+		return err
+	}
+	publisher.FilterProductTaskOutputInfoArtifactNames(&productTaskOutputInfo, filterRegexp, excludeRegexp)
 
 	mavenProductPath := publisher.MavenProductPath(productTaskOutputInfo, groupID)
 	baseURL := strings.Join([]string{cfg.URL, "content", cfg.Subject, cfg.Repository, cfg.Product, productTaskOutputInfo.Project.Version, mavenProductPath}, "/")

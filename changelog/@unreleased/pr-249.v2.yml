@@ -1,0 +1,13 @@
+type: feature
+feature:
+  description: |-
+    Adds flags to the built-in publishers that enables controlling the behavior
+    of the artifacts that will be published by the operation.
+
+    If "--filter-artifact-names" is specified, then only artifacts with names
+    that match the specified regular expression are published.
+
+    If "--exclude-artifact-names" is specified, then any artifacts with names
+    that match the specified regular expression are not published.
+  links:
+  - https://github.com/palantir/distgo/pull/249

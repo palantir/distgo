@@ -91,6 +91,8 @@ func (p *githubPublisher) Flags() ([]distgo.PublisherFlag, error) {
 		githubPublisherRepositoryFlag,
 		githubPublisherOwnerFlag,
 		githubAddVPrefixFlag,
+		publisher.ArtifactNamesFilterFlag,
+		publisher.ArtifactNamesExcludeFlag,
 	}, nil
 }
 
@@ -118,6 +120,16 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 	if err := publisher.SetConfigValue(flagVals, githubAddVPrefixFlag, &cfg.AddVPrefix); err != nil {
 		return err
 	}
+
+	filterRegexp, err := publisher.GetArtifactNamesFilterFlagValue(flagVals)
+	if err != nil {
+		return err
+	}
+	excludeRegexp, err := publisher.GetArtifactNamesExcludeFlagValue(flagVals)
+	if err != nil {
+		return err
+	}
+	publisher.FilterProductTaskOutputInfoArtifactNames(&productTaskOutputInfo, filterRegexp, excludeRegexp)
 
 	client := github.NewClient(oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: cfg.Token},

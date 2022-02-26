@@ -71,6 +71,8 @@ func (p *artifactoryPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	return append(publisher.BasicConnectionInfoFlags(),
 		PublisherRepositoryFlag,
 		publisher.GroupIDFlag,
+		publisher.ArtifactNamesFilterFlag,
+		publisher.ArtifactNamesExcludeFlag,
 		maven.NoPOMFlag,
 	), nil
 }
@@ -98,6 +100,16 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 	if err := publisher.SetConfigValue(flagVals, maven.NoPOMFlag, &cfg.NoPOM); err != nil {
 		return nil, err
 	}
+
+	filterRegexp, err := publisher.GetArtifactNamesFilterFlagValue(flagVals)
+	if err != nil {
+		return nil, err
+	}
+	excludeRegexp, err := publisher.GetArtifactNamesExcludeFlagValue(flagVals)
+	if err != nil {
+		return nil, err
+	}
+	publisher.FilterProductTaskOutputInfoArtifactNames(&productTaskOutputInfo, filterRegexp, excludeRegexp)
 
 	artifactoryURL := strings.Join([]string{cfg.URL, "artifactory"}, "/")
 	productPath := publisher.MavenProductPath(productTaskOutputInfo, groupID)

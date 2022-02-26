@@ -29,6 +29,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/palantir/distgo/distgo"
@@ -100,6 +101,16 @@ var (
 	GroupIDFlag = distgo.PublisherFlag{
 		Name:        "group-id",
 		Description: "the Maven group for the product (overrides value specified in publish configuration)",
+		Type:        distgo.StringFlag,
+	}
+	ArtifactNamesFilterFlag = distgo.PublisherFlag{
+		Name:        "filter-artifact-names",
+		Description: "If specified, is interpreted as a Go regular expression and only artifacts with names that match the regular expression are uploaded",
+		Type:        distgo.StringFlag,
+	}
+	ArtifactNamesExcludeFlag = distgo.PublisherFlag{
+		Name:        "exclude-artifact-names",
+		Description: "If specified, is interpreted as a Go regular expression and any artifacts with names that match the regular expression are not uploaded",
 		Type:        distgo.StringFlag,
 	}
 	ConnectionInfoURLFlag = distgo.PublisherFlag{
@@ -286,6 +297,67 @@ func GetRequiredGroupID(flagVals map[distgo.PublisherFlagName]interface{}, produ
 		return productTaskOutputInfo.Product.PublishOutputInfo.GroupID, nil
 	}
 	return "", PropertyNotSpecifiedError(GroupIDFlag)
+}
+
+// GetArtifactNamesFilterFlagValue returns the regular expression specified by the ArtifactNamesFilterFlag in the
+// provided flagVals map. Returns nil if a value was not specified for the flag or if it was blank. Returns an error if
+// a regular expression was specified but is not valid.
+func GetArtifactNamesFilterFlagValue(flagVals map[distgo.PublisherFlagName]interface{}) (*regexp.Regexp, error) {
+	re, err := getRegularExpressionFlagValue(flagVals, ArtifactNamesFilterFlag.Name)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid value for flag %q", ArtifactNamesFilterFlag.Name)
+	}
+	return re, nil
+}
+
+// GetArtifactNamesExcludeFlagValue returns the regular expression specified by the ArtifactNamesExcludeFlag in the
+// provided flagVals map. Returns nil if a value was not specified for the flag or if it was blank. Returns an error if
+// a regular expression was specified but is not valid.
+func GetArtifactNamesExcludeFlagValue(flagVals map[distgo.PublisherFlagName]interface{}) (*regexp.Regexp, error) {
+	re, err := getRegularExpressionFlagValue(flagVals, ArtifactNamesExcludeFlag.Name)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid value for flag %q", ArtifactNamesExcludeFlag.Name)
+	}
+	return re, nil
+}
+
+func getRegularExpressionFlagValue(flagVals map[distgo.PublisherFlagName]interface{}, flagName distgo.PublisherFlagName) (*regexp.Regexp, error) {
+	if flagVal, ok := flagVals[flagName]; ok {
+		if regexpFlagVal := flagVal.(string); regexpFlagVal != "" {
+			re, err := regexp.Compile(regexpFlagVal)
+			if err != nil {
+				return nil, errors.Wrapf(err, "invalid regular expression %q", regexpFlagVal)
+			}
+			return re, nil
+		}
+	}
+	return nil, nil
+}
+
+// FilterProductTaskOutputInfoArtifactNames modifies the provided productTaskOutputInfo such that it only retains dist
+// artifact names that match the provided filterRegexp and do not match the provided excludeRegexp. Is a no-op if both
+// of the provided regular expressions are nil. Only modifies the values in DistArtifactNames (even if all values in
+// DistArtifactNames are removed, the dist info itself is not otherwise modified or removed).
+func FilterProductTaskOutputInfoArtifactNames(productTaskOutputInfo *distgo.ProductTaskOutputInfo, filterRegexp, excludeRegexp *regexp.Regexp) {
+	if filterRegexp == nil && excludeRegexp == nil {
+		return
+	}
+	for k, v := range productTaskOutputInfo.Product.DistOutputInfos.DistInfos {
+		var matches []string
+		for _, name := range v.DistArtifactNames {
+			// if filter regexp is specified and name does not match it, exclude the name
+			if filterRegexp != nil && !filterRegexp.MatchString(name) {
+				continue
+			}
+			// if exclude regexp is specified and name matches it, exclude the name
+			if excludeRegexp != nil && excludeRegexp.MatchString(name) {
+				continue
+			}
+			matches = append(matches, name)
+		}
+		v.DistArtifactNames = matches
+		productTaskOutputInfo.Product.DistOutputInfos.DistInfos[k] = v
+	}
 }
 
 func PropertyNotSpecifiedError(flag distgo.PublisherFlag) error {
