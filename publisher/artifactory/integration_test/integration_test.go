@@ -129,6 +129,47 @@ products:
 				},
 			},
 			{
+				Name: "skips POM publish if no artifacts are uploaded",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+    dist:
+      disters:
+        type: os-arch-bin
+    publish:
+      group-id: com.test.group
+      info:
+        artifactory:
+          config:
+            url: http://artifactory.domain.com
+            username: testUsername
+            password: testPassword
+            repository: testRepo
+`,
+				},
+				Args: []string{
+					"--dry-run",
+					`--exclude-artifact-names=^.+\.tgz$`,
+				},
+				WantOutput: func(projectDir string) string {
+					return ""
+				},
+			},
+			{
 				Name: "can use flags to specify values",
 				Specs: []gofiles.GoFileSpec{
 					{

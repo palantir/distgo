@@ -164,6 +164,12 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 		artifactNames = append(artifactNames, path.Base(currArtifactPath))
 	}
 
+	// if no artifacts were uploaded (for example, because all artifacts were filtered out based on regular
+	// expressions), nothing more to do (don't upload POM).
+	if len(uploadedURLs) == 0 {
+		return uploadedURLs, nil
+	}
+
 	if !cfg.NoPOM {
 		pomName, pomContent, err := maven.POM(groupID, productTaskOutputInfo)
 		if err != nil {

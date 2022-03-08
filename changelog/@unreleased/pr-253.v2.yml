@@ -1,0 +1,6 @@
+type: fix
+fix:
+  description: Updates Artifactory publisher to upload a POM file only if the publish
+    operation publishes at least 1 artifact.
+  links:
+  - https://github.com/palantir/distgo/pull/253
