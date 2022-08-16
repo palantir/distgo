@@ -89,6 +89,26 @@ func TestRenderPOM(t *testing.T) {
 </project>
 `,
 		},
+		{
+			"render POM with only git URL",
+			"foo",
+			"1.0.0",
+			"com.palantir",
+			"",
+			gitParams{
+				gitURL: "git@github.com:palantir/distgo.git",
+			},
+			`<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.palantir</groupId>
+  <artifactId>foo</artifactId>
+  <version>1.0.0</version>
+  <scm><url>git@github.com:palantir/distgo.git</url></scm>
+</project>
+`,
+		},
 	} {
 		got, err := renderPOM(tc.productID, tc.version, tc.groupID, tc.packagingType, tc.git)
 		require.NoError(t, err, "Case %d", i)
