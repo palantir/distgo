@@ -167,6 +167,9 @@ github.com/ulikunitz/xz
 github.com/ulikunitz/xz/internal/hash
 github.com/ulikunitz/xz/internal/xlog
 github.com/ulikunitz/xz/lzma
+# github.com/whilp/git-urls v1.0.0
+## explicit; go 1.13
+github.com/whilp/git-urls
 # github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 ## explicit
 github.com/xi2/xz
