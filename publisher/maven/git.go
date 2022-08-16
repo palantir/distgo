@@ -27,14 +27,6 @@ type gitParams struct {
 	webURL string
 }
 
-func (g gitParams) GitURL() string {
-	return g.gitURL
-}
-
-func (g gitParams) WebURL() string {
-	return g.webURL
-}
-
 func getRepoOrigin() gitParams {
 	out, err := exec.Command("git", "remote", "get-url", "origin").CombinedOutput()
 	if err != nil {

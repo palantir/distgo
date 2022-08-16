@@ -56,7 +56,8 @@ func TestParseRepoOrigin(t *testing.T) {
 	} {
 		t.Run(tc.Remote, func(t *testing.T) {
 			out := parseRepoOrigin(tc.Remote)
-			assert.Equal(t, tc.URL, out.WebURL())
+			assert.Equal(t, tc.Remote, out.gitURL)
+			assert.Equal(t, tc.URL, out.webURL)
 		})
 	}
 }

@@ -91,7 +91,7 @@ func renderPOM(productID distgo.ProductID, version, groupID, packaging string, g
 		distgo.VersionTemplateFunction(version),
 		distgo.GroupIDTemplateFunction(groupID),
 		distgo.PackagingTemplateFunction(packaging),
-		distgo.GitURLTemplateFunction(git.GitURL()),
-		distgo.WebURLTemplateFunction(git.WebURL()),
+		distgo.GitURLTemplateFunction(git.gitURL),
+		distgo.WebURLTemplateFunction(git.webURL),
 	)
 }
