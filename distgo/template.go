@@ -40,6 +40,14 @@ func PackagingTemplateFunction(packaging string) TemplateFunction {
 	return TemplateValueFunction("Packaging", packaging)
 }
 
+func GitURLTemplateFunction(gitURL string) TemplateFunction {
+	return TemplateValueFunction("GitURL", gitURL)
+}
+
+func WebURLTemplateFunction(webURL string) TemplateFunction {
+	return TemplateValueFunction("WebURL", webURL)
+}
+
 func RepositoryTemplateFunction(repository string) TemplateFunction {
 	// if repository is non-empty and does not end in a '/', manually append it
 	if repository != "" && !strings.HasSuffix(repository, "/") {

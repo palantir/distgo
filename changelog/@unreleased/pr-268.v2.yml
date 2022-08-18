@@ -1,0 +1,5 @@
+type: feature
+feature:
+  description: Include git remote and web url in maven pom.xml
+  links:
+  - https://github.com/palantir/distgo/pull/268
