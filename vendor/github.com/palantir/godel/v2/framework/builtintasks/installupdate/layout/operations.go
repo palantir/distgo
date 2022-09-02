@@ -18,9 +18,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
-	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 )
@@ -54,14 +53,14 @@ func CopyDir(src, dst string) error {
 		return errors.Wrapf(err, "failed to create destination directory %s", dst)
 	}
 
-	files, err := ioutil.ReadDir(src)
+	files, err := os.ReadDir(src)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read directory %s", src)
 	}
 
 	for _, f := range files {
-		srcPath := path.Join(src, f.Name())
-		dstPath := path.Join(dst, f.Name())
+		srcPath := filepath.Join(src, f.Name())
+		dstPath := filepath.Join(dst, f.Name())
 
 		if f.IsDir() {
 			err = CopyDir(srcPath, dstPath)
@@ -130,13 +129,13 @@ func CopyFile(src, dst string) (rErr error) {
 func SyncDir(srcDir, dstDir string, skip []string) (bool, error) {
 	modified := false
 
-	srcFiles, err := ioutil.ReadDir(srcDir)
+	srcFiles, err := os.ReadDir(srcDir)
 	if err != nil {
 		return modified, errors.Wrapf(err, "failed to read directory %s", srcDir)
 	}
 	srcFilesMap := toMap(srcFiles)
 
-	dstFiles, err := ioutil.ReadDir(dstDir)
+	dstFiles, err := os.ReadDir(dstDir)
 	if err != nil {
 		return modified, errors.Wrapf(err, "failed to read directory %s", dstDir)
 	}
@@ -150,8 +149,8 @@ func SyncDir(srcDir, dstDir string, skip []string) (bool, error) {
 		}
 
 		remove := false
-		srcFilePath := path.Join(srcDir, dstFileName)
-		dstFilePath := path.Join(dstDir, dstFileName)
+		srcFilePath := filepath.Join(srcDir, dstFileName)
+		dstFilePath := filepath.Join(dstDir, dstFileName)
 
 		if currSrcFileInfo, ok := srcFilesMap[dstFileName]; !ok {
 			// if dst exists but src does not, remove dst
@@ -197,8 +196,8 @@ func SyncDir(srcDir, dstDir string, skip []string) (bool, error) {
 			continue
 		}
 
-		srcFilePath := path.Join(srcDir, srcFileName)
-		dstFilePath := path.Join(dstDir, srcFileName)
+		srcFilePath := filepath.Join(srcDir, srcFileName)
+		dstFilePath := filepath.Join(dstDir, srcFileName)
 
 		if _, err := os.Stat(dstFilePath); os.IsNotExist(err) {
 			// if path does not exist at destination, copy source version
@@ -228,8 +227,8 @@ func toSet(input []string) map[string]struct{} {
 	return s
 }
 
-func toMap(input []os.FileInfo) map[string]os.FileInfo {
-	m := make(map[string]os.FileInfo, len(input))
+func toMap(input []os.DirEntry) map[string]os.DirEntry {
+	m := make(map[string]os.DirEntry, len(input))
 	for _, curr := range input {
 		m[curr.Name()] = curr
 	}
@@ -251,14 +250,14 @@ func Checksum(p string) (string, error) {
 // SyncDirAdditive copies all of the files and directories in src that are not in dst. Directories that are present in
 // both are handled recursively. Basically a recursive merge with source preservation.
 func SyncDirAdditive(src, dst string) error {
-	srcInfos, err := ioutil.ReadDir(src)
+	srcInfos, err := os.ReadDir(src)
 	if err != nil {
 		return errors.Wrapf(err, "failed to open %s", src)
 	}
 
 	for _, srcInfo := range srcInfos {
-		srcPath := path.Join(src, srcInfo.Name())
-		dstPath := path.Join(dst, srcInfo.Name())
+		srcPath := filepath.Join(src, srcInfo.Name())
+		dstPath := filepath.Join(dst, srcInfo.Name())
 
 		if dstInfo, err := os.Stat(dstPath); os.IsNotExist(err) {
 			// safe to copy
@@ -283,11 +282,11 @@ func SyncDirAdditive(src, dst string) error {
 }
 
 func VerifyDirExists(dir string) error {
-	return verifyPath(dir, path.Base(dir), true, false)
+	return verifyPath(dir, filepath.Base(dir), true, false)
 }
 
 func verifyPath(p, expectedName string, isDir bool, optional bool) error {
-	if path.Base(p) != expectedName {
+	if filepath.Base(p) != expectedName {
 		return errors.Errorf("%s is not a path to %s", p, expectedName)
 	}
 
@@ -312,7 +311,7 @@ func verifyDstPathSafe(dst string) error {
 	if _, err := os.Stat(dst); !os.IsNotExist(err) {
 		return errors.Wrapf(err, "destination path %s already exists", dst)
 	}
-	if _, err := os.Stat(path.Dir(dst)); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Dir(dst)); os.IsNotExist(err) {
 		return errors.Wrapf(err, "parent directory of destination path %s does not exist", dst)
 	}
 	return nil
