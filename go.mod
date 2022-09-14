@@ -1,6 +1,6 @@
 module github.com/palantir/distgo
 
-go 1.18
+go 1.19
 
 require (
 	github.com/google/go-github/v28 v28.1.1
