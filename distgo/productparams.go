@@ -70,8 +70,8 @@ func ProductParamsForProductArgs(inputProducts map[ProductID]ProductParam, produ
 }
 
 // ProductBuildID identifies a product or a specific build for a product. A ProductBuildID is one of the following:
-//   * {{ProductID}} (e.g. "foo"), which specifies that all OS/Archs for the product should be built
-//   * {{ProductID}}.{{OSArch}} (e.g. "foo.darwin-amd64"), which specifies that the specified OS/Arch for the specified
+//   - {{ProductID}} (e.g. "foo"), which specifies that all OS/Archs for the product should be built
+//   - {{ProductID}}.{{OSArch}} (e.g. "foo.darwin-amd64"), which specifies that the specified OS/Arch for the specified
 //     product should be built
 type ProductBuildID string
 
@@ -241,8 +241,8 @@ func filterOSArch(in []osarch.OSArch, filter map[osarch.OSArch]struct{}) []osarc
 }
 
 // ProductDistID identifies a product or a specific dist for a product. A ProductDistID is one of the following:
-//   * {{ProductID}} (e.g. "foo"), which specifies that all dists for the product should be built
-//   * {{ProductID}}.{{DistID}} (e.g. "foo.os-arch-bin"), which specifies that the specified DistID for the specified
+//   - {{ProductID}} (e.g. "foo"), which specifies that all dists for the product should be built
+//   - {{ProductID}}.{{DistID}} (e.g. "foo.os-arch-bin"), which specifies that the specified DistID for the specified
 //     product should be built
 type ProductDistID string
 
@@ -367,10 +367,10 @@ func ProductParamsForDistProductArgs(inputProducts map[ProductID]ProductParam, p
 
 // ProductDockerID identifies a product, a specific Docker builder for a product, or a specific Docker tag for a
 // specific Docker builder for a product. A ProductDockerID is one of the following:
-//   * {{ProductID}} (e.g. "foo"), which identifies all Docker images and its tags for the product
-//   * {{ProductID}}.{{DockerID}} (e.g. "foo.prod-docker"), which specifies all of the tags for the specified DockerID
+//   - {{ProductID}} (e.g. "foo"), which identifies all Docker images and its tags for the product
+//   - {{ProductID}}.{{DockerID}} (e.g. "foo.prod-docker"), which specifies all of the tags for the specified DockerID
 //     for the specified product
-//   * {{ProductID}}.{{DockerID}}.{{DockerTagID}} (e.g. "foo.prod-docker.release"), which specifies a specific tag for
+//   - {{ProductID}}.{{DockerID}}.{{DockerTagID}} (e.g. "foo.prod-docker.release"), which specifies a specific tag for
 //     the specified DockerID for the specified product
 type ProductDockerID string
 
