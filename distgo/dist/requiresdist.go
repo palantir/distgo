@@ -25,11 +25,11 @@ import (
 // RequiresDist returns a pointer to a distgo.ProductParam that contains only the Dister parameters for the output dist
 // artifacts that require generation. A product is considered to require generating dist artifacts if any of the
 // following is true:
-//   * Any of the dist artifact output paths do not exist
-//   * The product's dist configuration (as specified by configModTime) is more recent than any of its dist artifacts
-//   * The product has dependencies and any of the dependent build or dist artifacts are newer (have a later
+//   - Any of the dist artifact output paths do not exist
+//   - The product's dist configuration (as specified by configModTime) is more recent than any of its dist artifacts
+//   - The product has dependencies and any of the dependent build or dist artifacts are newer (have a later
 //     modification date) than any of the dist artifacts for the provided product
-//   * The product does not define a dist configuration
+//   - The product does not define a dist configuration
 //
 // Returns nil if all of the outputs exist and are up-to-date.
 func RequiresDist(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, configModTime *time.Time) (*distgo.ProductParam, error) {
