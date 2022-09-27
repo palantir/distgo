@@ -13,9 +13,9 @@ require (
 	github.com/palantir/godel/v2 v2.67.0
 	github.com/palantir/pkg/cobracli v1.1.0
 	github.com/palantir/pkg/gittest v1.0.1
-	github.com/palantir/pkg/matcher v1.0.1
+	github.com/palantir/pkg/matcher v1.1.0
 	github.com/palantir/pkg/signals v1.0.1
-	github.com/palantir/pkg/specdir v1.0.1
+	github.com/palantir/pkg/specdir v1.1.0
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5
@@ -48,13 +48,13 @@ require (
 	github.com/nmiyake/pkg/errorstringer v1.1.0 // indirect
 	github.com/nwaples/rardecode v1.0.0 // indirect
 	github.com/palantir/pkg v1.0.1 // indirect
-	github.com/palantir/pkg/pkgpath v1.0.1 // indirect
+	github.com/palantir/pkg/pkgpath v1.1.0 // indirect
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.7.0 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	golang.org/x/crypto v0.0.0-20220919173607-35f4265a4bc0 // indirect
+	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be // indirect
 	golang.org/x/mod v0.5.0 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/sys v0.0.0-20211205182925-97ca703d548d // indirect
