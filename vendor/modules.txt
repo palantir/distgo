@@ -111,26 +111,26 @@ github.com/palantir/godel/v2/godelgetter
 github.com/palantir/godel/v2/pkg/osarch
 github.com/palantir/godel/v2/pkg/products
 github.com/palantir/godel/v2/pkg/versionedconfig
-# github.com/palantir/pkg v1.0.1
-## explicit; go 1.13
+# github.com/palantir/pkg v1.1.0
+## explicit; go 1.19
 github.com/palantir/pkg
-# github.com/palantir/pkg/cobracli v1.1.0
-## explicit; go 1.16
+# github.com/palantir/pkg/cobracli v1.2.0
+## explicit; go 1.19
 github.com/palantir/pkg/cobracli
-# github.com/palantir/pkg/gittest v1.0.1
-## explicit; go 1.13
+# github.com/palantir/pkg/gittest v1.1.0
+## explicit; go 1.19
 github.com/palantir/pkg/gittest
-# github.com/palantir/pkg/matcher v1.1.0
-## explicit; go 1.18
+# github.com/palantir/pkg/matcher v1.2.0
+## explicit; go 1.19
 github.com/palantir/pkg/matcher
-# github.com/palantir/pkg/pkgpath v1.1.0
-## explicit; go 1.18
+# github.com/palantir/pkg/pkgpath v1.2.0
+## explicit; go 1.19
 github.com/palantir/pkg/pkgpath
-# github.com/palantir/pkg/signals v1.0.1
-## explicit; go 1.13
+# github.com/palantir/pkg/signals v1.1.0
+## explicit; go 1.19
 github.com/palantir/pkg/signals
-# github.com/palantir/pkg/specdir v1.1.0
-## explicit; go 1.18
+# github.com/palantir/pkg/specdir v1.2.0
+## explicit; go 1.19
 github.com/palantir/pkg/specdir
 # github.com/pierrec/lz4 v2.0.5+incompatible
 ## explicit
