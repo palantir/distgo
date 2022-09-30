@@ -11,11 +11,11 @@ require (
 	github.com/palantir/distgo/pkg/git v1.0.0
 	github.com/palantir/godel/pkg/products/v2 v2.0.0
 	github.com/palantir/godel/v2 v2.67.0
-	github.com/palantir/pkg/cobracli v1.1.0
-	github.com/palantir/pkg/gittest v1.0.1
-	github.com/palantir/pkg/matcher v1.1.0
-	github.com/palantir/pkg/signals v1.0.1
-	github.com/palantir/pkg/specdir v1.1.0
+	github.com/palantir/pkg/cobracli v1.2.0
+	github.com/palantir/pkg/gittest v1.1.0
+	github.com/palantir/pkg/matcher v1.2.0
+	github.com/palantir/pkg/signals v1.1.0
+	github.com/palantir/pkg/specdir v1.2.0
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5
@@ -47,8 +47,8 @@ require (
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/nmiyake/pkg/errorstringer v1.1.0 // indirect
 	github.com/nwaples/rardecode v1.0.0 // indirect
-	github.com/palantir/pkg v1.0.1 // indirect
-	github.com/palantir/pkg/pkgpath v1.1.0 // indirect
+	github.com/palantir/pkg v1.1.0 // indirect
+	github.com/palantir/pkg/pkgpath v1.2.0 // indirect
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.7.0 // indirect
