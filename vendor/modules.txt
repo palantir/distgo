@@ -173,7 +173,7 @@ github.com/whilp/git-urls
 # github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 ## explicit
 github.com/xi2/xz
-# golang.org/x/crypto v0.0.0-20221005025214-4161e89ecf1b
+# golang.org/x/crypto v0.0.0-20221010152910-d6f0a8c073c2
 ## explicit; go 1.17
 golang.org/x/crypto/cast5
 golang.org/x/crypto/openpgp
