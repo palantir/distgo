@@ -5,8 +5,8 @@ github.com/nmiyake/pkg/dirs v1.0.0 h1:pYeIw1wH7jh5/ew8naGE4Q56byJG7Uyi8PwwhVe/MT
 github.com/nmiyake/pkg/dirs v1.0.0/go.mod h1:r6/PkZ3CA1szGfQkxcHheEjBWi6Zu6jLb+lQmRXEyvM=
 github.com/palantir/pkg v1.1.0 h1:0EhrSUP8oeeh3MUvk7V/UU7WmsN1UiJNTvNj0sN9Cpo=
 github.com/palantir/pkg v1.1.0/go.mod h1:KC9srP/9ssWRxBxFCIqhUGC4Jt7OJkWRz0Iqehup1/c=
-github.com/palantir/pkg/gittest v1.1.0 h1:BtPlqZpDZZs5T/t5uDLycXPIzBo+9rDFcvvMWL6f/qg=
-github.com/palantir/pkg/gittest v1.1.0/go.mod h1:z2eq/rEzUDmNR8rvJCb+/XZ7w9/nxRCAKvYjMYW/w/w=
+github.com/palantir/pkg/gittest v1.2.0 h1:RPINGtLh+Mlt+o1M/nRQlTPrt4CP5tJOSMgeB5vxerM=
+github.com/palantir/pkg/gittest v1.2.0/go.mod h1:z2eq/rEzUDmNR8rvJCb+/XZ7w9/nxRCAKvYjMYW/w/w=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
