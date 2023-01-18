@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Add support for multi-architecture builds with a docker `buildx` builder
+  links:
+  - https://github.com/palantir/distgo/pull/307
