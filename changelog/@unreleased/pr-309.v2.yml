@@ -1,0 +1,5 @@
+type: feature
+feature:
+  description: Attempt to publish OCI artifact if it exists
+  links:
+  - https://github.com/palantir/distgo/pull/309
