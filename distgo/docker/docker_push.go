@@ -17,7 +17,6 @@ package docker
 import (
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"sort"
 
