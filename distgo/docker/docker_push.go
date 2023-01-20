@@ -86,7 +86,7 @@ func runSingleDockerPush(
 	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running Docker push for configuration %s of product %s...", dockerID, productID), dryRun)
 
 	// if an OCI artifact exists, push that. Otherwise, default to pushing the artifact in the docker daemon
-	if _, err := os.Stat(fmt.Sprintf("%s/%s.tar", productTaskOutputInfo.ProductDistOutputDir(distgo.DistID("oci")), dockerID)); err == nil {
+	if _, err := layout.FromPath(productTaskOutputInfo.ProductDistOutputDir(distgo.DistID("oci"))); err == nil {
 		return runOCIPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
 	}
 	return runDockerDaemonPush(dockerID, productTaskOutputInfo, dryRun, stdout)
