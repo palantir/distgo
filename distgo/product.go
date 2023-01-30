@@ -99,6 +99,10 @@ func (p *ProductTaskOutputInfo) ProductDockerDistArtifactPaths() map[DockerID]ma
 	return ProductDockerDistArtifactPaths(p.Project, p.Product, p.Deps)
 }
 
+func (p *ProductTaskOutputInfo) ProductDockerDistOutputDir(dockerID DockerID) string {
+	return ProductDistOutputDir(p.Project, p.Product, DistID(dockerID))
+}
+
 func ExecutableName(productName, goos string) string {
 	executableName := productName
 	if goos == "windows" {

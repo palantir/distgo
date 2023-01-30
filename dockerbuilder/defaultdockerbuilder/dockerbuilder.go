@@ -15,6 +15,8 @@
 package defaultdockerbuilder
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"os/exec"
 	"path"
@@ -24,9 +26,20 @@ import (
 
 const TypeName = "default"
 
+type BuildxOutput uint
+
+const (
+	OCITarball BuildxOutput = 1 << iota
+	DockerDaemon
+)
+
+type Option func(*DefaultDockerBuilder)
+
 type DefaultDockerBuilder struct {
-	BuildArgs       []string
-	BuildArgsScript string
+	BuildArgs        []string
+	BuildArgsScript  string
+	BuildxOutput     BuildxOutput
+	BuildxDriverOpts []string
 }
 
 func NewDefaultDockerBuilder(buildArgs []string, buildArgsScript string) distgo.DockerBuilder {
@@ -34,6 +47,14 @@ func NewDefaultDockerBuilder(buildArgs []string, buildArgsScript string) distgo.
 		BuildArgs:       buildArgs,
 		BuildArgsScript: buildArgsScript,
 	}
+}
+
+func NewDefaultDockerBuilderWithOptions(options ...Option) distgo.DockerBuilder {
+	builder := &DefaultDockerBuilder{}
+	for _, opt := range options {
+		opt(builder)
+	}
+	return builder
 }
 
 func (d *DefaultDockerBuilder) TypeName() (string, error) {
@@ -60,8 +81,92 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		}
 		args = append(args, buildArgsFromScript...)
 	}
+
+	if d.BuildxOutput != 0 {
+		return d.buildX(dockerID, productTaskOutputInfo, args, contextDirPath, verbose, dryRun, stdout)
+	}
+
 	args = append(args, contextDirPath)
 
 	cmd := exec.Command("docker", args...)
 	return distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout)
+}
+
+func (d *DefaultDockerBuilder) buildX(dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, args []string, contextDirPath string, verbose, dryRun bool, stdout io.Writer) error {
+	if err := d.ensureDockerContainerDriver(verbose, dryRun, stdout); err != nil {
+		return err
+	}
+	args = append([]string{"buildx"}, args...)
+	if d.BuildxOutput&OCITarball != 0 {
+		ociArgs := append(args, fmt.Sprintf("--output=type=oci,dest=%s", productTaskOutputInfo.ProductDockerDistOutputDir(dockerID)), contextDirPath)
+		cmd := exec.Command("docker", ociArgs...)
+		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
+			return err
+		}
+	}
+	if d.BuildxOutput&DockerDaemon != 0 {
+		dockerArgs := append(args, "--output=type=docker", contextDirPath)
+		cmd := exec.Command("docker", dockerArgs...)
+		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ensureDockerContainerDriver ensures there is a buildx builder that uses the docker-container driver, currently
+// required for multi-arch support, until docker finishes supporting multi-arch containers in the daemon. If one does
+// not exist, create one and set it to the default.
+func (d *DefaultDockerBuilder) ensureDockerContainerDriver(verbose, dryRun bool, stdout io.Writer) error {
+	cmd := exec.Command("docker", "buildx", "inspect")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return err
+	}
+
+	if bytes.Contains(out, []byte("docker-container")) {
+		return nil
+	}
+	var driverOptArgs []string
+	for _, opt := range d.BuildxDriverOpts {
+		driverOptArgs = append(driverOptArgs, "--driver-opt", opt)
+	}
+	args := []string{"buildx", "create", "--use", "--driver", "docker-container"}
+	cmd = exec.Command("docker", append(args, driverOptArgs...)...)
+	if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
+		return err
+	}
+
+	// The version of docker/buildx on circle does not have --bootstrap, so we run an empty build to make sure it's
+	// ready and is working.
+	cmd = exec.Command("docker", "buildx", "--file", "-", ".")
+	cmd.Stdin = bytes.NewBufferString("FROM scratch")
+	if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
+		return err
+	}
+	return nil
+}
+
+func WithBuildArgs(buildArgs []string) Option {
+	return func(d *DefaultDockerBuilder) {
+		d.BuildArgs = buildArgs
+	}
+}
+
+func WithBuildArgsScript(buildArgsScript string) Option {
+	return func(d *DefaultDockerBuilder) {
+		d.BuildArgsScript = buildArgsScript
+	}
+}
+
+func WithBuildxDriverOptions(buildxDriverOptions []string) Option {
+	return func(d *DefaultDockerBuilder) {
+		d.BuildxDriverOpts = buildxDriverOptions
+	}
+}
+
+func WithBuildxOutput(output BuildxOutput) Option {
+	return func(d *DefaultDockerBuilder) {
+		d.BuildxOutput = output
+	}
 }
