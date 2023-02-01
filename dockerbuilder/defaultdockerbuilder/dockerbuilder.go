@@ -16,11 +16,15 @@ package defaultdockerbuilder
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"path"
 
+	"github.com/google/go-containerregistry/pkg/v1/layout"
+	"github.com/mholt/archiver/v3"
 	"github.com/palantir/distgo/distgo"
 )
 
@@ -98,9 +102,14 @@ func (d *DefaultDockerBuilder) buildX(dockerID distgo.DockerID, productTaskOutpu
 	}
 	args = append([]string{"buildx"}, args...)
 	if d.BuildxOutput&OCITarball != 0 {
-		ociArgs := append(args, fmt.Sprintf("--output=type=oci,dest=%s", productTaskOutputInfo.ProductDockerDistOutputDir(dockerID)), contextDirPath)
+		destDir := productTaskOutputInfo.ProductDockerDistOutputDir(dockerID)
+		destFile := fmt.Sprintf("%s/image.tar", destDir)
+		ociArgs := append(args, fmt.Sprintf("--output=type=oci,dest=%s", destFile), contextDirPath)
 		cmd := exec.Command("docker", ociArgs...)
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
+			return err
+		}
+		if err := d.extractToOCILayout(destDir, destFile); err != nil {
 			return err
 		}
 	}
@@ -110,6 +119,32 @@ func (d *DefaultDockerBuilder) buildX(dockerID distgo.DockerID, productTaskOutpu
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// extractToOCILayout is responsible for converting the buildx OCI tarball output to a compatible OCI layout on disk.
+// The buildx tarball adds a layer of indirection which doesn't seem to play nicely with some registries; the top-level
+// image index produced contains a manifest per-tag, which point to the "actual" image index we want to publish. Since
+// we know all the rendered tags at publish time, we can move the "actual" image index back to the top level and do a
+// publish per-tag.
+func (d *DefaultDockerBuilder) extractToOCILayout(destOCILayoutDir, sourceOCITarball string) error {
+	if err := archiver.DefaultTar.Unarchive(destOCILayoutDir, sourceOCITarball); err != nil {
+		return err
+	}
+	index, err := layout.ImageIndexFromPath(destOCILayoutDir)
+	if err != nil {
+		return err
+	}
+	idxManifest, err := index.IndexManifest()
+	if err != nil {
+		return err
+	}
+	if len(idxManifest.Manifests) == 0 {
+		return errors.New("Top-level OCI image index does not contain any manifests. While this is a valid image index, it is unexpected and likely means something erroneous happened earlier in the build")
+	}
+	if err := os.Rename(path.Join(destOCILayoutDir, "blobs", idxManifest.Manifests[0].Digest.Algorithm, idxManifest.Manifests[0].Digest.Hex), path.Join(destOCILayoutDir, "index.json")); err != nil {
+		return err
 	}
 	return nil
 }

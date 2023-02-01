@@ -2,6 +2,7 @@ package huff0
 
 import (
 	"fmt"
+	"math"
 	"runtime"
 	"sync"
 )
@@ -77,22 +78,30 @@ func compress(in []byte, s *Scratch, compressor func(src []byte) ([]byte, error)
 		// Each symbol present maximum once or too well distributed.
 		return nil, false, ErrIncompressible
 	}
-
-	if s.Reuse == ReusePolicyPrefer && canReuse {
+	if s.Reuse == ReusePolicyMust && !canReuse {
+		// We must reuse, but we can't.
+		return nil, false, ErrIncompressible
+	}
+	if (s.Reuse == ReusePolicyPrefer || s.Reuse == ReusePolicyMust) && canReuse {
 		keepTable := s.cTable
+		keepTL := s.actualTableLog
 		s.cTable = s.prevTable
+		s.actualTableLog = s.prevTableLog
 		s.Out, err = compressor(in)
 		s.cTable = keepTable
+		s.actualTableLog = keepTL
 		if err == nil && len(s.Out) < wantSize {
 			s.OutData = s.Out
 			return s.Out, true, nil
+		}
+		if s.Reuse == ReusePolicyMust {
+			return nil, false, ErrIncompressible
 		}
 		// Do not attempt to re-use later.
 		s.prevTable = s.prevTable[:0]
 	}
 
 	// Calculate new table.
-	s.optimalTableLog()
 	err = s.buildCTable()
 	if err != nil {
 		return nil, false, err
@@ -109,9 +118,15 @@ func compress(in []byte, s *Scratch, compressor func(src []byte) ([]byte, error)
 		if oldSize <= hSize+newSize || hSize+12 >= wantSize {
 			// Retain cTable even if we re-use.
 			keepTable := s.cTable
+			keepTL := s.actualTableLog
+
 			s.cTable = s.prevTable
+			s.actualTableLog = s.prevTableLog
 			s.Out, err = compressor(in)
+
+			// Restore ctable.
 			s.cTable = keepTable
+			s.actualTableLog = keepTL
 			if err != nil {
 				return nil, false, err
 			}
@@ -142,9 +157,73 @@ func compress(in []byte, s *Scratch, compressor func(src []byte) ([]byte, error)
 		return nil, false, ErrIncompressible
 	}
 	// Move current table into previous.
-	s.prevTable, s.cTable = s.cTable, s.prevTable[:0]
+	s.prevTable, s.prevTableLog, s.cTable = s.cTable, s.actualTableLog, s.prevTable[:0]
 	s.OutData = s.Out[len(s.OutTable):]
 	return s.Out, false, nil
+}
+
+// EstimateSizes will estimate the data sizes
+func EstimateSizes(in []byte, s *Scratch) (tableSz, dataSz, reuseSz int, err error) {
+	s, err = s.prepare(in)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
+	// Create histogram, if none was provided.
+	tableSz, dataSz, reuseSz = -1, -1, -1
+	maxCount := s.maxCount
+	var canReuse = false
+	if maxCount == 0 {
+		maxCount, canReuse = s.countSimple(in)
+	} else {
+		canReuse = s.canUseTable(s.prevTable)
+	}
+
+	// We want the output size to be less than this:
+	wantSize := len(in)
+	if s.WantLogLess > 0 {
+		wantSize -= wantSize >> s.WantLogLess
+	}
+
+	// Reset for next run.
+	s.clearCount = true
+	s.maxCount = 0
+	if maxCount >= len(in) {
+		if maxCount > len(in) {
+			return 0, 0, 0, fmt.Errorf("maxCount (%d) > length (%d)", maxCount, len(in))
+		}
+		if len(in) == 1 {
+			return 0, 0, 0, ErrIncompressible
+		}
+		// One symbol, use RLE
+		return 0, 0, 0, ErrUseRLE
+	}
+	if maxCount == 1 || maxCount < (len(in)>>7) {
+		// Each symbol present maximum once or too well distributed.
+		return 0, 0, 0, ErrIncompressible
+	}
+
+	// Calculate new table.
+	err = s.buildCTable()
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
+	if false && !s.canUseTable(s.cTable) {
+		panic("invalid table generated")
+	}
+
+	tableSz, err = s.cTable.estTableSize(s)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	if canReuse {
+		reuseSz = s.prevTable.estimateSize(s.count[:s.symbolLen])
+	}
+	dataSz = s.cTable.estimateSize(s.count[:s.symbolLen])
+
+	// Restore
+	return tableSz, dataSz, reuseSz, nil
 }
 
 func (s *Scratch) compress1X(src []byte) ([]byte, error) {
@@ -163,28 +242,23 @@ func (s *Scratch) compress1xDo(dst, src []byte) ([]byte, error) {
 	for i := len(src) & 3; i > 0; i-- {
 		bw.encSymbol(cTable, src[n+i-1])
 	}
+	n -= 4
 	if s.actualTableLog <= 8 {
-		n -= 4
 		for ; n >= 0; n -= 4 {
 			tmp := src[n : n+4]
 			// tmp should be len 4
 			bw.flush32()
-			bw.encSymbol(cTable, tmp[3])
-			bw.encSymbol(cTable, tmp[2])
-			bw.encSymbol(cTable, tmp[1])
-			bw.encSymbol(cTable, tmp[0])
+			bw.encTwoSymbols(cTable, tmp[3], tmp[2])
+			bw.encTwoSymbols(cTable, tmp[1], tmp[0])
 		}
 	} else {
-		n -= 4
 		for ; n >= 0; n -= 4 {
 			tmp := src[n : n+4]
 			// tmp should be len 4
 			bw.flush32()
-			bw.encSymbol(cTable, tmp[3])
-			bw.encSymbol(cTable, tmp[2])
+			bw.encTwoSymbols(cTable, tmp[3], tmp[2])
 			bw.flush32()
-			bw.encSymbol(cTable, tmp[1])
-			bw.encSymbol(cTable, tmp[0])
+			bw.encTwoSymbols(cTable, tmp[1], tmp[0])
 		}
 	}
 	err := bw.close()
@@ -215,6 +289,10 @@ func (s *Scratch) compress4X(src []byte) ([]byte, error) {
 		s.Out, err = s.compress1xDo(s.Out, toDo)
 		if err != nil {
 			return nil, err
+		}
+		if len(s.Out)-idx > math.MaxUint16 {
+			// We cannot store the size in the jump table
+			return nil, ErrIncompressible
 		}
 		// Write compressed length as little endian before block.
 		if i < 3 {
@@ -259,6 +337,10 @@ func (s *Scratch) compress4Xp(src []byte) ([]byte, error) {
 			return nil, errs[i]
 		}
 		o := s.tmpOut[i]
+		if len(o) > math.MaxUint16 {
+			// We cannot store the size in the jump table
+			return nil, ErrIncompressible
+		}
 		// Write compressed length as little endian before block.
 		if i < 3 {
 			// Last length is not written.
@@ -322,9 +404,27 @@ func (s *Scratch) canUseTable(c cTable) bool {
 	return true
 }
 
+//lint:ignore U1000 used for debugging
+func (s *Scratch) validateTable(c cTable) bool {
+	if len(c) < int(s.symbolLen) {
+		return false
+	}
+	for i, v := range s.count[:s.symbolLen] {
+		if v != 0 {
+			if c[i].nBits == 0 {
+				return false
+			}
+			if c[i].nBits > s.actualTableLog {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // minTableLog provides the minimum logSize to safely represent a distribution.
 func (s *Scratch) minTableLog() uint8 {
-	minBitsSrc := highBit32(uint32(s.br.remain()-1)) + 1
+	minBitsSrc := highBit32(uint32(s.br.remain())) + 1
 	minBitsSymbols := highBit32(uint32(s.symbolLen-1)) + 2
 	if minBitsSrc < minBitsSymbols {
 		return uint8(minBitsSrc)
@@ -336,7 +436,7 @@ func (s *Scratch) minTableLog() uint8 {
 func (s *Scratch) optimalTableLog() {
 	tableLog := s.TableLog
 	minBits := s.minTableLog()
-	maxBitsSrc := uint8(highBit32(uint32(s.br.remain()-1))) - 2
+	maxBitsSrc := uint8(highBit32(uint32(s.br.remain()-1))) - 1
 	if maxBitsSrc < tableLog {
 		// Accuracy can be reduced
 		tableLog = maxBitsSrc
@@ -363,6 +463,7 @@ type cTableEntry struct {
 const huffNodesMask = huffNodesLen - 1
 
 func (s *Scratch) buildCTable() error {
+	s.optimalTableLog()
 	s.huffSort()
 	if cap(s.cTable) < maxSymbolValue+1 {
 		s.cTable = make([]cTableEntry, s.symbolLen, maxSymbolValue+1)
@@ -376,7 +477,7 @@ func (s *Scratch) buildCTable() error {
 	var startNode = int16(s.symbolLen)
 	nonNullRank := s.symbolLen - 1
 
-	nodeNb := int16(startNode)
+	nodeNb := startNode
 	huffNode := s.nodes[1 : huffNodesLen+1]
 
 	// This overlays the slice above, but allows "-1" index lookups.
@@ -439,7 +540,7 @@ func (s *Scratch) buildCTable() error {
 		return fmt.Errorf("internal error: maxNbBits (%d) > tableLogMax (%d)", maxNbBits, tableLogMax)
 	}
 	var nbPerRank [tableLogMax + 1]uint16
-	var valPerRank [tableLogMax + 1]uint16
+	var valPerRank [16]uint16
 	for _, v := range huffNode[:nonNullRank+1] {
 		nbPerRank[v.nbBits]++
 	}
@@ -455,16 +556,17 @@ func (s *Scratch) buildCTable() error {
 	}
 
 	// push nbBits per symbol, symbol order
-	// TODO: changed `s.symbolLen` -> `nonNullRank+1` (micro-opt)
 	for _, v := range huffNode[:nonNullRank+1] {
 		s.cTable[v.symbol].nBits = v.nbBits
 	}
 
 	// assign value within rank, symbol order
-	for n, val := range s.cTable[:s.symbolLen] {
-		v := valPerRank[val.nBits]
-		s.cTable[n].val = v
-		valPerRank[val.nBits] = v + 1
+	t := s.cTable[:s.symbolLen]
+	for n, val := range t {
+		nbits := val.nBits & 15
+		v := valPerRank[nbits]
+		t[n].val = v
+		valPerRank[nbits] = v + 1
 	}
 
 	return nil
@@ -488,10 +590,12 @@ func (s *Scratch) huffSort() {
 		r := highBit32(v+1) & 31
 		rank[r].base++
 	}
-	for n := 30; n > 0; n-- {
+	// maxBitLength is log2(BlockSizeMax) + 1
+	const maxBitLength = 18 + 1
+	for n := maxBitLength; n > 0; n-- {
 		rank[n-1].base += rank[n].base
 	}
-	for n := range rank[:] {
+	for n := range rank[:maxBitLength] {
 		rank[n].current = rank[n].base
 	}
 	for n, c := range s.count[:s.symbolLen] {
@@ -506,11 +610,10 @@ func (s *Scratch) huffSort() {
 		}
 		nodes[pos&huffNodesMask] = nodeElt{count: c, symbol: byte(n)}
 	}
-	return
 }
 
 func (s *Scratch) setMaxHeight(lastNonNull int) uint8 {
-	maxNbBits := s.TableLog
+	maxNbBits := s.actualTableLog
 	huffNode := s.nodes[1 : huffNodesLen+1]
 	//huffNode = huffNode[: huffNodesLen]
 
@@ -550,7 +653,7 @@ func (s *Scratch) setMaxHeight(lastNonNull int) uint8 {
 
 		// Get pos of last (smallest) symbol per rank
 		{
-			currentNbBits := uint8(maxNbBits)
+			currentNbBits := maxNbBits
 			for pos := int(n); pos >= 0; pos-- {
 				if huffNode[pos].nbBits >= currentNbBits {
 					continue
