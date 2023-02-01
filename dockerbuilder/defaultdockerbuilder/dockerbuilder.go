@@ -106,10 +106,7 @@ func (d *DefaultDockerBuilder) buildX(dockerID distgo.DockerID, productTaskOutpu
 	if d.BuildxOutput&OCITarball != 0 {
 		destDir := productTaskOutputInfo.ProductDockerDistOutputDir(dockerID)
 		destFile := fmt.Sprintf("%s/image.tar", destDir)
-
-		ociArgs := args
-		ociArgs = append(ociArgs, fmt.Sprintf("--output=type=oci,dest=%s", destFile), contextDirPath)
-		ociArgs = append(ociArgs, d.BuildxPlatformArg)
+		ociArgs := append(args, d.BuildxPlatformArg, fmt.Sprintf("--output=type=oci,dest=%s", destFile), contextDirPath)
 		cmd := exec.Command("docker", ociArgs...)
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 			return err
@@ -120,8 +117,7 @@ func (d *DefaultDockerBuilder) buildX(dockerID distgo.DockerID, productTaskOutpu
 	}
 	if d.BuildxOutput&DockerDaemon != 0 {
 		// explicitly don't include the platform for this output type, as it can only support single-architecture builds
-		dockerArgs := args
-		dockerArgs = append(dockerArgs, "--output=type=docker", contextDirPath)
+		dockerArgs := append(args, "--output=type=docker", contextDirPath)
 		cmd := exec.Command("docker", dockerArgs...)
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 			return err
