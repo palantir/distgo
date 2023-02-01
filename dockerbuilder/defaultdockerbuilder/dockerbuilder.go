@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/v1/layout"
 	"github.com/mholt/archiver/v3"
@@ -40,10 +41,11 @@ const (
 type Option func(*DefaultDockerBuilder)
 
 type DefaultDockerBuilder struct {
-	BuildArgs        []string
-	BuildArgsScript  string
-	BuildxOutput     BuildxOutput
-	BuildxDriverOpts []string
+	BuildArgs         []string
+	BuildArgsScript   string
+	BuildxOutput      BuildxOutput
+	BuildxDriverOpts  []string
+	BuildxPlatformArg string
 }
 
 func NewDefaultDockerBuilder(buildArgs []string, buildArgsScript string) distgo.DockerBuilder {
@@ -104,7 +106,10 @@ func (d *DefaultDockerBuilder) buildX(dockerID distgo.DockerID, productTaskOutpu
 	if d.BuildxOutput&OCITarball != 0 {
 		destDir := productTaskOutputInfo.ProductDockerDistOutputDir(dockerID)
 		destFile := fmt.Sprintf("%s/image.tar", destDir)
-		ociArgs := append(args, fmt.Sprintf("--output=type=oci,dest=%s", destFile), contextDirPath)
+
+		ociArgs := args
+		ociArgs = append(ociArgs, fmt.Sprintf("--output=type=oci,dest=%s", destFile), contextDirPath)
+		ociArgs = append(ociArgs, d.BuildxPlatformArg)
 		cmd := exec.Command("docker", ociArgs...)
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 			return err
@@ -114,7 +119,9 @@ func (d *DefaultDockerBuilder) buildX(dockerID distgo.DockerID, productTaskOutpu
 		}
 	}
 	if d.BuildxOutput&DockerDaemon != 0 {
-		dockerArgs := append(args, "--output=type=docker", contextDirPath)
+		// explicitly don't include the platform for this output type, as it can only support single-architecture builds
+		dockerArgs := args
+		dockerArgs = append(dockerArgs, "--output=type=docker", contextDirPath)
 		cmd := exec.Command("docker", dockerArgs...)
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 			return err
@@ -203,5 +210,14 @@ func WithBuildxDriverOptions(buildxDriverOptions []string) Option {
 func WithBuildxOutput(output BuildxOutput) Option {
 	return func(d *DefaultDockerBuilder) {
 		d.BuildxOutput = output
+	}
+}
+
+// WithBuildxPlatforms allows buildx builds to produce multi-platform images. The formatting for the platform specifier
+// is defined in the containerd source code.
+// https://github.com/containerd/containerd/blob/v1.4.3/platforms/platforms.go#L63
+func WithBuildxPlatforms(buildxPlatforms []string) Option {
+	return func(d *DefaultDockerBuilder) {
+		d.BuildxPlatformArg = fmt.Sprintf("--platform=%s", strings.Join(buildxPlatforms, ","))
 	}
 }
