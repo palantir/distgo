@@ -111,8 +111,10 @@ func (d *DefaultDockerBuilder) buildX(dockerID distgo.DockerID, productTaskOutpu
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 			return err
 		}
-		if err := d.extractToOCILayout(destDir, destFile); err != nil {
-			return err
+		if !dryRun {
+			if err := d.extractToOCILayout(destDir, destFile); err != nil {
+				return err
+			}
 		}
 	}
 	if d.BuildxOutput&DockerDaemon != 0 {
