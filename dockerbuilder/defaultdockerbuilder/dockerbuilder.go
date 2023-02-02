@@ -104,7 +104,7 @@ func (d *DefaultDockerBuilder) buildX(dockerID distgo.DockerID, productTaskOutpu
 	}
 	args = append([]string{"buildx"}, args...)
 	if d.BuildxOutput&OCITarball != 0 {
-		destDir := productTaskOutputInfo.ProductDockerDistOutputDir(dockerID)
+		destDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)
 		destFile := fmt.Sprintf("%s/image.tar", destDir)
 		ociArgs := append(args, d.BuildxPlatformArg, fmt.Sprintf("--output=type=oci,dest=%s", destFile), contextDirPath)
 		cmd := exec.Command("docker", ociArgs...)
