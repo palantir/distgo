@@ -31,10 +31,10 @@ import (
 
 const TypeName = "default"
 
-type BuildxOutput uint
+type Output uint
 
 const (
-	OCITarball BuildxOutput = 1 << iota
+	OCITarball Output = 1 << iota
 	DockerDaemon
 )
 
@@ -43,15 +43,16 @@ type Option func(*DefaultDockerBuilder)
 type DefaultDockerBuilder struct {
 	BuildArgs         []string
 	BuildArgsScript   string
-	BuildxOutput      BuildxOutput
 	BuildxDriverOpts  []string
 	BuildxPlatformArg string
+	Output            Output
 }
 
 func NewDefaultDockerBuilder(buildArgs []string, buildArgsScript string) distgo.DockerBuilder {
 	return &DefaultDockerBuilder{
 		BuildArgs:       buildArgs,
 		BuildArgsScript: buildArgsScript,
+		Output:          DockerDaemon,
 	}
 }
 
@@ -71,6 +72,7 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 	dockerBuilderOutputInfo := productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID]
 	contextDirPath := path.Join(productTaskOutputInfo.Project.ProjectDir, dockerBuilderOutputInfo.ContextDir)
 	args := []string{
+		"buildx",
 		"build",
 		"--file", path.Join(contextDirPath, dockerBuilderOutputInfo.DockerfilePath),
 	}
@@ -88,22 +90,11 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		args = append(args, buildArgsFromScript...)
 	}
 
-	if d.BuildxOutput != 0 {
-		return d.buildX(dockerID, productTaskOutputInfo, args, contextDirPath, verbose, dryRun, stdout)
-	}
-
-	args = append(args, contextDirPath)
-
-	cmd := exec.Command("docker", args...)
-	return distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout)
-}
-
-func (d *DefaultDockerBuilder) buildX(dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, args []string, contextDirPath string, verbose, dryRun bool, stdout io.Writer) error {
 	if err := d.ensureDockerContainerDriver(verbose, dryRun, stdout); err != nil {
 		return err
 	}
-	args = append([]string{"buildx"}, args...)
-	if d.BuildxOutput&OCITarball != 0 {
+
+	if d.Output&OCITarball != 0 {
 		destDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)
 		destFile := fmt.Sprintf("%s/image.tar", destDir)
 		ociArgs := append(args, d.BuildxPlatformArg, fmt.Sprintf("--output=type=oci,dest=%s", destFile), contextDirPath)
@@ -117,7 +108,7 @@ func (d *DefaultDockerBuilder) buildX(dockerID distgo.DockerID, productTaskOutpu
 			}
 		}
 	}
-	if d.BuildxOutput&DockerDaemon != 0 {
+	if d.Output&DockerDaemon != 0 {
 		// explicitly don't include the platform for this output type, as it can only support single-architecture builds
 		dockerArgs := append(args, "--output=type=docker", contextDirPath)
 		cmd := exec.Command("docker", dockerArgs...)
@@ -205,9 +196,9 @@ func WithBuildxDriverOptions(buildxDriverOptions []string) Option {
 	}
 }
 
-func WithBuildxOutput(output BuildxOutput) Option {
+func WithBuildxOutput(output Output) Option {
 	return func(d *DefaultDockerBuilder) {
-		d.BuildxOutput = output
+		d.Output = output
 	}
 }
 
