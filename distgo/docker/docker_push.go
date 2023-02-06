@@ -82,18 +82,16 @@ func runSingleDockerPush(
 	dryRun bool,
 	stdout io.Writer) (rErr error) {
 
-	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running Docker push for configuration %s of product %s...", dockerID, productID), dryRun)
-
 	// if an OCI artifact exists, push that. Otherwise, default to pushing the artifact in the docker daemon
-	if _, err := layout.FromPath(productTaskOutputInfo.ProductDistOutputDir(distgo.DistID("oci"))); err == nil {
+	if _, err := layout.FromPath(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)); err == nil {
 		return runOCIPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
 	}
-	return runDockerDaemonPush(dockerID, productTaskOutputInfo, dryRun, stdout)
+	return runDockerDaemonPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
 }
 
 func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, stdout io.Writer) error {
+	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running Docker OCI push for configuration %s of product %s...", dockerID, productID), dryRun)
 	if dryRun {
-		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running Docker OCI push for configuration %s of product %s...", dockerID, productID), dryRun)
 		return nil
 	}
 	index, err := layout.ImageIndexFromPath(productTaskOutputInfo.ProductDistOutputDir(distgo.DistID("oci")))
@@ -113,11 +111,13 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 }
 
 func runDockerDaemonPush(
+	productID distgo.ProductID,
 	dockerID distgo.DockerID,
 	productTaskOutputInfo distgo.ProductTaskOutputInfo,
 	dryRun bool,
 	stdout io.Writer,
 ) error {
+	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running Docker push for configuration %s of product %s...", dockerID, productID), dryRun)
 	for _, tag := range productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags {
 		cmd := exec.Command("docker", "push", tag)
 		if err := distgo.RunCommandWithVerboseOption(cmd, true, dryRun, stdout); err != nil {
