@@ -31,10 +31,14 @@ import (
 
 const TypeName = "default"
 
-type Output uint
+// OutputType is a bitmask which specifies which artifacts to produce as part of the docker build. At least one build
+// type must be specified, but multiple build types can be combined
+type OutputType uint
 
 const (
-	OCITarball Output = 1 << iota
+	// OCILayout output type indicates that the build should produce an OCI-compliant filesystem layout as an output
+	OCILayout OutputType = 1 << iota
+	// DockerDaemon output type indicates that the build should produce an image in the local docker daemon
 	DockerDaemon
 )
 
@@ -45,14 +49,14 @@ type DefaultDockerBuilder struct {
 	BuildArgsScript   string
 	BuildxDriverOpts  []string
 	BuildxPlatformArg string
-	Output            Output
+	OutputType        OutputType
 }
 
 func NewDefaultDockerBuilder(buildArgs []string, buildArgsScript string) distgo.DockerBuilder {
 	return &DefaultDockerBuilder{
 		BuildArgs:       buildArgs,
 		BuildArgsScript: buildArgsScript,
-		Output:          DockerDaemon,
+		OutputType:      DockerDaemon,
 	}
 }
 
@@ -89,7 +93,11 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		args = append(args, buildArgsFromScript...)
 	}
 
-	if d.Output&OCITarball != 0 {
+	if d.OutputType == 0 {
+		return errors.New("Output type of docker builder must be specified")
+	}
+
+	if d.OutputType&OCILayout != 0 {
 		if err := d.ensureDockerContainerDriver(verbose, dryRun, stdout); err != nil {
 			return err
 		}
@@ -108,7 +116,7 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 			}
 		}
 	}
-	if d.Output&DockerDaemon != 0 {
+	if d.OutputType&DockerDaemon != 0 {
 		cmd := exec.Command("docker", append(args, contextDirPath)...)
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 			return err
@@ -150,7 +158,7 @@ func (d *DefaultDockerBuilder) ensureDockerContainerDriver(verbose, dryRun bool,
 	cmd := exec.Command("docker", "buildx", "inspect")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check for existence of buildx drivers: %s", string(out))
 	}
 
 	if bytes.Contains(out, []byte("docker-container")) {
@@ -166,7 +174,7 @@ func (d *DefaultDockerBuilder) ensureDockerContainerDriver(verbose, dryRun bool,
 		return err
 	}
 
-	// The version of docker/buildx on circle does not have --bootstrap, so we run an empty build to make sure it's
+	// Not all instances of docker will run with the --bootstrap flag, so we run an empty build to make sure it's
 	// ready and is working.
 	cmd = exec.Command("docker", "buildx", "--file", "-", ".")
 	cmd.Stdin = bytes.NewBufferString("FROM scratch")
@@ -194,9 +202,9 @@ func WithBuildxDriverOptions(buildxDriverOptions []string) Option {
 	}
 }
 
-func WithBuildxOutput(output Output) Option {
+func WithBuildxOutput(output OutputType) Option {
 	return func(d *DefaultDockerBuilder) {
-		d.Output = output
+		d.OutputType = output
 	}
 }
 
@@ -205,6 +213,8 @@ func WithBuildxOutput(output Output) Option {
 // https://github.com/containerd/containerd/blob/v1.4.3/platforms/platforms.go#L63
 func WithBuildxPlatforms(buildxPlatforms []string) Option {
 	return func(d *DefaultDockerBuilder) {
-		d.BuildxPlatformArg = fmt.Sprintf("--platform=%s", strings.Join(buildxPlatforms, ","))
+		if len(buildxPlatforms) != 0 {
+			d.BuildxPlatformArg = fmt.Sprintf("--platform=%s", strings.Join(buildxPlatforms, ","))
+		}
 	}
 }
