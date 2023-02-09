@@ -328,12 +328,11 @@ func TestBuildErrorMessage(t *testing.T) {
 		param.Build.MainPkg = "./foo"
 	})
 
-	want := fmt.Sprintf(`(?s)^go build failed: build command \[.+go build -i -o out/build/testProduct/%v/testProduct ./foo\] run in directory %s with additional environment variables \[GOOS=.+ GOARCH=.+\] failed with output:.+foo/main.go:1:15: syntax error: non-declaration statement outside function body$`,
+	want := fmt.Sprintf(`(?s)^go build failed: build command \[.+go build -o out/build/testProduct/%v/testProduct ./foo\] run in directory %s with additional environment variables \[GOOS=.+ GOARCH=.+\] failed with output:.+foo/main.go:1:15: syntax error: non-declaration statement outside function body$`,
 		osarch.Current(), tmpDir)
 
 	buf := &bytes.Buffer{}
 	err = build.Run(projectInfo, []distgo.ProductParam{productParam}, build.Options{
-		Install:  true,
 		Parallel: false,
 	}, buf)
 	assert.Regexp(t, want, err.Error())
