@@ -40,6 +40,8 @@ const (
 	OCILayout OutputType = 1 << iota
 	// DockerDaemon output type indicates that the build should produce an image in the local docker daemon
 	DockerDaemon
+
+	allOutputs = OCILayout | DockerDaemon
 )
 
 type Option func(*DefaultDockerBuilder)
@@ -93,8 +95,8 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		args = append(args, buildArgsFromScript...)
 	}
 
-	if d.OutputType == 0 {
-		return errors.New("Output type of docker builder must be specified")
+	if d.OutputType&allOutputs == 0 {
+		return errors.New("A valid output type of docker builder must be specified")
 	}
 
 	if d.OutputType&OCILayout != 0 {

@@ -1,5 +1,12 @@
 type: improvement
 improvement:
-  description: Add support for multi-architecture builds with a docker `buildx` builder
+  description: |-
+    Add support for multi-architecture builds with a docker `buildx` builder.
+    This is not directly exposed to end users of `distgo`, and the default
+    behavior is identical, but allows for plugins to start using this builder.
+
+    The only supported output for multi-architecture builds is an OCI image
+    layout, which is produced in a new dist directory.
   links:
   - https://github.com/palantir/distgo/pull/307
+  - https://github.com/opencontainers/image-spec/blob/24027e1093941c9785f19475c8c1a4a8bef23c29/image-layout.md
