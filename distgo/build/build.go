@@ -40,7 +40,6 @@ type buildUnit struct {
 
 type Options struct {
 	Parallel bool
-	Install  bool
 	DryRun   bool
 	OSArchs  []osarch.OSArch
 }
@@ -185,7 +184,7 @@ func executeBuild(unit buildUnit, buildOpts Options, stdout io.Writer) error {
 			return errors.Wrapf(err, "failed to create directories for %s", path.Dir(outputArtifactPath))
 		}
 	}
-	if err := doBuildAction(unit, outputArtifactPath, buildOpts.Install, buildOpts.DryRun, stdout); err != nil {
+	if err := doBuildAction(unit, outputArtifactPath, buildOpts.DryRun, stdout); err != nil {
 		return errors.Wrapf(err, "go build failed")
 	}
 
@@ -194,7 +193,7 @@ func executeBuild(unit buildUnit, buildOpts Options, stdout io.Writer) error {
 	return nil
 }
 
-func doBuildAction(unit buildUnit, outputArtifactPath string, doInstall, dryRun bool, stdout io.Writer) error {
+func doBuildAction(unit buildUnit, outputArtifactPath string, dryRun bool, stdout io.Writer) error {
 	osArch := unit.osArch
 
 	cmd := exec.Command("go")
@@ -214,9 +213,6 @@ func doBuildAction(unit buildUnit, outputArtifactPath string, doInstall, dryRun 
 
 	args := []string{cmd.Path}
 	args = append(args, "build")
-	if doInstall {
-		args = append(args, "-i")
-	}
 
 	if !path.IsAbs(outputArtifactPath) {
 		// if outputArtifactPath is relative, then if it starts with ProjectDir the prefix needs to be trimmed because
