@@ -100,7 +100,7 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 	}
 
 	if d.OutputType&OCILayout != 0 {
-		if err := d.ensureDockerContainerDriver(verbose, dryRun, stdout); err != nil {
+		if err := d.ensureDockerContainerDriver(dockerID, verbose, dryRun, stdout); err != nil {
 			return err
 		}
 		destDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)
@@ -156,7 +156,7 @@ func (d *DefaultDockerBuilder) extractToOCILayout(destOCILayoutDir, sourceOCITar
 // ensureDockerContainerDriver ensures there is a buildx builder that uses the docker-container driver, currently
 // required for multi-arch support, until docker finishes supporting multi-arch containers in the daemon. If one does
 // not exist, create one and set it to the default.
-func (d *DefaultDockerBuilder) ensureDockerContainerDriver(verbose, dryRun bool, stdout io.Writer) error {
+func (d *DefaultDockerBuilder) ensureDockerContainerDriver(dockerID distgo.DockerID, verbose, dryRun bool, stdout io.Writer) error {
 	cmd := exec.Command("docker", "buildx", "inspect")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -170,16 +170,14 @@ func (d *DefaultDockerBuilder) ensureDockerContainerDriver(verbose, dryRun bool,
 	for _, opt := range d.BuildxDriverOpts {
 		driverOptArgs = append(driverOptArgs, "--driver-opt", opt)
 	}
-	args := []string{"buildx", "create", "--use", "--driver", "docker-container"}
-	cmd = exec.Command("docker", append(args, driverOptArgs...)...)
-	if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
+	createContextArgs := []string{"context", "create", string(dockerID)}
+	createContextCmd := exec.Command("docker", createContextArgs...)
+	if err := distgo.RunCommandWithVerboseOption(createContextCmd, verbose, dryRun, stdout); err != nil {
 		return err
 	}
 
-	// Not all instances of docker will run with the --bootstrap flag, so we run an empty build to make sure it's
-	// ready and is working.
-	cmd = exec.Command("docker", "buildx", "--file", "-", ".")
-	cmd.Stdin = bytes.NewBufferString("FROM scratch")
+	args := []string{"buildx", "create", string(dockerID), "--bootstrap", "--use", "--driver", "docker-container"}
+	cmd = exec.Command("docker", append(args, driverOptArgs...)...)
 	if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 		return err
 	}
