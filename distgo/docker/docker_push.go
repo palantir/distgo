@@ -20,6 +20,10 @@ import (
 	"os/exec"
 	"sort"
 
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/layout"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/palantir/distgo/distgo"
 )
 
@@ -78,6 +82,41 @@ func runSingleDockerPush(
 	dryRun bool,
 	stdout io.Writer) (rErr error) {
 
+	// if an OCI artifact exists, push that. Otherwise, default to pushing the artifact in the docker daemon
+	if _, err := layout.FromPath(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)); err == nil {
+		return runOCIPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
+	}
+	return runDockerDaemonPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
+}
+
+func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, stdout io.Writer) error {
+	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running Docker OCI push for configuration %s of product %s...", dockerID, productID), dryRun)
+	if dryRun {
+		return nil
+	}
+	index, err := layout.ImageIndexFromPath(productTaskOutputInfo.ProductDistOutputDir(distgo.DistID("oci")))
+	if err != nil {
+		return err
+	}
+	for _, tag := range productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags {
+		ref, err := name.ParseReference(tag)
+		if err != nil {
+			return err
+		}
+		if err := remote.WriteIndex(ref, index, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func runDockerDaemonPush(
+	productID distgo.ProductID,
+	dockerID distgo.DockerID,
+	productTaskOutputInfo distgo.ProductTaskOutputInfo,
+	dryRun bool,
+	stdout io.Writer,
+) error {
 	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running Docker push for configuration %s of product %s...", dockerID, productID), dryRun)
 	for _, tag := range productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags {
 		cmd := exec.Command("docker", "push", tag)
