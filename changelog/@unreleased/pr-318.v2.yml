@@ -1,0 +1,7 @@
+type: fix
+fix:
+  description: Removes the "--install" flag for the "build" command. The underlying
+    flag (the "-i" flag for the "go build" command) has been deprecated since Go 1.16
+    and was removed in Go 1.20.
+  links:
+  - https://github.com/palantir/distgo/pull/318

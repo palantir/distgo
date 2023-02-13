@@ -41,7 +41,6 @@ var (
 			}
 			return build.Products(projectInfo, projectParam, distgo.ToProductBuildIDs(args), build.Options{
 				Parallel: buildParallelFlagVal,
-				Install:  buildInstallFlagVal,
 				DryRun:   buildDryRunFlagVal,
 				OSArchs:  osArchs,
 			}, cmd.OutOrStdout())
@@ -51,14 +50,12 @@ var (
 
 var (
 	buildParallelFlagVal bool
-	buildInstallFlagVal  bool
 	buildOSArchsFlagVal  []string
 	buildDryRunFlagVal   bool
 )
 
 func init() {
 	buildCmd.Flags().BoolVar(&buildParallelFlagVal, "parallel", true, "build binaries in parallel")
-	buildCmd.Flags().BoolVar(&buildInstallFlagVal, "install", false, "build products with the '-i' flag")
 	buildCmd.Flags().StringSliceVar(&buildOSArchsFlagVal, "os-arch", nil, "if specified, only builds the binaries for the specified GOOS-GOARCH(s)")
 	buildCmd.Flags().BoolVar(&buildDryRunFlagVal, "dry-run", false, "print the operations that would be performed")
 
