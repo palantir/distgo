@@ -83,8 +83,11 @@ func runSingleDockerPush(
 	stdout io.Writer) (rErr error) {
 
 	// if an OCI artifact exists, push that. Otherwise, default to pushing the artifact in the docker daemon
-	if _, err := layout.FromPath(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)); err == nil {
+	ociDistDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)
+	if _, err := layout.FromPath(ociDistDir); err == nil {
 		return runOCIPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
+	} else {
+		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Using legacy docker daemon push due to to missing osi-layout, expected %s (%s)", ociDistDir, err), dryRun)
 	}
 	return runDockerDaemonPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
 }
