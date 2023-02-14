@@ -16,7 +16,6 @@ package defaultdockerbuilder
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -27,6 +26,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/layout"
 	"github.com/mholt/archiver/v3"
 	"github.com/palantir/distgo/distgo"
+	"github.com/pkg/errors"
 )
 
 const TypeName = "default"
@@ -96,7 +96,7 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 	}
 
 	if d.OutputType&allOutputs == 0 {
-		return errors.New("A valid output type of docker builder must be specified")
+		return errors.New("a valid output type of docker builder must be specified")
 	}
 
 	if d.OutputType&OCILayout != 0 {
@@ -105,9 +105,9 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		}
 		destDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)
 		if err := os.MkdirAll(destDir, 0755); err != nil {
-			return err
+			return errors.Wrapf(err, "failed to create directory %s for OCI output", destDir)
 		}
-		destFile := fmt.Sprintf("%s/image.tar", destDir)
+		destFile := filepath.Join(destDir, "image.tar")
 
 		ociArgs := append([]string{"buildx"}, args...)
 		ociArgs = append(ociArgs, d.BuildxPlatformArg, fmt.Sprintf("--output=type=oci,dest=%s", destFile), contextDirPath)
@@ -137,28 +137,24 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 // publish per-tag.
 func (d *DefaultDockerBuilder) extractToOCILayout(destOCILayoutDir, sourceOCITarball string) error {
 	if err := archiver.DefaultTar.Unarchive(sourceOCITarball, destOCILayoutDir); err != nil {
-		return err
+		return errors.Wrapf(err, "failed to extract OCI tarball %s to location %s", sourceOCITarball, destOCILayoutDir)
 	}
 	index, err := layout.ImageIndexFromPath(destOCILayoutDir)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to read OCI layout from path")
 	}
 	idxManifest, err := index.IndexManifest()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to read index manifest")
 	}
 	if len(idxManifest.Manifests) == 0 {
-		return errors.New("Top-level OCI image index does not contain any manifests. While this is a valid image index, it is unexpected and likely means something erroneous happened earlier in the build")
+		return errors.New("top-level OCI image index does not contain any manifests. While this is a valid image index, it is unexpected and likely means something erroneous happened earlier in the build")
 	}
 	if err := os.Rename(filepath.Join(destOCILayoutDir, "blobs", idxManifest.Manifests[0].Digest.Algorithm, idxManifest.Manifests[0].Digest.Hex), filepath.Join(destOCILayoutDir, "index.json")); err != nil {
 		return err
 	}
 	return nil
 }
-
-// ensureDockerContainerDriver ensures there is a buildx builder that uses the docker-container driver, currently
-// required for multi-arch support, until docker finishes supporting multi-arch containers in the daemon. If one does
-// not exist, create one and set it to the default.
 
 // ensureDockerContainerDriver ensures there is a buildx builder that uses the docker-container driver, which is
 // required for building multi-arch images. If a buildx builder does not exist, creates one and sets it as the default.
@@ -168,7 +164,7 @@ func (d *DefaultDockerBuilder) ensureDockerContainerDriver(dockerID distgo.Docke
 	cmd := exec.Command("docker", "buildx", "inspect")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to check for existence of buildx drivers: %s", string(out))
+		return errors.Wrapf(err, "failed to check for existence of buildx drivers: %s", string(out))
 	}
 
 	if bytes.Contains(out, []byte("docker-container")) {
