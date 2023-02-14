@@ -22,7 +22,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/v1/layout"
@@ -106,7 +105,7 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		}
 		destDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)
 		destFile := fmt.Sprintf("%s/image.tar", destDir)
-		if err := os.MkdirAll(filepath.Dir(destDir), 0755); err != nil {
+		if err := os.MkdirAll(destDir, 0755); err != nil {
 			return err
 		}
 
