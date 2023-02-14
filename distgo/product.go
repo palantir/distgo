@@ -15,6 +15,7 @@
 package distgo
 
 import (
+	"fmt"
 	"path"
 
 	"github.com/palantir/godel/v2/pkg/osarch"
@@ -140,6 +141,17 @@ func ProductDistOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutp
 		return ""
 	}
 	return path.Join(projectInfo.ProjectDir, productOutputInfo.DistOutputInfos.DistOutputDir, string(productOutputInfo.ID), projectInfo.Version, string(distID))
+}
+
+// ProductDockerOCIDistOutputDir returns the output directory for the Docker OCI dist outputs, which is
+// "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}/oci-{{DockerID}}". If the builder for a given DockerID
+// uses the buildx builder for multi-architecture images, the output is written to this directory.
+//
+// Note that this scheme uses the namespace for dist outputs, so if a product has a DockerID "X" and a dist with
+// DistID "oci-X", then the output directories will be the same and the behavior will be undefined -- this is a
+// known issue/risk that we are accepting as part of the design.
+func (p *ProductTaskOutputInfo) ProductDockerOCIDistOutputDir(dockerID DockerID) string {
+	return ProductDistOutputDir(p.Project, p.Product, DistID(fmt.Sprintf("oci-%s", dockerID)))
 }
 
 // ProductDistWorkDirs returns a map from DistID to the directory used to prepare the distribution for that DistID,

@@ -13,14 +13,16 @@ import (
 )
 
 const (
-	// 2 bits:   type   0 = literal  1=EOF  2=Match   3=Unused
-	// 8 bits:   xlength = length - MIN_MATCH_LENGTH
-	// 22 bits   xoffset = offset - MIN_OFFSET_SIZE, or literal
-	lengthShift = 22
-	offsetMask  = 1<<lengthShift - 1
-	typeMask    = 3 << 30
-	literalType = 0 << 30
-	matchType   = 1 << 30
+	// bits 0-16  	xoffset = offset - MIN_OFFSET_SIZE, or literal - 16 bits
+	// bits 16-22	offsetcode - 5 bits
+	// bits 22-30   xlength = length - MIN_MATCH_LENGTH - 8 bits
+	// bits 30-32   type   0 = literal  1=EOF  2=Match   3=Unused - 2 bits
+	lengthShift         = 22
+	offsetMask          = 1<<lengthShift - 1
+	typeMask            = 3 << 30
+	literalType         = 0 << 30
+	matchType           = 1 << 30
+	matchOffsetOnlyMask = 0xffff
 )
 
 // The length code for length X (MIN_MATCH_LENGTH <= X <= MAX_MATCH_LENGTH)
@@ -126,11 +128,11 @@ var offsetCodes14 = [256]uint32{
 type token uint32
 
 type tokens struct {
-	nLits     int
 	extraHist [32]uint16  // codes 256->maxnumlit
 	offHist   [32]uint16  // offset codes
 	litHist   [256]uint16 // codes 0->255
-	n         uint16      // Must be able to contain maxStoreBlockSize
+	nFilled   int
+	n         uint16 // Must be able to contain maxStoreBlockSize
 	tokens    [maxStoreBlockSize + 1]token
 }
 
@@ -139,7 +141,7 @@ func (t *tokens) Reset() {
 		return
 	}
 	t.n = 0
-	t.nLits = 0
+	t.nFilled = 0
 	for i := range t.litHist[:] {
 		t.litHist[i] = 0
 	}
@@ -158,12 +160,12 @@ func (t *tokens) Fill() {
 	for i, v := range t.litHist[:] {
 		if v == 0 {
 			t.litHist[i] = 1
-			t.nLits++
+			t.nFilled++
 		}
 	}
 	for i, v := range t.extraHist[:literalCount-256] {
 		if v == 0 {
-			t.nLits++
+			t.nFilled++
 			t.extraHist[i] = 1
 		}
 	}
@@ -184,77 +186,83 @@ func (t *tokens) indexTokens(in []token) {
 	t.Reset()
 	for _, tok := range in {
 		if tok < matchType {
-			t.tokens[t.n] = tok
-			t.litHist[tok]++
-			t.n++
+			t.AddLiteral(tok.literal())
 			continue
 		}
-		t.AddMatch(uint32(tok.length()), tok.offset())
+		t.AddMatch(uint32(tok.length()), tok.offset()&matchOffsetOnlyMask)
 	}
 }
 
 // emitLiteral writes a literal chunk and returns the number of bytes written.
 func emitLiteral(dst *tokens, lit []byte) {
-	ol := int(dst.n)
-	for i, v := range lit {
-		dst.tokens[(i+ol)&maxStoreBlockSize] = token(v)
+	for _, v := range lit {
+		dst.tokens[dst.n] = token(v)
 		dst.litHist[v]++
+		dst.n++
 	}
-	dst.n += uint16(len(lit))
-	dst.nLits += len(lit)
 }
 
 func (t *tokens) AddLiteral(lit byte) {
 	t.tokens[t.n] = token(lit)
 	t.litHist[lit]++
 	t.n++
-	t.nLits++
+}
+
+// from https://stackoverflow.com/a/28730362
+func mFastLog2(val float32) float32 {
+	ux := int32(math.Float32bits(val))
+	log2 := (float32)(((ux >> 23) & 255) - 128)
+	ux &= -0x7f800001
+	ux += 127 << 23
+	uval := math.Float32frombits(uint32(ux))
+	log2 += ((-0.34484843)*uval+2.02466578)*uval - 0.67487759
+	return log2
 }
 
 // EstimatedBits will return an minimum size estimated by an *optimal*
 // compression of the block.
 // The size of the block
 func (t *tokens) EstimatedBits() int {
-	shannon := float64(0)
+	shannon := float32(0)
 	bits := int(0)
 	nMatches := 0
-	if t.nLits > 0 {
-		invTotal := 1.0 / float64(t.nLits)
+	total := int(t.n) + t.nFilled
+	if total > 0 {
+		invTotal := 1.0 / float32(total)
 		for _, v := range t.litHist[:] {
 			if v > 0 {
-				n := float64(v)
-				shannon += math.Ceil(-math.Log2(n*invTotal) * n)
+				n := float32(v)
+				shannon += atLeastOne(-mFastLog2(n*invTotal)) * n
 			}
 		}
 		// Just add 15 for EOB
 		shannon += 15
-		for _, v := range t.extraHist[1 : literalCount-256] {
+		for i, v := range t.extraHist[1 : literalCount-256] {
 			if v > 0 {
-				n := float64(v)
-				shannon += math.Ceil(-math.Log2(n*invTotal) * n)
-				bits += int(lengthExtraBits[v&31]) * int(v)
+				n := float32(v)
+				shannon += atLeastOne(-mFastLog2(n*invTotal)) * n
+				bits += int(lengthExtraBits[i&31]) * int(v)
 				nMatches += int(v)
 			}
 		}
 	}
 	if nMatches > 0 {
-		invTotal := 1.0 / float64(nMatches)
-		for _, v := range t.offHist[:offsetCodeCount] {
+		invTotal := 1.0 / float32(nMatches)
+		for i, v := range t.offHist[:offsetCodeCount] {
 			if v > 0 {
-				n := float64(v)
-				shannon += math.Ceil(-math.Log2(n*invTotal) * n)
-				bits += int(offsetExtraBits[v&31]) * int(n)
+				n := float32(v)
+				shannon += atLeastOne(-mFastLog2(n*invTotal)) * n
+				bits += int(offsetExtraBits[i&31]) * int(v)
 			}
 		}
 	}
-
 	return int(shannon) + bits
 }
 
 // AddMatch adds a match to the tokens.
 // This function is very sensitive to inlining and right on the border.
 func (t *tokens) AddMatch(xlength uint32, xoffset uint32) {
-	if debugDecode {
+	if debugDeflate {
 		if xlength >= maxMatchLength+baseMatchLength {
 			panic(fmt.Errorf("invalid length: %v", xlength))
 		}
@@ -262,36 +270,40 @@ func (t *tokens) AddMatch(xlength uint32, xoffset uint32) {
 			panic(fmt.Errorf("invalid offset: %v", xoffset))
 		}
 	}
-	t.nLits++
-	lengthCode := lengthCodes1[uint8(xlength)] & 31
+	oCode := offsetCode(xoffset)
+	xoffset |= oCode << 16
+
+	t.extraHist[lengthCodes1[uint8(xlength)]]++
+	t.offHist[oCode&31]++
 	t.tokens[t.n] = token(matchType | xlength<<lengthShift | xoffset)
-	t.extraHist[lengthCode]++
-	t.offHist[offsetCode(xoffset)&31]++
 	t.n++
 }
 
 // AddMatchLong adds a match to the tokens, potentially longer than max match length.
 // Length should NOT have the base subtracted, only offset should.
 func (t *tokens) AddMatchLong(xlength int32, xoffset uint32) {
-	if debugDecode {
+	if debugDeflate {
 		if xoffset >= maxMatchOffset+baseMatchOffset {
 			panic(fmt.Errorf("invalid offset: %v", xoffset))
 		}
 	}
-	oc := offsetCode(xoffset) & 31
+	oc := offsetCode(xoffset)
+	xoffset |= oc << 16
 	for xlength > 0 {
 		xl := xlength
 		if xl > 258 {
 			// We need to have at least baseMatchLength left over for next loop.
-			xl = 258 - baseMatchLength
+			if xl > 258+baseMatchLength {
+				xl = 258
+			} else {
+				xl = 258 - baseMatchLength
+			}
 		}
 		xlength -= xl
-		xl -= 3
-		t.nLits++
-		lengthCode := lengthCodes1[uint8(xl)] & 31
+		xl -= baseMatchLength
+		t.extraHist[lengthCodes1[uint8(xl)]]++
+		t.offHist[oc&31]++
 		t.tokens[t.n] = token(matchType | uint32(xl)<<lengthShift | xoffset)
-		t.extraHist[lengthCode]++
-		t.offHist[oc]++
 		t.n++
 	}
 }
@@ -346,8 +358,8 @@ func (t token) offset() uint32 { return uint32(t) & offsetMask }
 
 func (t token) length() uint8 { return uint8(t >> lengthShift) }
 
-// The code is never more than 8 bits, but is returned as uint32 for convenience.
-func lengthCode(len uint8) uint32 { return uint32(lengthCodes[len]) }
+// Convert length to code.
+func lengthCode(len uint8) uint8 { return lengthCodes[len] }
 
 // Returns the offset code corresponding to a specific offset
 func offsetCode(off uint32) uint32 {
