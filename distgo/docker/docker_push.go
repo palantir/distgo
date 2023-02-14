@@ -90,21 +90,20 @@ func runSingleDockerPush(
 }
 
 func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, stdout io.Writer) error {
-	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running Docker OCI push for configuration %s of product %s...", dockerID, productID), dryRun)
-	if dryRun {
-		return nil
-	}
-	index, err := layout.ImageIndexFromPath(productTaskOutputInfo.ProductDistOutputDir(distgo.DistID("oci")))
+	index, err := layout.ImageIndexFromPath(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID))
 	if err != nil {
 		return err
 	}
 	for _, tag := range productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags {
-		ref, err := name.ParseReference(tag)
-		if err != nil {
-			return err
-		}
-		if err := remote.WriteIndex(ref, index, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
-			return err
+		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing index for tag %s of configuration %s of product %s...", tag, dockerID, productID), dryRun)
+		if !dryRun {
+			ref, err := name.ParseReference(tag)
+			if err != nil {
+				return err
+			}
+			if err := remote.WriteIndex(ref, index, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
