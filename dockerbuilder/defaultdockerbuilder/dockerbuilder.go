@@ -21,7 +21,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/v1/layout"
@@ -76,10 +76,10 @@ func (d *DefaultDockerBuilder) TypeName() (string, error) {
 
 func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, verbose, dryRun bool, stdout io.Writer) error {
 	dockerBuilderOutputInfo := productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID]
-	contextDirPath := path.Join(productTaskOutputInfo.Project.ProjectDir, dockerBuilderOutputInfo.ContextDir)
+	contextDirPath := filepath.Join(productTaskOutputInfo.Project.ProjectDir, dockerBuilderOutputInfo.ContextDir)
 	args := []string{
 		"build",
-		"--file", path.Join(contextDirPath, dockerBuilderOutputInfo.DockerfilePath),
+		"--file", filepath.Join(contextDirPath, dockerBuilderOutputInfo.DockerfilePath),
 	}
 	for _, tag := range dockerBuilderOutputInfo.RenderedTags {
 		args = append(args,
@@ -104,6 +104,9 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 			return err
 		}
 		destDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)
+		if err := os.MkdirAll(destDir, 0755); err != nil {
+			return err
+		}
 		destFile := fmt.Sprintf("%s/image.tar", destDir)
 
 		ociArgs := append([]string{"buildx"}, args...)
@@ -133,7 +136,7 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 // we know all the rendered tags at publish time, we can move the "actual" image index back to the top level and do a
 // publish per-tag.
 func (d *DefaultDockerBuilder) extractToOCILayout(destOCILayoutDir, sourceOCITarball string) error {
-	if err := archiver.DefaultTar.Unarchive(destOCILayoutDir, sourceOCITarball); err != nil {
+	if err := archiver.DefaultTar.Unarchive(sourceOCITarball, destOCILayoutDir); err != nil {
 		return err
 	}
 	index, err := layout.ImageIndexFromPath(destOCILayoutDir)
@@ -147,7 +150,7 @@ func (d *DefaultDockerBuilder) extractToOCILayout(destOCILayoutDir, sourceOCITar
 	if len(idxManifest.Manifests) == 0 {
 		return errors.New("Top-level OCI image index does not contain any manifests. While this is a valid image index, it is unexpected and likely means something erroneous happened earlier in the build")
 	}
-	if err := os.Rename(path.Join(destOCILayoutDir, "blobs", idxManifest.Manifests[0].Digest.Algorithm, idxManifest.Manifests[0].Digest.Hex), path.Join(destOCILayoutDir, "index.json")); err != nil {
+	if err := os.Rename(filepath.Join(destOCILayoutDir, "blobs", idxManifest.Manifests[0].Digest.Algorithm, idxManifest.Manifests[0].Digest.Hex), filepath.Join(destOCILayoutDir, "index.json")); err != nil {
 		return err
 	}
 	return nil
@@ -156,6 +159,11 @@ func (d *DefaultDockerBuilder) extractToOCILayout(destOCILayoutDir, sourceOCITar
 // ensureDockerContainerDriver ensures there is a buildx builder that uses the docker-container driver, currently
 // required for multi-arch support, until docker finishes supporting multi-arch containers in the daemon. If one does
 // not exist, create one and set it to the default.
+
+// ensureDockerContainerDriver ensures there is a buildx builder that uses the docker-container driver, which is
+// required for building multi-arch images. If a buildx builder does not exist, creates one and sets it as the default.
+// This is required until docker finishes supporting multi-arch containers in the daemon.
+// https://docs.docker.com/engine/reference/commandline/buildx_create/#driver
 func (d *DefaultDockerBuilder) ensureDockerContainerDriver(dockerID distgo.DockerID, verbose, dryRun bool, stdout io.Writer) error {
 	cmd := exec.Command("docker", "buildx", "inspect")
 	out, err := cmd.CombinedOutput()
@@ -170,6 +178,9 @@ func (d *DefaultDockerBuilder) ensureDockerContainerDriver(dockerID distgo.Docke
 	for _, opt := range d.BuildxDriverOpts {
 		driverOptArgs = append(driverOptArgs, "--driver-opt", opt)
 	}
+	// Some CI environments have compatibility issues running with the TLS data in the default context. Creating a new
+	// named context copies the TLS data correctly, and allows for a buildx builder to be created.
+	// https://support.circleci.com/hc/en-us/articles/360058095471-How-To-Use-Docker-Buildx-in-Remote-Docker-
 	createContextArgs := []string{"context", "create", string(dockerID)}
 	createContextCmd := exec.Command("docker", createContextArgs...)
 	if err := distgo.RunCommandWithVerboseOption(createContextCmd, verbose, dryRun, stdout); err != nil {
