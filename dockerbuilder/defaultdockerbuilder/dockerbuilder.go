@@ -180,7 +180,8 @@ func (d *DefaultDockerBuilder) ensureDockerContainerDriver(dockerID distgo.Docke
 	}
 	// Some CI environments have compatibility issues running with the TLS data in the default context. Creating a new
 	// named context copies the TLS data correctly, and allows for a buildx builder to be created.
-	// https://support.circleci.com/hc/en-us/articles/360058095471-How-To-Use-Docker-Buildx-in-Remote-Docker-
+	// https://support.circleci.com/hc/en-us/articles/360058095471-How-To-Use-Docker-Buildx-in-Rem have compatibility issues running with the TLS data in the default context. Creating a new
+	// named context copies the TLS data correctly, and allows for a buildx builder to be created.ote-Docker-
 	createContextArgs := []string{"context", "create", string(dockerID)}
 	createContextCmd := exec.Command("docker", createContextArgs...)
 	if err := distgo.RunCommandWithVerboseOption(createContextCmd, verbose, dryRun, stdout); err != nil {
