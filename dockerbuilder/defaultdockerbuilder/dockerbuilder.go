@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/v1/layout"
@@ -105,6 +106,9 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		}
 		destDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)
 		destFile := fmt.Sprintf("%s/image.tar", destDir)
+		if err := os.MkdirAll(filepath.Dir(destDir), 0755); err != nil {
+			return err
+		}
 
 		ociArgs := append([]string{"buildx"}, args...)
 		ociArgs = append(ociArgs, d.BuildxPlatformArg, fmt.Sprintf("--output=type=oci,dest=%s", destFile), contextDirPath)
@@ -133,7 +137,7 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 // we know all the rendered tags at publish time, we can move the "actual" image index back to the top level and do a
 // publish per-tag.
 func (d *DefaultDockerBuilder) extractToOCILayout(destOCILayoutDir, sourceOCITarball string) error {
-	if err := archiver.DefaultTar.Unarchive(destOCILayoutDir, sourceOCITarball); err != nil {
+	if err := archiver.DefaultTar.Unarchive(sourceOCITarball, destOCILayoutDir); err != nil {
 		return err
 	}
 	index, err := layout.ImageIndexFromPath(destOCILayoutDir)
