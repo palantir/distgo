@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/layout"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/palantir/distgo/distgo"
+	"github.com/pkg/errors"
 )
 
 func PushProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productDockerIDs []distgo.ProductDockerID, tagKeys []string, dryRun bool, stdout io.Writer) error {
@@ -92,17 +93,17 @@ func runSingleDockerPush(
 func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, stdout io.Writer) error {
 	index, err := layout.ImageIndexFromPath(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID))
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to construct image index from OCI layout at path %s", productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID))
 	}
 	for _, tag := range productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags {
-		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing index for tag %s of configuration %s of product %s...", tag, dockerID, productID), dryRun)
+		ref, err := name.ParseReference(tag)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse reference from tag %s", tag)
+		}
+		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing index for tag %s of docker configuration %s of product %s...", tag, dockerID, productID), dryRun)
 		if !dryRun {
-			ref, err := name.ParseReference(tag)
-			if err != nil {
-				return err
-			}
 			if err := remote.WriteIndex(ref, index, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
-				return err
+				return errors.Wrap(err, "failed to write index to remote")
 			}
 		}
 	}
