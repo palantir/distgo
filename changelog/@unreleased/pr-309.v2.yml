@@ -1,0 +1,12 @@
+type: feature
+feature:
+  description: |-
+    Add support for publishing multi-architecture docker images as part of the
+    "push" command if the corresponding OCI artifact exists. This behavior is
+    gated on the existence of an OCI layout existing in the expected "dist"
+    directory for the docker configuration we're pushing.
+    
+    If no OCI layout exists on disk, this change will have no affect to the
+    previous push behavior.
+  links:
+  - https://github.com/palantir/distgo/pull/309
