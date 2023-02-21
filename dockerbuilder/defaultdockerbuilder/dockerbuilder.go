@@ -123,6 +123,7 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 	}
 	if d.OutputType&DockerDaemon != 0 {
 		cmd := exec.Command("docker", append(args, contextDirPath)...)
+		cmd.Env = append(os.Environ(), "DOCKER_BUILDKIT=1")
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 			return err
 		}
