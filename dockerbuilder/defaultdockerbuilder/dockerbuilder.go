@@ -100,10 +100,11 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		return errors.New("a valid output type of docker builder must be specified")
 	}
 
+	if err := d.ensureDockerContainerDriver(dockerID, verbose, dryRun, stdout); err != nil {
+		return err
+	}
+
 	if d.OutputType&OCILayout != 0 {
-		if err := d.ensureDockerContainerDriver(dockerID, verbose, dryRun, stdout); err != nil {
-			return err
-		}
 		destDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)
 		if err := os.MkdirAll(destDir, 0755); err != nil {
 			return errors.Wrapf(err, "failed to create directory %s for OCI output", destDir)
