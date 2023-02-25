@@ -20,7 +20,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/termie/go-shutil v0.0.0-20140729215957-bcacb06fecae
 	github.com/whilp/git-urls v1.0.0
 	golang.org/x/oauth2 v0.1.0
