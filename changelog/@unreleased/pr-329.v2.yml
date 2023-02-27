@@ -1,0 +1,9 @@
+type: fix
+fix:
+  description: Use buildx subcommand for docker daemon output builds. This fixes the
+    docker daemon output type for dockerfiles which take advantage of various buildkit
+    features, such as [platform args](https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope).
+    The `buildx` subcommand is backwards compatible, so Dockerfiles which worked with
+    previous versions of this plugin should continue building without issues.
+  links:
+  - https://github.com/palantir/distgo/pull/329

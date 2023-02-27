@@ -78,6 +78,7 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 	dockerBuilderOutputInfo := productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID]
 	contextDirPath := filepath.Join(productTaskOutputInfo.Project.ProjectDir, dockerBuilderOutputInfo.ContextDir)
 	args := []string{
+		"buildx",
 		"build",
 		"--file", filepath.Join(contextDirPath, dockerBuilderOutputInfo.DockerfilePath),
 	}
@@ -99,18 +100,18 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		return errors.New("a valid output type of docker builder must be specified")
 	}
 
+	if err := d.ensureDockerContainerDriver(dockerID, verbose, dryRun, stdout); err != nil {
+		return err
+	}
+
 	if d.OutputType&OCILayout != 0 {
-		if err := d.ensureDockerContainerDriver(dockerID, verbose, dryRun, stdout); err != nil {
-			return err
-		}
 		destDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)
 		if err := os.MkdirAll(destDir, 0755); err != nil {
 			return errors.Wrapf(err, "failed to create directory %s for OCI output", destDir)
 		}
 		destFile := filepath.Join(destDir, "image.tar")
 
-		ociArgs := append([]string{"buildx"}, args...)
-		ociArgs = append(ociArgs, d.BuildxPlatformArg, fmt.Sprintf("--output=type=oci,dest=%s", destFile), contextDirPath)
+		ociArgs := append(args, d.BuildxPlatformArg, fmt.Sprintf("--output=type=oci,dest=%s", destFile), contextDirPath)
 		cmd := exec.Command("docker", ociArgs...)
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 			return err
@@ -122,7 +123,8 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		}
 	}
 	if d.OutputType&DockerDaemon != 0 {
-		cmd := exec.Command("docker", append(args, contextDirPath)...)
+		daemonArgs := append(args, "--output=type=docker", contextDirPath)
+		cmd := exec.Command("docker", daemonArgs...)
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 			return err
 		}

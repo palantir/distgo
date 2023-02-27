@@ -86,7 +86,7 @@ products:
 				},
 				WantOutput: func(projectDir string) string {
 					return fmt.Sprintf(`[DRY RUN] Running Docker build for configuration tester of product foo...
-[DRY RUN] Run [docker build --file %s/testContextDir/Dockerfile -t tester-tag:latest-and-greatest %s/testContextDir]
+[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile -t tester-tag:latest-and-greatest --output=type=docker %s/testContextDir]
 `, projectDir, projectDir)
 				},
 			},
@@ -142,7 +142,7 @@ products:
 				},
 				WantOutput: func(projectDir string) string {
 					return fmt.Sprintf(`[DRY RUN] Running Docker build for configuration tester of product foo...
-[DRY RUN] Run [docker build --file %s/testContextDir/Dockerfile -t tester-tag:latest-and-greatest --rm --build-arg arg=2.3 %s/testContextDir]
+[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile -t tester-tag:latest-and-greatest --rm --build-arg arg=2.3 --output=type=docker %s/testContextDir]
 `, projectDir, projectDir)
 				},
 			},
@@ -193,7 +193,7 @@ products:
 				},
 				WantOutput: func(projectDir string) string {
 					return fmt.Sprintf(`[DRY RUN] Running Docker build for configuration tester of product foo...
-[DRY RUN] Run [docker build --file %s/testContextDir/Dockerfile -t tester-tag:1.0.0 %s/testContextDir]
+[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile -t tester-tag:1.0.0 --output=type=docker %s/testContextDir]
 `, projectDir, projectDir)
 				},
 			},
