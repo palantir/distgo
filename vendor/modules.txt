@@ -15,22 +15,6 @@ github.com/containerd/stargz-snapshotter/estargz/errorutil
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/docker/cli v20.10.20+incompatible
-## explicit
-github.com/docker/cli/cli/config
-github.com/docker/cli/cli/config/configfile
-github.com/docker/cli/cli/config/credentials
-github.com/docker/cli/cli/config/types
-# github.com/docker/distribution v2.8.1+incompatible
-## explicit
-github.com/docker/distribution/registry/client/auth/challenge
-# github.com/docker/docker v20.10.20+incompatible
-## explicit
-github.com/docker/docker/pkg/homedir
-# github.com/docker/docker-credential-helpers v0.7.0
-## explicit; go 1.18
-github.com/docker/docker-credential-helpers/client
-github.com/docker/docker-credential-helpers/credentials
 # github.com/dsnet/compress v0.0.1
 ## explicit; go 1.9
 github.com/dsnet/compress
@@ -58,12 +42,7 @@ github.com/google/go-containerregistry/internal/and
 github.com/google/go-containerregistry/internal/compression
 github.com/google/go-containerregistry/internal/estargz
 github.com/google/go-containerregistry/internal/gzip
-github.com/google/go-containerregistry/internal/redact
-github.com/google/go-containerregistry/internal/retry
-github.com/google/go-containerregistry/internal/retry/wait
-github.com/google/go-containerregistry/internal/verify
 github.com/google/go-containerregistry/internal/zstd
-github.com/google/go-containerregistry/pkg/authn
 github.com/google/go-containerregistry/pkg/compression
 github.com/google/go-containerregistry/pkg/logs
 github.com/google/go-containerregistry/pkg/name
@@ -73,8 +52,6 @@ github.com/google/go-containerregistry/pkg/v1/layout
 github.com/google/go-containerregistry/pkg/v1/match
 github.com/google/go-containerregistry/pkg/v1/mutate
 github.com/google/go-containerregistry/pkg/v1/partial
-github.com/google/go-containerregistry/pkg/v1/remote
-github.com/google/go-containerregistry/pkg/v1/remote/transport
 github.com/google/go-containerregistry/pkg/v1/stream
 github.com/google/go-containerregistry/pkg/v1/tarball
 github.com/google/go-containerregistry/pkg/v1/types
@@ -115,9 +92,6 @@ github.com/mattn/go-runewidth
 # github.com/mholt/archiver/v3 v3.3.0
 ## explicit; go 1.12
 github.com/mholt/archiver/v3
-# github.com/mitchellh/go-homedir v1.1.0
-## explicit
-github.com/mitchellh/go-homedir
 # github.com/nmiyake/pkg/dirs v1.1.0
 ## explicit; go 1.16
 github.com/nmiyake/pkg/dirs
@@ -206,9 +180,6 @@ github.com/rogpeppe/go-internal/internal/syscall/windows
 github.com/rogpeppe/go-internal/internal/syscall/windows/sysdll
 github.com/rogpeppe/go-internal/lockedfile
 github.com/rogpeppe/go-internal/lockedfile/internal/filelock
-# github.com/sirupsen/logrus v1.9.0
-## explicit; go 1.13
-github.com/sirupsen/logrus
 # github.com/spf13/cobra v1.6.1
 ## explicit; go 1.15
 github.com/spf13/cobra
@@ -263,9 +234,7 @@ golang.org/x/sync/errgroup
 # golang.org/x/sys v0.5.0
 ## explicit; go 1.17
 golang.org/x/sys/execabs
-golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
-golang.org/x/sys/windows
 # golang.org/x/tools v0.6.0
 ## explicit; go 1.18
 golang.org/x/tools/go/gcexportdata
