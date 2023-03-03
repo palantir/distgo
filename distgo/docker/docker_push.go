@@ -100,7 +100,7 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 	}
 
 	for _, tag := range productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags {
-		ref, err := name.NewTag(tag)
+		ref, err := name.ParseReference(tag)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse reference from tag %s", tag)
 		}
@@ -158,7 +158,7 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 		case types.OCIManifestSchema1:
 			distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing image for tag %s of docker configuration %s of product %s...", tag, dockerID, productID), dryRun)
 			if !dryRun {
-				image, err := tarball.ImageFromPath(filepath.Join(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID), "image.tar"), &ref)
+				image, err := tarball.ImageFromPath(filepath.Join(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID), "image.tar"), nil)
 				if err != nil {
 					return err
 				}
