@@ -18,12 +18,15 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"sort"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/layout"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/palantir/distgo/distgo"
 	"github.com/pkg/errors"
 )
@@ -95,15 +98,73 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct image index from OCI layout at path %s", productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID))
 	}
+
 	for _, tag := range productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags {
-		ref, err := name.ParseReference(tag)
+		ref, err := name.NewTag(tag)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse reference from tag %s", tag)
 		}
-		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing index for tag %s of docker configuration %s of product %s...", tag, dockerID, productID), dryRun)
-		if !dryRun {
-			if err := remote.WriteIndex(ref, index, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
-				return errors.Wrap(err, "failed to write index to remote")
+
+		// need to resolve what we're pushing:
+		// 1. image index pointing to image indexes -> dereference top-level index and push image index
+		// 2. image index (with multiple platforms) pointing to manifests -> push image index
+		// 3. image index (without multiple platforms) pointing to manifests -> read image from index and push manifest
+		// 4. manifest -> re-extract image from tarball and push manifest :(
+		idxManifest, err := index.IndexManifest()
+		if err != nil {
+			return err
+		}
+		switch idxManifest.MediaType {
+		case types.OCIImageIndex:
+			// check the type of the inner manifests
+			switch idxManifest.Manifests[0].MediaType {
+			case types.OCIImageIndex:
+				// if we have an image index, go one level down and push that
+				distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing image index for tag %s of docker configuration %s of product %s...", tag, dockerID, productID), dryRun)
+				if !dryRun {
+					innerIndex, err := index.ImageIndex(idxManifest.Manifests[0].Digest)
+					if err != nil {
+						return err
+					}
+					if err := remote.WriteIndex(ref, innerIndex, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
+						return errors.Wrap(err, "failed to write index to remote")
+					}
+				}
+			case types.OCIManifestSchema1:
+				if idxManifest.Manifests[0].Platform != nil {
+					// if we have platform information, we should push our current image index
+					distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing image index for tag %s of docker configuration %s of product %s...", tag, dockerID, productID), dryRun)
+					if !dryRun {
+						if err := remote.WriteIndex(ref, index, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
+							return errors.Wrap(err, "failed to write index to remote")
+						}
+					}
+
+				} else {
+					// if we don't have platform information, read and push the image
+					distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing image for tag %s of docker configuration %s of product %s...", tag, dockerID, productID), dryRun)
+					if !dryRun {
+						image, err := index.Image(idxManifest.Manifests[0].Digest)
+						if err != nil {
+							return err
+						}
+						if err := remote.Write(ref, image, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
+							return errors.Wrap(err, "failed to write image to remote")
+						}
+					}
+				}
+			}
+
+		case types.OCIManifestSchema1:
+			distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing image for tag %s of docker configuration %s of product %s...", tag, dockerID, productID), dryRun)
+			if !dryRun {
+				image, err := tarball.ImageFromPath(filepath.Join(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID), "image.tar"), &ref)
+				if err != nil {
+					return err
+				}
+				if err := remote.Write(ref, image, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
+					return errors.Wrap(err, "failed to write image to remote")
+				}
 			}
 		}
 	}
