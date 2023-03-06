@@ -1,5 +1,0 @@
-type: fix
-fix:
-  description: Revert publishing OCI artifacts
-  links:
-  - https://github.com/palantir/distgo/pull/333
