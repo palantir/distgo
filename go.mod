@@ -23,7 +23,7 @@ require (
 	github.com/stretchr/testify v1.8.2
 	github.com/termie/go-shutil v0.0.0-20140729215957-bcacb06fecae
 	github.com/whilp/git-urls v1.0.0
-	golang.org/x/oauth2 v0.1.0
+	golang.org/x/oauth2 v0.6.0
 	golang.org/x/tools v0.6.0
 	gopkg.in/cheggaaa/pb.v1 v1.0.22
 	gopkg.in/yaml.v2 v2.4.0
