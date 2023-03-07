@@ -113,7 +113,7 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 		// 4. manifest -> re-extract image from tarball and push manifest :(
 		idxManifest, err := index.IndexManifest()
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to read index manifest")
 		}
 		switch idxManifest.MediaType {
 		case types.OCIImageIndex:
@@ -123,34 +123,35 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 				// if we have an image index, go one level down and push that
 				innerIndex, err := index.ImageIndex(idxManifest.Manifests[0].Digest)
 				if err != nil {
-					return err
+					return errors.Wrapf(err, "failed to read image index digest %s from OCI layout", idxManifest.Manifests[0].Digest)
 				}
 				if err := writeIndex(innerIndex, ref, productID, dockerID, dryRun, stdout); err != nil {
-					return err
+					return errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
 				}
 			case types.OCIManifestSchema1:
 				if idxManifest.Manifests[0].Platform != nil {
 					// if we have platform information, we should push our current image index
 					if err := writeIndex(index, ref, productID, dockerID, dryRun, stdout); err != nil {
-						return err
+						return errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
 					}
 				} else {
 					image, err := index.Image(idxManifest.Manifests[0].Digest)
 					if err != nil {
-						return err
+						return errors.Wrapf(err, "failed to read image digest %s from OCI layout", idxManifest.Manifests[0].Digest)
 					}
 					if err := writeImage(image, ref, productID, dockerID, dryRun, stdout); err != nil {
-						return err
+						return errors.Wrapf(err, "failed to write image for tag %s of configuration %s for product %s", ref, dockerID, productID)
 					}
 				}
 			}
 		case types.OCIManifestSchema1:
-			image, err := tarball.ImageFromPath(filepath.Join(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID), "image.tar"), nil)
+			path := filepath.Join(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID), "image.tar")
+			image, err := tarball.ImageFromPath(path, nil)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "failed to read image from path %s", path)
 			}
 			if err := writeImage(image, ref, productID, dockerID, dryRun, stdout); err != nil {
-				return err
+				return errors.Wrapf(err, "failed to write image for tag %s of configuration %s for product %s", ref, dockerID, productID)
 			}
 		}
 	}
