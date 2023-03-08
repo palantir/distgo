@@ -225,10 +225,10 @@ func manifestMetadataFromIndexManifest(indexManifest *v1.IndexManifest) (manifes
 	mediaType := maps.Keys(mediaTypes)[0]
 	switch mediaType {
 	case types.OCIImageIndex:
+		return manifestMetadata{mediaType: mediaType, containsPlatformInfo: false}, nil
+	case types.OCIManifestSchema1:
 		platformInfo := indexManifest.Manifests[0].Platform != nil
 		return manifestMetadata{mediaType: mediaType, containsPlatformInfo: platformInfo}, nil
-	case types.OCIManifestSchema1:
-		return manifestMetadata{mediaType: mediaType, containsPlatformInfo: false}, nil
 	default:
 		return manifestMetadata{}, errors.Errorf("unexpected media type %s", mediaType)
 	}
