@@ -213,7 +213,7 @@ func manifestMetadataFromIndexManifest(indexManifest *v1.IndexManifest) (manifes
 		return manifestMetadata{}, errors.New("image index contains no inner manifests")
 	}
 
-	var mediaTypes map[types.MediaType]struct{}
+	mediaTypes := make(map[types.MediaType]struct{})
 	for _, manifest := range indexManifest.Manifests {
 		mediaTypes[manifest.MediaType] = struct{}{}
 	}
