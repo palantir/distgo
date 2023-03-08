@@ -1,5 +1,5 @@
-type: fix
-fix:
+type: feature
+feature:
   description: |
     Add support for publishing multi-architecture docker images as part of the
     "push" command if the corresponding OCI artifact exists. This behavior is
