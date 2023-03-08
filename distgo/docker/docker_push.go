@@ -30,6 +30,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/palantir/distgo/distgo"
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 )
 
 func PushProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productDockerIDs []distgo.ProductDockerID, tagKeys []string, dryRun bool, stdout io.Writer) error {
@@ -117,43 +118,67 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 		}
 		switch idxManifest.MediaType {
 		case types.OCIImageIndex:
-			// check the type of the inner manifests
-			switch idxManifest.Manifests[0].MediaType {
-			case types.OCIImageIndex:
-				// if we have an image index, go one level down and push that
-				innerIndex, err := index.ImageIndex(idxManifest.Manifests[0].Digest)
-				if err != nil {
-					return errors.Wrapf(err, "failed to read image index digest %s from OCI layout", idxManifest.Manifests[0].Digest)
-				}
-				if err := writeIndex(innerIndex, ref, productID, dockerID, dryRun, stdout); err != nil {
-					return errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
-				}
-			case types.OCIManifestSchema1:
-				if idxManifest.Manifests[0].Platform != nil {
-					// if we have platform information, we should push our current image index
-					if err := writeIndex(index, ref, productID, dockerID, dryRun, stdout); err != nil {
-						return errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
-					}
-				} else {
-					image, err := index.Image(idxManifest.Manifests[0].Digest)
-					if err != nil {
-						return errors.Wrapf(err, "failed to read image digest %s from OCI layout", idxManifest.Manifests[0].Digest)
-					}
-					if err := writeImage(image, ref, productID, dockerID, dryRun, stdout); err != nil {
-						return errors.Wrapf(err, "failed to write image for tag %s of configuration %s for product %s", ref, dockerID, productID)
-					}
-				}
-			}
+			return handleImageIndex(index, idxManifest, ref, productID, dockerID, dryRun, stdout)
 		case types.OCIManifestSchema1:
-			path := filepath.Join(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID), "image.tar")
-			image, err := tarball.ImageFromPath(path, nil)
-			if err != nil {
-				return errors.Wrapf(err, "failed to read image from path %s", path)
-			}
-			if err := writeImage(image, ref, productID, dockerID, dryRun, stdout); err != nil {
-				return errors.Wrapf(err, "failed to write image for tag %s of configuration %s for product %s", ref, dockerID, productID)
-			}
+			return handleImageManifest(ref, productID, dockerID, productTaskOutputInfo, dryRun, stdout)
+		default:
+			return errors.Errorf("unexpected media type %s for configuration %s for product %s", idxManifest.MediaType, dockerID, productID)
 		}
+	}
+	return nil
+}
+
+func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) error {
+	// check the type of the inner manifests
+	manifestMetadata, err := manifestMetadataFromIndexManifest(idxManifest)
+	if err != nil {
+		return errors.Wrap(err, "encountered unexpected index manifest state")
+	}
+
+	switch manifestMetadata.mediaType {
+	case types.OCIImageIndex:
+		// if we have an image index, go one level down and push that
+		innerIndex, err := index.ImageIndex(idxManifest.Manifests[0].Digest)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read image index digest %s from OCI layout", idxManifest.Manifests[0].Digest)
+		}
+		if err := writeIndex(innerIndex, ref, productID, dockerID, dryRun, stdout); err != nil {
+			return errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
+		}
+		return nil
+	case types.OCIManifestSchema1:
+		if manifestMetadata.containsPlatformInfo {
+			// if we have platform information, we should push our current image index
+			if err := writeIndex(index, ref, productID, dockerID, dryRun, stdout); err != nil {
+				return errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
+			}
+			return nil
+		}
+
+		if len(idxManifest.Manifests) != 1 {
+			return errors.New("unexpected number of image manifests present in image index without platform information")
+		}
+		image, err := index.Image(idxManifest.Manifests[0].Digest)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read image digest %s from OCI layout", idxManifest.Manifests[0].Digest)
+		}
+		if err := writeImage(image, ref, productID, dockerID, dryRun, stdout); err != nil {
+			return errors.Wrapf(err, "failed to write image for tag %s of configuration %s for product %s", ref, dockerID, productID)
+		}
+		return nil
+	default:
+		return errors.Errorf("unexpected media type %s for configuration %s for product %s", idxManifest.MediaType, dockerID, productID)
+	}
+}
+
+func handleImageManifest(ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, stdout io.Writer) error {
+	path := filepath.Join(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID), "image.tar")
+	image, err := tarball.ImageFromPath(path, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read image from path %s", path)
+	}
+	if err := writeImage(image, ref, productID, dockerID, dryRun, stdout); err != nil {
+		return errors.Wrapf(err, "failed to write image for tag %s of configuration %s for product %s", ref, dockerID, productID)
 	}
 	return nil
 }
@@ -176,6 +201,37 @@ func writeImage(image v1.Image, ref name.Reference, productID distgo.ProductID, 
 		}
 	}
 	return nil
+}
+
+type manifestMetadata struct {
+	mediaType            types.MediaType
+	containsPlatformInfo bool
+}
+
+func manifestMetadataFromIndexManifest(indexManifest *v1.IndexManifest) (manifestMetadata, error) {
+	if len(indexManifest.Manifests) == 0 {
+		return manifestMetadata{}, errors.New("image index contains no inner manifests")
+	}
+
+	var mediaTypes map[types.MediaType]struct{}
+	for _, manifest := range indexManifest.Manifests {
+		mediaTypes[manifest.MediaType] = struct{}{}
+	}
+
+	if len(mediaTypes) != 1 {
+		return manifestMetadata{}, errors.Errorf("image index contained mixed inner manifest types: %s", maps.Keys(mediaTypes))
+	}
+
+	mediaType := maps.Keys(mediaTypes)[0]
+	switch mediaType {
+	case types.OCIImageIndex:
+		platformInfo := indexManifest.Manifests[0].Platform != nil
+		return manifestMetadata{mediaType: mediaType, containsPlatformInfo: platformInfo}, nil
+	case types.OCIManifestSchema1:
+		return manifestMetadata{mediaType: mediaType, containsPlatformInfo: false}, nil
+	default:
+		return manifestMetadata{}, errors.Errorf("unexpected media type %s", mediaType)
+	}
 }
 
 func runDockerDaemonPush(
