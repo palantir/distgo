@@ -118,9 +118,13 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 		}
 		switch idxManifest.MediaType {
 		case types.OCIImageIndex:
-			return handleImageIndex(index, idxManifest, ref, productID, dockerID, dryRun, stdout)
+			if err := handleImageIndex(index, idxManifest, ref, productID, dockerID, dryRun, stdout); err != nil {
+				return errors.Wrapf(err, "failed to publish image index for configuration %s for product %s", dockerID, productID)
+			}
 		case types.OCIManifestSchema1:
-			return handleImageManifest(ref, productID, dockerID, productTaskOutputInfo, dryRun, stdout)
+			if err := handleImageManifest(ref, productID, dockerID, productTaskOutputInfo, dryRun, stdout); err != nil {
+				return errors.Wrapf(err, "failed to image manifest for configuration %s for product %s", dockerID, productID)
+			}
 		default:
 			return errors.Errorf("unexpected media type %s for configuration %s for product %s", idxManifest.MediaType, dockerID, productID)
 		}
