@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -111,10 +110,17 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 	}
 	publisher.FilterProductTaskOutputInfoArtifactNames(&productTaskOutputInfo, filterRegexp, excludeRegexp)
 
-	artifactoryURL := strings.Join([]string{cfg.URL, "artifactory"}, "/")
-	productPath := publisher.MavenProductPath(productTaskOutputInfo, groupID)
+	var productPath string
+	if cfg.FlatDir {
+		if !cfg.NoPOM {
+			return nil, fmt.Errorf("flat-dir requires no-pom")
+		}
+	} else {
+		productPath = publisher.MavenProductPath(productTaskOutputInfo, groupID)
+	}
+
 	artifactExists := func(dstFileName string, checksums publisher.Checksums, username, password string) bool {
-		rawCheckArtifactURL := strings.Join([]string{artifactoryURL, "api", "storage", cfg.Repository, productPath, dstFileName}, "/")
+		rawCheckArtifactURL := pathJoin(cfg.URL, "artifactory", "api", "storage", cfg.Repository, productPath, dstFileName)
 		checkArtifactURL, err := url.Parse(rawCheckArtifactURL)
 		if err != nil {
 			return false
@@ -134,9 +140,9 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 				_ = resp.Body.Close()
 			}()
 
-			if bytes, err := ioutil.ReadAll(resp.Body); err == nil {
+			if jsonBytes, err := io.ReadAll(resp.Body); err == nil {
 				var jsonMap map[string]*json.RawMessage
-				if err := json.Unmarshal(bytes, &jsonMap); err == nil {
+				if err := json.Unmarshal(jsonBytes, &jsonMap); err == nil {
 					if checksumJSON, ok := jsonMap["Checksums"]; ok && checksumJSON != nil {
 						var dstChecksums publisher.Checksums
 						if err := json.Unmarshal(*checksumJSON, &dstChecksums); err == nil {
@@ -154,7 +160,7 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 	if err != nil {
 		return nil, err
 	}
-	baseURL := strings.Join([]string{deploymentURL, productPath}, "/")
+	baseURL := pathJoin(deploymentURL, productPath)
 	artifactPaths, uploadedURLs, err := cfg.BasicConnectionInfo.UploadDistArtifacts(productTaskOutputInfo, baseURL, artifactExists, dryRun, stdout)
 	if err != nil {
 		return nil, err
@@ -184,7 +190,7 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 
 	if !dryRun {
 		// compute SHA-256 Checksums for artifacts
-		if err := p.computeArtifactChecksums(cfg, artifactoryURL, productPath, artifactNames); err != nil {
+		if err := p.computeArtifactChecksums(cfg, productPath, artifactNames); err != nil {
 			// if triggering checksum computation fails, print message but don't throw error
 			_, _ = fmt.Fprintln(stdout, "Uploading artifacts succeeded, but failed to trigger computation of SHA-256 checksums:", err)
 		}
@@ -193,18 +199,18 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 }
 
 // computeArtifactChecksums uses the "api/checksum/sha256" endpoint to compute the checksums for the provided artifacts.
-func (p *artifactoryPublisher) computeArtifactChecksums(cfg config.Artifactory, artifactoryURL, productPath string, artifactNames []string) error {
+func (p *artifactoryPublisher) computeArtifactChecksums(cfg config.Artifactory, productPath string, artifactNames []string) error {
 	for _, currArtifactName := range artifactNames {
-		currArtifactURL := strings.Join([]string{productPath, currArtifactName}, "/")
-		if err := p.artifactorySetSHA256Checksum(cfg, artifactoryURL, currArtifactURL); err != nil {
+		currArtifactURL := pathJoin(productPath, currArtifactName)
+		if err := p.artifactorySetSHA256Checksum(cfg, currArtifactURL); err != nil {
 			return errors.Wrapf(err, "")
 		}
 	}
 	return nil
 }
 
-func (p *artifactoryPublisher) artifactorySetSHA256Checksum(cfg config.Artifactory, baseURLString, filePath string) (rErr error) {
-	apiURLString := baseURLString + "/api/checksum/sha256"
+func (p *artifactoryPublisher) artifactorySetSHA256Checksum(cfg config.Artifactory, filePath string) (rErr error) {
+	apiURLString := pathJoin(cfg.URL, "artifactory", "/api/checksum/sha256")
 	uploadURL, err := url.Parse(apiURLString)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse %s as URL", apiURLString)
@@ -219,7 +225,7 @@ func (p *artifactoryPublisher) artifactorySetSHA256Checksum(cfg config.Artifacto
 		Method:        http.MethodPost,
 		URL:           uploadURL,
 		Header:        header,
-		Body:          ioutil.NopCloser(reader),
+		Body:          io.NopCloser(reader),
 		ContentLength: int64(len([]byte(jsonContent))),
 	}
 	req.SetBasicAuth(cfg.Username, cfg.Password)
@@ -241,13 +247,12 @@ func (p *artifactoryPublisher) artifactorySetSHA256Checksum(cfg config.Artifacto
 }
 
 func (p *artifactoryPublisher) getDeploymentURL(cfg config.Artifactory) (string, error) {
-	url := strings.Join([]string{cfg.URL, "artifactory", cfg.Repository}, "/")
+	repoURL := pathJoin(cfg.URL, "artifactory", cfg.Repository)
 	encodedProps, err := encodeProperties(cfg.Properties)
 	if err != nil {
 		return "", err
 	}
-
-	return strings.Join(append([]string{url}, encodedProps...), ";"), nil
+	return strings.Join(append([]string{repoURL}, encodedProps...), ";"), nil
 }
 
 // encodeProperties takes in a map[string]string of properties, renders each value as a Go template, and returns
@@ -281,4 +286,21 @@ func encodeProperties(properties map[string]string) ([]string, error) {
 	}
 	sort.Strings(encoded)
 	return encoded, nil
+}
+
+// pathJoin is used instead of path.Join because it does not clean double slashes in URL schemes.
+func pathJoin(left string, right ...string) string {
+	if len(right) == 0 {
+		return left
+	}
+	if len(right[0]) == 0 {
+		return pathJoin(left, right[1:]...)
+	}
+	if strings.HasSuffix(left, "/") {
+		left = strings.TrimSuffix(left, "/")
+	}
+	if strings.HasPrefix(right[0], "/") {
+		right[0] = strings.TrimPrefix(right[0], "/")
+	}
+	return pathJoin(left+"/"+right[0], right[1:]...)
 }
