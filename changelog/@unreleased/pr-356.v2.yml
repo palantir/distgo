@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Update OCI docker builder to overwrite files instead of erroring
+  links:
+  - https://github.com/palantir/distgo/pull/356
