@@ -59,7 +59,7 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publi
 	}
 	for _, currDistID := range productOutputInfo.DistOutputInfos.DistIDs {
 		for _, currArtifactPath := range distgo.ProductDistArtifactPaths(projectInfo, productOutputInfo)[currDistID] {
-			if _, err := os.Stat(currArtifactPath); os.IsNotExist(err) {
+			if _, err := os.Stat(currArtifactPath); os.IsNotExist(err) && !dryRun {
 				return errors.Errorf("distribution artifact for product %s with dist %s does not exist at %s", productParam.ID, currDistID, currArtifactPath)
 			}
 		}
