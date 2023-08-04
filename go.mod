@@ -3,7 +3,7 @@ module github.com/palantir/distgo
 go 1.20
 
 require (
-	github.com/google/go-containerregistry v0.15.2
+	github.com/google/go-containerregistry v0.16.1
 	github.com/google/go-github/v28 v28.1.1
 	github.com/jtacoma/uritemplates v1.0.0
 	github.com/mholt/archiver/v3 v3.3.0
@@ -11,7 +11,7 @@ require (
 	github.com/nmiyake/pkg/gofiles v1.2.0
 	github.com/palantir/distgo/pkg/git v1.0.0
 	github.com/palantir/godel/pkg/products/v2 v2.0.0
-	github.com/palantir/godel/v2 v2.88.0
+	github.com/palantir/godel/v2 v2.89.0
 	github.com/palantir/pkg/cobracli v1.2.0
 	github.com/palantir/pkg/gittest v1.2.0
 	github.com/palantir/pkg/matcher v1.2.0
@@ -25,7 +25,7 @@ require (
 	github.com/whilp/git-urls v1.0.0
 	golang.org/x/exp v0.0.0-20230307190834-24139beb5833
 	golang.org/x/oauth2 v0.10.0
-	golang.org/x/tools v0.11.0
+	golang.org/x/tools v0.11.1
 	gopkg.in/cheggaaa/pb.v1 v1.0.22
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -36,7 +36,7 @@ require (
 	github.com/cheggaaa/pb/v3 v3.0.2 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/cli v23.0.5+incompatible // indirect
+	github.com/docker/cli v24.0.0+incompatible // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v24.0.5+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
@@ -62,13 +62,13 @@ require (
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.7.0 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/sirupsen/logrus v1.9.1 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/vbatts/tar-split v0.11.3 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/net v0.13.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
