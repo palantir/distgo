@@ -15,7 +15,6 @@
 package config
 
 import (
-	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
