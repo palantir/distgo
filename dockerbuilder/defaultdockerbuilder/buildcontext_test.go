@@ -33,10 +33,10 @@ func TestDependencyImageBuildContextArgs(t *testing.T) {
 		Project: distgo.ProjectInfo{ProjectDir: projectDir, Version: "1.0.0"},
 		Deps: map[distgo.ProductID]distgo.ProductOutputInfo{
 			"base": {
-				ID:              "base",
-				DistOutputInfos: &distgo.DistOutputInfos{DistOutputDir: "out/dist"},
+				ID: "base",
 				DockerOutputInfos: &distgo.DockerOutputInfos{
-					DockerIDs: []distgo.DockerID{"base-docker"},
+					DockerOutputDir: "out/docker",
+					DockerIDs:       []distgo.DockerID{"base-docker"},
 					DockerBuilderOutputInfos: map[distgo.DockerID]distgo.DockerBuilderOutputInfo{
 						"base-docker": {RenderedTags: []string{"registry/base:1.0.0", "registry/base:latest"}},
 					},
@@ -44,7 +44,7 @@ func TestDependencyImageBuildContextArgs(t *testing.T) {
 			},
 		},
 	}
-	layoutDir := filepath.Join(projectDir, "out", "dist", "base", "1.0.0", "oci-base-docker", distgo.DockerBuildContextLayoutSubdir)
+	layoutDir := filepath.Join(projectDir, "out", "docker", "base", "1.0.0", "base-docker", distgo.DockerBuildContextLayoutSubdir)
 	unpinnedArgs := []string{
 		"--build-context", "registry/base:1.0.0=oci-layout://" + layoutDir,
 		"--build-context", "registry/base:latest=oci-layout://" + layoutDir,

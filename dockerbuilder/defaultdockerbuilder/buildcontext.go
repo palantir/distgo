@@ -49,7 +49,7 @@ func dependencyImageBuildContextArgs(productTaskOutputInfo distgo.ProductTaskOut
 			if !ok || len(builderOutputInfo.RenderedTags) == 0 {
 				continue
 			}
-			ociDir := distgo.ProductDistOutputDir(productTaskOutputInfo.Project, depOutputInfo, distgo.DistID(fmt.Sprintf("oci-%s", dockerID)))
+			ociDir := distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, depOutputInfo, dockerID)
 			if ociDir == "" {
 				continue
 			}
