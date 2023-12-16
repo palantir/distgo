@@ -111,9 +111,8 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		return err
 	}
 
-	// A product with a Docker image but no dist has no OCI dist output dir ("" from ProductDockerOCIDistOutputDir), so
-	// there is nowhere to write the layout: skip OCI output (any daemon output below still runs).
-	if destDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID); d.OutputType&OCILayout != 0 && destDir != "" {
+	// ProductDockerOutputDir is empty only when the product declares no Docker builders; guard so we never MkdirAll("").
+	if destDir := distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID); d.OutputType&OCILayout != 0 && destDir != "" {
 		if err := os.MkdirAll(destDir, 0755); err != nil {
 			return errors.Wrapf(err, "failed to create directory %s for OCI output", destDir)
 		}

@@ -28,11 +28,14 @@ func ToDockerConfig(in *DockerConfig) *v0.DockerConfig {
 }
 
 func (cfg *DockerConfig) ToParam(scriptIncludes string, defaultCfg DockerConfig, dockerBuilderFactory distgo.DockerBuilderFactory) (distgo.DockerParam, error) {
+	outputDir := getConfigStringValue(cfg.OutputDir, defaultCfg.OutputDir, "out/docker")
+
 	dockerBuilderParams, err := (*DockerBuildersConfig)(cfg.DockerBuildersConfig).ToParam(scriptIncludes, (*DockerBuildersConfig)(cfg.DockerBuildersConfig), dockerBuilderFactory)
 	if err != nil {
 		return distgo.DockerParam{}, err
 	}
 	return distgo.DockerParam{
+		OutputDir:           outputDir,
 		Repository:          getConfigStringValue(cfg.Repository, defaultCfg.Repository, ""),
 		DockerBuilderParams: dockerBuilderParams,
 	}, nil
