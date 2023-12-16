@@ -46,10 +46,10 @@ func TestCrossProductBuildContextRegistryFree(t *testing.T) {
 
 	project := distgo.ProjectInfo{ProjectDir: projectDir, Version: "1.0.0"}
 	baseProduct := distgo.ProductOutputInfo{
-		ID:              "base",
-		DistOutputInfos: &distgo.DistOutputInfos{DistOutputDir: "out/dist"},
+		ID: "base",
 		DockerOutputInfos: &distgo.DockerOutputInfos{
-			DockerIDs: []distgo.DockerID{"base-docker"},
+			DockerOutputDir: "out/docker",
+			DockerIDs:       []distgo.DockerID{"base-docker"},
 			DockerBuilderOutputInfos: map[distgo.DockerID]distgo.DockerBuilderOutputInfo{
 				"base-docker": {ContextDir: "base", DockerfilePath: "Dockerfile", RenderedTags: []string{"itbase:tag"}},
 			},
@@ -59,10 +59,10 @@ func TestCrossProductBuildContextRegistryFree(t *testing.T) {
 	leafInfo := distgo.ProductTaskOutputInfo{
 		Project: project,
 		Product: distgo.ProductOutputInfo{
-			ID:              "leaf",
-			DistOutputInfos: &distgo.DistOutputInfos{DistOutputDir: "out/dist"},
+			ID: "leaf",
 			DockerOutputInfos: &distgo.DockerOutputInfos{
-				DockerIDs: []distgo.DockerID{"leaf-docker"},
+				DockerOutputDir: "out/docker",
+				DockerIDs:       []distgo.DockerID{"leaf-docker"},
 				DockerBuilderOutputInfos: map[distgo.DockerID]distgo.DockerBuilderOutputInfo{
 					"leaf-docker": {ContextDir: "leaf", DockerfilePath: "Dockerfile", RenderedTags: []string{"itleaf:tag"}},
 				},
@@ -78,7 +78,7 @@ func TestCrossProductBuildContextRegistryFree(t *testing.T) {
 	)
 	require.NoError(t, builder.RunDockerBuild("base-docker", baseInfo, false, false, io.Discard))
 	// Stand in for the Docker build task's post-build wrapper write.
-	require.NoError(t, distgo.WriteDockerBuildContextLayout(baseInfo.ProductDockerOCIDistOutputDir("base-docker"), []string{"itbase:tag"}))
+	require.NoError(t, distgo.WriteDockerBuildContextLayout(distgo.ProductDockerOutputDir(baseInfo.Project, baseInfo.Product, "base-docker"), []string{"itbase:tag"}))
 	require.NoError(t, builder.RunDockerBuild("leaf-docker", leafInfo, false, false, io.Discard),
 		"leaf must resolve FROM itbase:tag from the base's local layout (registry-free)")
 }
