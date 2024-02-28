@@ -20,6 +20,10 @@ import (
 
 // ProductConfig represents user-specified configuration on how to build a specific product.
 type ProductConfig struct {
+	// ProductName specifies the product name for the product. If not specified,
+	// the product ID will generally be used.
+	ProductName *string `yaml:"product-name,omitempty"`
+
 	// Build specifies the build configuration for the product.
 	Build *BuildConfig `yaml:"build,omitempty"`
 

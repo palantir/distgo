@@ -34,6 +34,7 @@ func (cfg *PublishConfig) ToParam(defaultCfg PublishConfig) (distgo.PublishParam
 	}
 	return distgo.PublishParam{
 		GroupID:     getConfigStringValue(cfg.GroupID, defaultCfg.GroupID, ""),
+		ProductName: cfg.ProductName,
 		PublishInfo: publishInfo,
 	}, nil
 }

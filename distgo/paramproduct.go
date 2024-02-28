@@ -23,6 +23,9 @@ type ProductParam struct {
 	// the configuration.
 	ID ProductID
 
+	// Name is the name of this product. If not specified, the ID is generally used.
+	Name *string
+
 	// Build specifies the build configuration for the product.
 	Build *BuildParam
 
@@ -68,6 +71,7 @@ func (p *ProductParam) AllDependenciesSortedIDs() []ProductID {
 
 type ProductOutputInfo struct {
 	ID                ProductID          `json:"productId"`
+	Name              *string            `json:"productName,omitempty"`
 	BuildOutputInfo   *BuildOutputInfo   `json:"buildOutputInfo"`
 	DistOutputInfos   *DistOutputInfos   `json:"distOutputInfos"`
 	PublishOutputInfo *PublishOutputInfo `json:"publishOutputInfo"`
@@ -106,9 +110,17 @@ func (p *ProductParam) ToProductOutputInfo(version string) (ProductOutputInfo, e
 	}
 	return ProductOutputInfo{
 		ID:                p.ID,
+		Name:              p.Name,
 		BuildOutputInfo:   buildOutputInfo,
 		DistOutputInfos:   distOutputInfos,
 		PublishOutputInfo: publishOutputInfo,
 		DockerOutputInfos: dockerOutputInfos,
 	}, nil
+}
+
+func (p ProductOutputInfo) ProductName() string {
+	if p.Name != nil {
+		return *p.Name
+	}
+	return string(p.ID)
 }
