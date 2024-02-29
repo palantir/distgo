@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Handle legacy plugins that do not include product name
+  links:
+  - https://github.com/palantir/distgo/pull/454
