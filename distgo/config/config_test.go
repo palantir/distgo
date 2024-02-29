@@ -344,7 +344,8 @@ products:
 			distgo.ProjectParam{
 				Products: map[distgo.ProductID]distgo.ProductParam{
 					"test-1": {
-						ID: "test-1",
+						ID:   "test-1",
+						Name: "test-1",
 						Build: &distgo.BuildParam{
 							NameTemplate: "{{Product}}",
 							OutputDir:    "test1-output",
@@ -354,7 +355,8 @@ products:
 						},
 					},
 					"test-2": {
-						ID: "test-2",
+						ID:   "test-2",
+						Name: "test-2",
 						Build: &distgo.BuildParam{
 							NameTemplate: "{{Product}}",
 							VersionVar:   "main.version",
@@ -365,7 +367,8 @@ products:
 						},
 					},
 					"test-3": {
-						ID: "test-3",
+						ID:   "test-3",
+						Name: "test-3",
 						Build: &distgo.BuildParam{
 							NameTemplate: "{{Product}}",
 							OutputDir:    "out/build",
@@ -375,7 +378,8 @@ products:
 						},
 					},
 					"test-4": {
-						ID: "test-4",
+						ID:   "test-4",
+						Name: "test-4",
 					},
 				},
 				ProjectVersionerParam: distgo.ProjectVersionerParam{
@@ -398,35 +402,41 @@ products:
 			distgo.ProjectParam{
 				Products: map[distgo.ProductID]distgo.ProductParam{
 					"test-1": {
-						ID: "test-1",
+						ID:   "test-1",
+						Name: "test-1",
 						FirstLevelDependencies: []distgo.ProductID{
 							"test-2",
 						},
 						AllDependencies: map[distgo.ProductID]distgo.ProductParam{
 							"test-2": {
-								ID: "test-2",
+								ID:   "test-2",
+								Name: "test-2",
 								FirstLevelDependencies: []distgo.ProductID{
 									"test-3",
 								},
 							},
 							"test-3": {
-								ID: "test-3",
+								ID:   "test-3",
+								Name: "test-3",
 							},
 						},
 					},
 					"test-2": {
-						ID: "test-2",
+						ID:   "test-2",
+						Name: "test-2",
 						FirstLevelDependencies: []distgo.ProductID{
 							"test-3",
 						},
 						AllDependencies: map[distgo.ProductID]distgo.ProductParam{
 							"test-3": {
-								ID: "test-3",
+								ID:   "test-3",
+								Name: "test-3",
 							},
 						},
 					},
 					"test-3": {
-						ID: "test-3",
+						ID:   "test-3",
+						Name: "test-3",
 					},
 				},
 				ProjectVersionerParam: distgo.ProjectVersionerParam{
@@ -474,7 +484,8 @@ products:
 			distgo.ProjectParam{
 				Products: map[distgo.ProductID]distgo.ProductParam{
 					"test-1": {
-						ID: "test-1",
+						ID:   "test-1",
+						Name: "test-1",
 						Docker: &distgo.DockerParam{
 							DockerBuilderParams: map[distgo.DockerID]distgo.DockerBuilderParam{
 								"default": {
@@ -502,7 +513,8 @@ products:
 						},
 						AllDependencies: map[distgo.ProductID]distgo.ProductParam{
 							"test-2": {
-								ID: "test-2",
+								ID:   "test-2",
+								Name: "test-2",
 								Build: &distgo.BuildParam{
 									NameTemplate: "{{Product}}",
 									OutputDir:    "out/build",
@@ -517,7 +529,8 @@ products:
 								},
 							},
 							"test-3": {
-								ID: "test-3",
+								ID:   "test-3",
+								Name: "test-3",
 								Build: &distgo.BuildParam{
 									NameTemplate: "{{Product}}",
 									OutputDir:    "out/build",
@@ -531,7 +544,8 @@ products:
 						},
 					},
 					"test-2": {
-						ID: "test-2",
+						ID:   "test-2",
+						Name: "test-2",
 						Build: &distgo.BuildParam{
 							NameTemplate: "{{Product}}",
 							OutputDir:    "out/build",
@@ -546,7 +560,8 @@ products:
 						},
 						AllDependencies: map[distgo.ProductID]distgo.ProductParam{
 							"test-3": {
-								ID: "test-3",
+								ID:   "test-3",
+								Name: "test-3",
 								Build: &distgo.BuildParam{
 									NameTemplate: "{{Product}}",
 									OutputDir:    "out/build",
@@ -560,7 +575,8 @@ products:
 						},
 					},
 					"test-3": {
-						ID: "test-3",
+						ID:   "test-3",
+						Name: "test-3",
 						Build: &distgo.BuildParam{
 							NameTemplate: "{{Product}}",
 							OutputDir:    "out/build",
@@ -612,7 +628,8 @@ products:
 			distgo.ProjectParam{
 				Products: map[distgo.ProductID]distgo.ProductParam{
 					"test-1": {
-						ID: "test-1",
+						ID:   "test-1",
+						Name: "test-1",
 						Docker: &distgo.DockerParam{
 							DockerBuilderParams: map[distgo.DockerID]distgo.DockerBuilderParam{
 								"default": {
@@ -640,7 +657,8 @@ products:
 						},
 						AllDependencies: map[distgo.ProductID]distgo.ProductParam{
 							"test-2": {
-								ID: "test-2",
+								ID:   "test-2",
+								Name: "test-2",
 								Dist: &distgo.DistParam{
 									OutputDir: "out/dist",
 									DistParams: map[distgo.DistID]distgo.DisterParam{
@@ -659,7 +677,8 @@ products:
 								},
 							},
 							"test-3": {
-								ID: "test-3",
+								ID:   "test-3",
+								Name: "test-3",
 								Dist: &distgo.DistParam{
 									OutputDir: "out/dist",
 									DistParams: map[distgo.DistID]distgo.DisterParam{
@@ -673,7 +692,8 @@ products:
 						},
 					},
 					"test-2": {
-						ID: "test-2",
+						ID:   "test-2",
+						Name: "test-2",
 						Dist: &distgo.DistParam{
 							OutputDir: "out/dist",
 							DistParams: map[distgo.DistID]distgo.DisterParam{
@@ -692,7 +712,8 @@ products:
 						},
 						AllDependencies: map[distgo.ProductID]distgo.ProductParam{
 							"test-3": {
-								ID: "test-3",
+								ID:   "test-3",
+								Name: "test-3",
 								Dist: &distgo.DistParam{
 									OutputDir: "out/dist",
 									DistParams: map[distgo.DistID]distgo.DisterParam{
@@ -706,7 +727,162 @@ products:
 						},
 					},
 					"test-3": {
-						ID: "test-3",
+						ID:   "test-3",
+						Name: "test-3",
+						Dist: &distgo.DistParam{
+							OutputDir: "out/dist",
+							DistParams: map[distgo.DistID]distgo.DisterParam{
+								"os-arch-bin": {
+									NameTemplate: "{{Product}}-{{Version}}",
+									Dister:       osarchbin.New(osarch.Current()),
+								},
+							},
+						},
+					},
+				},
+				ProjectVersionerParam: distgo.ProjectVersionerParam{
+					ProjectVersioner: git.New(),
+				},
+			},
+		},
+		{
+			"Docker dist dependencies expanded with name overrides",
+			`
+products:
+  test-1:
+    docker:
+      docker-builders:
+        default:
+          type: default
+          context-dir: docker
+          input-dists:
+            - test-2
+            - test-2.bar
+            - test-3.os-arch-bin
+          tag-templates:
+            latest: foo:latest
+    dependencies:
+      - test-2
+  test-2:
+    name: test-1
+    dist:
+      disters:
+        foo:
+          type: os-arch-bin
+        bar:
+          type: os-arch-bin
+    dependencies:
+      - test-3
+  test-3:
+    name: test-1
+    dist:
+      disters:
+        type: os-arch-bin
+`,
+			distgo.ProjectParam{
+				Products: map[distgo.ProductID]distgo.ProductParam{
+					"test-1": {
+						ID:   "test-1",
+						Name: "test-1",
+						Docker: &distgo.DockerParam{
+							DockerBuilderParams: map[distgo.DockerID]distgo.DockerBuilderParam{
+								"default": {
+									DockerBuilder:  defaultdockerbuilder.NewDefaultDockerBuilder(nil, ""),
+									DockerfilePath: "Dockerfile",
+									ContextDir:     "docker",
+									InputDists: []distgo.ProductDistID{
+										"test-2.bar",
+										"test-2.foo",
+										"test-3.os-arch-bin",
+									},
+									TagTemplates: distgo.TagTemplatesMap{
+										Templates: map[distgo.DockerTagID]string{
+											"latest": "foo:latest",
+										},
+										OrderedKeys: []distgo.DockerTagID{
+											"latest",
+										},
+									},
+								},
+							},
+						},
+						FirstLevelDependencies: []distgo.ProductID{
+							"test-2",
+						},
+						AllDependencies: map[distgo.ProductID]distgo.ProductParam{
+							"test-2": {
+								ID:   "test-2",
+								Name: "test-1",
+								Dist: &distgo.DistParam{
+									OutputDir: "out/dist",
+									DistParams: map[distgo.DistID]distgo.DisterParam{
+										"bar": {
+											NameTemplate: "{{Product}}-{{Version}}",
+											Dister:       osarchbin.New(osarch.Current()),
+										},
+										"foo": {
+											NameTemplate: "{{Product}}-{{Version}}",
+											Dister:       osarchbin.New(osarch.Current()),
+										},
+									},
+								},
+								FirstLevelDependencies: []distgo.ProductID{
+									"test-3",
+								},
+							},
+							"test-3": {
+								ID:   "test-3",
+								Name: "test-1",
+								Dist: &distgo.DistParam{
+									OutputDir: "out/dist",
+									DistParams: map[distgo.DistID]distgo.DisterParam{
+										"os-arch-bin": {
+											NameTemplate: "{{Product}}-{{Version}}",
+											Dister:       osarchbin.New(osarch.Current()),
+										},
+									},
+								},
+							},
+						},
+					},
+					"test-2": {
+						ID:   "test-2",
+						Name: "test-1",
+						Dist: &distgo.DistParam{
+							OutputDir: "out/dist",
+							DistParams: map[distgo.DistID]distgo.DisterParam{
+								"bar": {
+									NameTemplate: "{{Product}}-{{Version}}",
+									Dister:       osarchbin.New(osarch.Current()),
+								},
+								"foo": {
+									NameTemplate: "{{Product}}-{{Version}}",
+									Dister:       osarchbin.New(osarch.Current()),
+								},
+							},
+						},
+						FirstLevelDependencies: []distgo.ProductID{
+							"test-3",
+						},
+						AllDependencies: map[distgo.ProductID]distgo.ProductParam{
+							"test-3": {
+								ID:   "test-3",
+								Name: "test-1",
+								Dist: &distgo.DistParam{
+									OutputDir: "out/dist",
+									DistParams: map[distgo.DistID]distgo.DisterParam{
+										"os-arch-bin": {
+											NameTemplate: "{{Product}}-{{Version}}",
+											Dister:       osarchbin.New(osarch.Current()),
+										},
+									},
+								},
+							},
+						},
+					},
+					"test-3": {
+						ID:   "test-3",
+						Name: "test-1",
 						Dist: &distgo.DistParam{
 							OutputDir: "out/dist",
 							DistParams: map[distgo.DistID]distgo.DisterParam{
@@ -738,9 +914,10 @@ func TestProjectConfig_DefaultProducts(t *testing.T) {
 	require.NoError(t, err)
 	defer cleanup()
 
-	defaultProductParam := func(name, mainPkgDir string, modifyFns ...func(*distgo.ProductParam)) distgo.ProductParam {
+	defaultProductParam := func(id, mainPkgDir string, modifyFns ...func(*distgo.ProductParam)) distgo.ProductParam {
 		param := distgo.ProductParam{
-			ID: distgo.ProductID(name),
+			ID:   distgo.ProductID(id),
+			Name: id,
 			Build: &distgo.BuildParam{
 				NameTemplate: "{{Product}}",
 				OutputDir:    "out/build",
@@ -1033,9 +1210,39 @@ products:
 						Version:    "1.0.0",
 					},
 					Product: distgo.ProductOutputInfo{
-						ID: "test-one",
+						ID:   "test-one",
+						Name: "test-one",
 						BuildOutputInfo: &distgo.BuildOutputInfo{
 							BuildNameTemplateRendered: "test-one-1.0.0-cli",
+							BuildOutputDir:            "out/build",
+							OSArchs: []osarch.OSArch{
+								osarch.Current(),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			"name template rendered with name override",
+			`
+products:
+  test-one:
+    name: test-one-override
+    build:
+      name-template: "{{Product}}-{{Version}}-cli"
+`,
+			map[distgo.ProductID]distgo.ProductTaskOutputInfo{
+				"test-one": {
+					Project: distgo.ProjectInfo{
+						ProjectDir: projectDir,
+						Version:    "1.0.0",
+					},
+					Product: distgo.ProductOutputInfo{
+						ID:   "test-one",
+						Name: "test-one-override",
+						BuildOutputInfo: &distgo.BuildOutputInfo{
+							BuildNameTemplateRendered: "test-one-override-1.0.0-cli",
 							BuildOutputDir:            "out/build",
 							OSArchs: []osarch.OSArch{
 								osarch.Current(),
@@ -1060,7 +1267,8 @@ products:
 						Version:    "1.0.0",
 					},
 					Product: distgo.ProductOutputInfo{
-						ID: "test-one",
+						ID:   "test-one",
+						Name: "test-one",
 						BuildOutputInfo: &distgo.BuildOutputInfo{
 							BuildNameTemplateRendered: "test-one",
 							BuildOutputDir:            "out/build",

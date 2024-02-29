@@ -106,14 +106,14 @@ func (doi *DockerBuilderOutputInfo) InputDistDistIDs(productID ProductID) []Dist
 	return distIDs
 }
 
-func (p *DockerParam) ToDockerOutputInfos(productID ProductID, version string) (DockerOutputInfos, error) {
+func (p *DockerParam) ToDockerOutputInfos(productName, version string) (DockerOutputInfos, error) {
 	var dockerIDs []DockerID
 	var dockerOutputInfos map[DockerID]DockerBuilderOutputInfo
 	if len(p.DockerBuilderParams) > 0 {
 		dockerOutputInfos = make(map[DockerID]DockerBuilderOutputInfo)
 		for dockerID, dockerBuilderParam := range p.DockerBuilderParams {
 			dockerIDs = append(dockerIDs, dockerID)
-			currDockerOutputInfo, err := dockerBuilderParam.ToDockerBuilderOutputInfo(productID, version, p.Repository)
+			currDockerOutputInfo, err := dockerBuilderParam.ToDockerBuilderOutputInfo(productName, version, p.Repository)
 			if err != nil {
 				return DockerOutputInfos{}, err
 			}
@@ -191,12 +191,12 @@ type TagTemplatesMap struct {
 	OrderedKeys []DockerTagID
 }
 
-func (p *DockerBuilderParam) ToDockerBuilderOutputInfo(productID ProductID, version, repository string) (DockerBuilderOutputInfo, error) {
+func (p *DockerBuilderParam) ToDockerBuilderOutputInfo(productName, version, repository string) (DockerBuilderOutputInfo, error) {
 	renderedTagsMap := make(map[DockerTagID]string)
 	var renderedTags []string
 	for _, currTagTemplateKey := range p.TagTemplates.OrderedKeys {
 		currRenderedTag, err := RenderTemplate(p.TagTemplates.Templates[currTagTemplateKey], nil,
-			ProductTemplateFunction(productID),
+			ProductTemplateFunction(productName),
 			VersionTemplateFunction(version),
 			RepositoryTemplateFunction(repository),
 			RepositoryLiteralTemplateFunction(repository),

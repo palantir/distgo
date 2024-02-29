@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Add support for overriding product name in config
+  links:
+  - https://github.com/palantir/distgo/pull/453

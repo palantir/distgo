@@ -158,7 +158,7 @@ func TestBuildArtifacts(t *testing.T) {
 		// returns paths for all OS/arch combinations if requested osArchs is empty
 		{
 			params: []distgo.ProductParam{
-				createBuildSpec("foo", []osarch.OSArch{
+				createBuildSpec("foo", "foo", []osarch.OSArch{
 					{OS: "darwin", Arch: "amd64"},
 					{OS: "darwin", Arch: "arm64"},
 					{OS: "linux", Arch: "amd64"},
@@ -174,10 +174,29 @@ func TestBuildArtifacts(t *testing.T) {
 				}
 			},
 		},
+		// returns paths for all OS/arch combinations if requested osArchs is empty, with name override
+		{
+			params: []distgo.ProductParam{
+				createBuildSpec("foo", "bar", []osarch.OSArch{
+					{OS: "darwin", Arch: "amd64"},
+					{OS: "darwin", Arch: "arm64"},
+					{OS: "linux", Arch: "amd64"},
+				}),
+			},
+			want: func(projectDir string) map[distgo.ProductID][]string {
+				return map[distgo.ProductID][]string{
+					"foo": {
+						path.Join(projectDir, "out", "build", "foo", "0.1.0", "darwin-amd64", "bar"),
+						path.Join(projectDir, "out", "build", "foo", "0.1.0", "darwin-arm64", "bar"),
+						path.Join(projectDir, "out", "build", "foo", "0.1.0", "linux-amd64", "bar"),
+					},
+				}
+			},
+		},
 		// path to windows executable includes ".exe"
 		{
 			params: []distgo.ProductParam{
-				createBuildSpec("foo", []osarch.OSArch{
+				createBuildSpec("foo", "foo", []osarch.OSArch{
 					{OS: "windows", Arch: "amd64"},
 				}),
 			},
@@ -185,6 +204,21 @@ func TestBuildArtifacts(t *testing.T) {
 				return map[distgo.ProductID][]string{
 					"foo": {
 						path.Join(projectDir, "out", "build", "foo", "0.1.0", "windows-amd64", "foo.exe"),
+					},
+				}
+			},
+		},
+		// path to windows executable includes ".exe", with name override
+		{
+			params: []distgo.ProductParam{
+				createBuildSpec("foo", "bar", []osarch.OSArch{
+					{OS: "windows", Arch: "amd64"},
+				}),
+			},
+			want: func(projectDir string) map[distgo.ProductID][]string {
+				return map[distgo.ProductID][]string{
+					"foo": {
+						path.Join(projectDir, "out", "build", "foo", "0.1.0", "windows-amd64", "bar.exe"),
 					},
 				}
 			},
@@ -224,7 +258,7 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 		// returns paths to all artifacts if build has not happened
 		{
 			params: []distgo.ProductParam{
-				createBuildSpec("foo", []osarch.OSArch{
+				createBuildSpec("foo", "foo", []osarch.OSArch{
 					{OS: "darwin", Arch: "amd64"},
 					{OS: "darwin", Arch: "arm64"},
 					{OS: "linux", Arch: "amd64"},
@@ -240,10 +274,39 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 				}
 			},
 		},
+		// returns paths to all artifacts if build has not happened, no name collision with name override
+		{
+			params: []distgo.ProductParam{
+				createBuildSpec("foo", "foo", []osarch.OSArch{
+					{OS: "darwin", Arch: "amd64"},
+					{OS: "darwin", Arch: "arm64"},
+					{OS: "linux", Arch: "amd64"},
+				}),
+				createBuildSpec("bar", "foo", []osarch.OSArch{
+					{OS: "darwin", Arch: "amd64"},
+					{OS: "darwin", Arch: "arm64"},
+					{OS: "linux", Arch: "amd64"},
+				}),
+			},
+			want: func(projectDir string) map[distgo.ProductID][]string {
+				return map[distgo.ProductID][]string{
+					"foo": {
+						path.Join(projectDir, "out", "build", "foo", "0.1.0", "darwin-amd64", "foo"),
+						path.Join(projectDir, "out", "build", "foo", "0.1.0", "darwin-arm64", "foo"),
+						path.Join(projectDir, "out", "build", "foo", "0.1.0", "linux-amd64", "foo"),
+					},
+					"bar": {
+						path.Join(projectDir, "out", "build", "bar", "0.1.0", "darwin-amd64", "foo"),
+						path.Join(projectDir, "out", "build", "bar", "0.1.0", "darwin-arm64", "foo"),
+						path.Join(projectDir, "out", "build", "bar", "0.1.0", "linux-amd64", "foo"),
+					},
+				}
+			},
+		},
 		// returns empty if all artifacts exist and are up-to-date
 		{
 			params: []distgo.ProductParam{
-				createBuildSpec("foo", []osarch.OSArch{
+				createBuildSpec("foo", "foo", []osarch.OSArch{
 					{OS: "darwin", Arch: "amd64"},
 					{OS: "darwin", Arch: "arm64"},
 					{OS: "linux", Arch: "amd64"},
@@ -263,7 +326,7 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 		// returns paths to all artifacts if input source file has been modified
 		{
 			params: []distgo.ProductParam{
-				createBuildSpec("foo", []osarch.OSArch{
+				createBuildSpec("foo", "foo", []osarch.OSArch{
 					{OS: "darwin", Arch: "amd64"},
 					{OS: "darwin", Arch: "arm64"},
 					{OS: "linux", Arch: "amd64"},
@@ -333,7 +396,7 @@ func TestDistArtifacts(t *testing.T) {
 		// returns dist artifact outputs
 		{
 			params: []distgo.ProductParam{
-				createDistSpec("foo", osarchbin.New(
+				createDistSpec("foo", "foo", osarchbin.New(
 					osarch.OSArch{OS: "darwin", Arch: "amd64"},
 					osarch.OSArch{OS: "linux", Arch: "amd64"},
 				)),
@@ -343,6 +406,31 @@ func TestDistArtifacts(t *testing.T) {
 					"foo": {
 						path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0-darwin-amd64.tgz"),
 						path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0-linux-amd64.tgz"),
+					},
+				}
+			},
+		},
+		// returns dist artifact outputs with name override
+		{
+			params: []distgo.ProductParam{
+				createDistSpec("foo", "foo", osarchbin.New(
+					osarch.OSArch{OS: "darwin", Arch: "amd64"},
+					osarch.OSArch{OS: "linux", Arch: "amd64"},
+				)),
+				createDistSpec("bar", "foo", osarchbin.New(
+					osarch.OSArch{OS: "darwin", Arch: "amd64"},
+					osarch.OSArch{OS: "linux", Arch: "amd64"},
+				)),
+			},
+			want: func(projectDir string) map[distgo.ProductID][]string {
+				return map[distgo.ProductID][]string{
+					"foo": {
+						path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0-darwin-amd64.tgz"),
+						path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0-linux-amd64.tgz"),
+					},
+					"bar": {
+						path.Join(projectDir, "out", "dist", "bar", "0.1.0", "os-arch-bin", "foo-0.1.0-darwin-amd64.tgz"),
+						path.Join(projectDir, "out", "dist", "bar", "0.1.0", "os-arch-bin", "foo-0.1.0-linux-amd64.tgz"),
 					},
 				}
 			},
@@ -550,9 +638,10 @@ func TestDockerArtifacts(t *testing.T) {
 	}
 }
 
-func createBuildSpec(productName string, osArchs []osarch.OSArch) distgo.ProductParam {
+func createBuildSpec(productID, productName string, osArchs []osarch.OSArch) distgo.ProductParam {
 	return distgo.ProductParam{
-		ID: distgo.ProductID(productName),
+		ID:   distgo.ProductID(productID),
+		Name: productName,
 		Build: &distgo.BuildParam{
 			NameTemplate: "{{Product}}",
 			OutputDir:    "out/build",
@@ -562,14 +651,15 @@ func createBuildSpec(productName string, osArchs []osarch.OSArch) distgo.Product
 	}
 }
 
-func createDistSpec(productName string, dister distgo.Dister) distgo.ProductParam {
+func createDistSpec(productID, productName string, dister distgo.Dister) distgo.ProductParam {
 	disterName, err := dister.TypeName()
 	if err != nil {
 		panic(err)
 	}
 
 	return distgo.ProductParam{
-		ID: distgo.ProductID(productName),
+		ID:   distgo.ProductID(productID),
+		Name: productName,
 		Dist: &distgo.DistParam{
 			OutputDir: "out/dist",
 			DistParams: map[distgo.DistID]distgo.DisterParam{

@@ -484,7 +484,8 @@ func TestBuildAllParallel(t *testing.T) {
 
 func createBuildProductParam(fn func(*distgo.ProductParam)) distgo.ProductParam {
 	param := distgo.ProductParam{
-		ID: "testProduct",
+		ID:   "testProduct",
+		Name: "testProduct",
 		Build: &distgo.BuildParam{
 			NameTemplate: "{{Product}}",
 			MainPkg:      ".",
