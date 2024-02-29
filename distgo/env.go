@@ -44,7 +44,7 @@ func BuildScriptEnvVariables(outputInfo ProductTaskOutputInfo) map[string]string
 	m := map[string]string{
 		"PROJECT_DIR": outputInfo.Project.ProjectDir,
 		"VERSION":     outputInfo.Project.Version,
-		"PRODUCT":     string(outputInfo.Product.ID),
+		"PRODUCT":     outputInfo.Product.Name,
 	}
 
 	// add build environment variables for current product

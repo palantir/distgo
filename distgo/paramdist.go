@@ -47,14 +47,14 @@ type DistOutputInfos struct {
 	DistInfos     map[DistID]DistOutputInfo `json:"distInfos"`
 }
 
-func (p *DistParam) ToDistOutputInfos(productID ProductID, version string) (DistOutputInfos, error) {
+func (p *DistParam) ToDistOutputInfos(productName, version string) (DistOutputInfos, error) {
 	var distIDs []DistID
 	var distInfos map[DistID]DistOutputInfo
 	if len(p.DistParams) > 0 {
 		distInfos = make(map[DistID]DistOutputInfo)
 		for distID, distParam := range p.DistParams {
 			distIDs = append(distIDs, distID)
-			distOutputInfo, err := distParam.ToDistOutputInfo(productID, version)
+			distOutputInfo, err := distParam.ToDistOutputInfo(productName, version)
 			if err != nil {
 				return DistOutputInfos{}, err
 			}
@@ -101,8 +101,8 @@ type DistOutputInfo struct {
 	PackagingExtension       string   `json:"packagingExtension"`
 }
 
-func (p *DisterParam) ToDistOutputInfo(productID ProductID, version string) (DistOutputInfo, error) {
-	renderedName, err := renderNameTemplate(p.NameTemplate, productID, version)
+func (p *DisterParam) ToDistOutputInfo(productName, version string) (DistOutputInfo, error) {
+	renderedName, err := renderNameTemplate(p.NameTemplate, productName, version)
 	if err != nil {
 		return DistOutputInfo{}, errors.Wrapf(err, "failed to render name template")
 	}

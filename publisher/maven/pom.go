@@ -42,10 +42,10 @@ func POM(groupID string, outputInfo distgo.ProductTaskOutputInfo) (string, strin
 	if err != nil {
 		return "", "", err
 	}
-	pomName := fmt.Sprintf("%s-%s.pom", outputInfo.Product.ID, outputInfo.Project.Version)
+	pomName := fmt.Sprintf("%s-%s.pom", outputInfo.Product.Name, outputInfo.Project.Version)
 
 	git := getRepoOrigin()
-	pomContent, err := renderPOM(outputInfo.Product.ID, outputInfo.Project.Version, groupID, packaging, git)
+	pomContent, err := renderPOM(outputInfo.Product.Name, outputInfo.Project.Version, groupID, packaging, git)
 	if err != nil {
 		return "", "", err
 	}
@@ -85,9 +85,9 @@ func Packaging(distID distgo.DistID, outputInfo distgo.ProductTaskOutputInfo) st
 	return outputInfo.Product.DistOutputInfos.DistInfos[distID].PackagingExtension
 }
 
-func renderPOM(productID distgo.ProductID, version, groupID, packaging string, git gitParams) (string, error) {
+func renderPOM(productName, version, groupID, packaging string, git gitParams) (string, error) {
 	return distgo.RenderTemplate(pomTemplate, nil,
-		distgo.ProductTemplateFunction(productID),
+		distgo.ProductTemplateFunction(productName),
 		distgo.VersionTemplateFunction(version),
 		distgo.GroupIDTemplateFunction(groupID),
 		distgo.PackagingTemplateFunction(packaging),

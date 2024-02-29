@@ -84,8 +84,8 @@ type BuildOutputInfo struct {
 	OSArchs                   []osarch.OSArch `json:"osArchs"`
 }
 
-func (p *BuildParam) ToBuildOutputInfo(productID ProductID, version string) (BuildOutputInfo, error) {
-	renderedName, err := renderNameTemplate(p.NameTemplate, productID, version)
+func (p *BuildParam) ToBuildOutputInfo(productName string, version string) (BuildOutputInfo, error) {
+	renderedName, err := renderNameTemplate(p.NameTemplate, productName, version)
 	if err != nil {
 		return BuildOutputInfo{}, errors.Wrapf(err, "failed to render name template")
 	}

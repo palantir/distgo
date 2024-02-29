@@ -25,7 +25,7 @@ import (
 func TestRenderPOM(t *testing.T) {
 	for i, tc := range []struct {
 		name          string
-		productID     distgo.ProductID
+		productID     string
 		version       string
 		groupID       string
 		packagingType string

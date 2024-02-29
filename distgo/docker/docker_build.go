@@ -128,6 +128,7 @@ func RunBuild(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, 
 		if err := runSingleDockerBuild(
 			projectInfo,
 			productParam.ID,
+			productParam.Name,
 			dockerID,
 			productParam.Docker.DockerBuilderParams[dockerID],
 			productTaskOutputInfo,
@@ -146,6 +147,7 @@ func RunBuild(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, 
 func runSingleDockerBuild(
 	projectInfo distgo.ProjectInfo,
 	productID distgo.ProductID,
+	productName string,
 	dockerID distgo.DockerID,
 	dockerBuilderParam distgo.DockerBuilderParam,
 	productTaskOutputInfo distgo.ProductTaskOutputInfo,
@@ -200,7 +202,7 @@ func runSingleDockerBuild(
 		renderedDockerfile := string(originalDockerfileBytes)
 		if !dockerBuilderParam.DisableTemplateRendering {
 			if renderedDockerfile, err = distgo.RenderTemplate(string(originalDockerfileBytes), nil,
-				distgo.ProductTemplateFunction(productID),
+				distgo.ProductTemplateFunction(productName),
 				distgo.VersionTemplateFunction(projectInfo.Version),
 				distgo.RepositoryTemplateFunction(productTaskOutputInfo.Product.DockerOutputInfos.Repository),
 				distgo.RepositoryLiteralTemplateFunction(productTaskOutputInfo.Product.DockerOutputInfos.Repository),

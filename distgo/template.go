@@ -24,8 +24,8 @@ import (
 
 type TemplateFunction func(fnMap template.FuncMap)
 
-func ProductTemplateFunction(productID ProductID) TemplateFunction {
-	return TemplateValueFunction("Product", string(productID))
+func ProductTemplateFunction(productName string) TemplateFunction {
+	return TemplateValueFunction("Product", productName)
 }
 
 func VersionTemplateFunction(version string) TemplateFunction {
@@ -87,9 +87,9 @@ func RenderTemplate(tmplContent string, data interface{}, fns ...TemplateFunctio
 	return output.String(), nil
 }
 
-func renderNameTemplate(nameTemplate string, productID ProductID, version string) (string, error) {
+func renderNameTemplate(nameTemplate, productName, version string) (string, error) {
 	return RenderTemplate(nameTemplate, nil,
-		ProductTemplateFunction(productID),
+		ProductTemplateFunction(productName),
 		VersionTemplateFunction(version),
 	)
 }

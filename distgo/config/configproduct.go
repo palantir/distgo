@@ -102,7 +102,7 @@ func (cfg *ProductConfig) ToParam(productID distgo.ProductID, scriptIncludes str
 	}
 	return distgo.ProductParam{
 		ID:                     productID,
-		Name:                   cfg.ProductName,
+		Name:                   getConfigStringValue(cfg.Name, defaultCfg.Name, string(productID)),
 		Build:                  buildParam,
 		Run:                    runParam,
 		Dist:                   distParam,
