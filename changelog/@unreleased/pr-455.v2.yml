@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Add product name support to artifactory publisher
+  links:
+  - https://github.com/palantir/distgo/pull/455
