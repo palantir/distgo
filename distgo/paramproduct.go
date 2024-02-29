@@ -15,6 +15,7 @@
 package distgo
 
 import (
+	"encoding/json"
 	"sort"
 )
 
@@ -80,6 +81,17 @@ type ProductOutputInfo struct {
 	DistOutputInfos   *DistOutputInfos   `json:"distOutputInfos"`
 	PublishOutputInfo *PublishOutputInfo `json:"publishOutputInfo"`
 	DockerOutputInfos *DockerOutputInfos `json:"dockerOutputInfos"`
+}
+
+func (p *ProductOutputInfo) UnmarshalJSON(bytes []byte) error {
+	if err := json.Unmarshal(bytes, p); err == nil {
+		return err
+	}
+	// Handle legacy distgo plugins that do not include the Name field yet
+	if p.Name == "" {
+		p.Name = string(p.ID)
+	}
+	return nil
 }
 
 func (p *ProductParam) ToProductOutputInfo(version string) (ProductOutputInfo, error) {
