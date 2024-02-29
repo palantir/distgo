@@ -24,35 +24,50 @@ import (
 )
 
 func TestUnmarshalProductTaskOutputInfo(t *testing.T) {
-	jsonBytesWithProductName, err := json.Marshal(distgo.ProductTaskOutputInfo{
-		Product: distgo.ProductOutputInfo{
-			ID:   "foo",
-			Name: "bar",
+	for _, tc := range []struct {
+		name     string
+		in       distgo.ProductTaskOutputInfo
+		expected distgo.ProductTaskOutputInfo
+	}{
+		{
+			name: "product name is set - noop",
+			in: distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID:   "foo",
+					Name: "bar",
+				},
+			},
+			expected: distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID:   "foo",
+					Name: "bar",
+				},
+			},
 		},
-	})
-	require.NoError(t, err)
-	var ptoi distgo.ProductTaskOutputInfo
-	err = json.Unmarshal(jsonBytesWithProductName, &ptoi)
-	assert.NoError(t, err)
-	assert.Equal(t, distgo.ProductTaskOutputInfo{
-		Product: distgo.ProductOutputInfo{
-			ID:   "foo",
-			Name: "bar",
+		{
+			name: "product name not set - set to product ID",
+			in: distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID: "foo",
+				},
+			},
+			expected: distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID:   "foo",
+					Name: "foo",
+				},
+			},
 		},
-	}, ptoi)
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			jsonBytes, err := json.Marshal(tc.in)
+			require.NoError(t, err)
 
-	jsonBytesWithoutProductName, err := json.Marshal(distgo.ProductTaskOutputInfo{
-		Product: distgo.ProductOutputInfo{
-			ID: "foo",
-		},
-	})
-	require.NoError(t, err)
-	err = json.Unmarshal(jsonBytesWithoutProductName, &ptoi)
-	assert.NoError(t, err)
-	assert.Equal(t, distgo.ProductTaskOutputInfo{
-		Product: distgo.ProductOutputInfo{
-			ID:   "foo",
-			Name: "foo",
-		},
-	}, ptoi)
+			var ptoi distgo.ProductTaskOutputInfo
+			err = json.Unmarshal(jsonBytes, &ptoi)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, ptoi)
+		})
+	}
 }
