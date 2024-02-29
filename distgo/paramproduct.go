@@ -84,13 +84,15 @@ type ProductOutputInfo struct {
 }
 
 func (p *ProductOutputInfo) UnmarshalJSON(bytes []byte) error {
-	if err := json.Unmarshal(bytes, p); err == nil {
+	type productOutputInfoAlias ProductOutputInfo
+	var productOutputInfo productOutputInfoAlias
+	if err := json.Unmarshal(bytes, &productOutputInfo); err != nil {
 		return err
 	}
-	// Handle legacy distgo plugins that do not include the Name field yet
-	if p.Name == "" {
-		p.Name = string(p.ID)
+	if productOutputInfo.Name == "" {
+		productOutputInfo.Name = string(productOutputInfo.ID)
 	}
+	*p = ProductOutputInfo(productOutputInfo)
 	return nil
 }
 
