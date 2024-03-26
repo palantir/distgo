@@ -15,7 +15,6 @@
 package distgo
 
 import (
-	"fmt"
 	"path"
 
 	"github.com/palantir/godel/v2/pkg/osarch"
@@ -109,7 +108,7 @@ func ExecutableName(productName, goos string) string {
 }
 
 // ProductBuildOutputDir returns the output directory for the build outputs, which is
-// "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}".
+// "{{ProjectDir}}/{{BuildOutputDir}}/{{ProductID}}/{{Version}}".
 func ProductBuildOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) string {
 	if productOutputInfo.BuildOutputInfo == nil {
 		return ""
@@ -120,7 +119,7 @@ func ProductBuildOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOut
 // ProductBuildArtifactPaths returns a map that contains the paths to the executables created by the provided product
 // for the provided project. The keys in the map are the OS/architecture of the executable and the values are the
 // executable output paths for that OS/architecture. The output paths are of the form
-// "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}/{{OSArch}}/{{NameTemplateRendered}}" (and if the OS is
+// "{{ProjectDir}}/{{BuildOutputDir}}/{{ProductID}}/{{Version}}/{{OSArch}}/{{NameTemplateRendered}}" (and if the OS is
 // Windows, the ".exe" extension is appended).
 func ProductBuildArtifactPaths(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) map[osarch.OSArch]string {
 	if productOutputInfo.BuildOutputInfo == nil {
@@ -135,7 +134,7 @@ func ProductBuildArtifactPaths(projectInfo ProjectInfo, productOutputInfo Produc
 }
 
 // ProductDistOutputDir returns the output directory for the dist outputs for the dist with the given DistID, which is
-// "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}/{{DistID}}".
+// "{{ProjectDir}}/{{DistOutputDir}}/{{ProductID}}/{{Version}}/{{DistID}}".
 func ProductDistOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo, distID DistID) string {
 	if productOutputInfo.DistOutputInfos == nil {
 		return ""
@@ -143,19 +142,17 @@ func ProductDistOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutp
 	return path.Join(projectInfo.ProjectDir, productOutputInfo.DistOutputInfos.DistOutputDir, string(productOutputInfo.ID), projectInfo.Version, string(distID))
 }
 
-// ProductDockerOCIDistOutputDir returns the output directory for the Docker OCI dist outputs, which is
-// "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}/oci-{{DockerID}}". If the builder for a given DockerID
-// uses the buildx builder for multi-architecture images, the output is written to this directory.
-//
-// Note that this scheme uses the namespace for dist outputs, so if a product has a DockerID "X" and a dist with
-// DistID "oci-X", then the output directories will be the same and the behavior will be undefined -- this is a
-// known issue/risk that we are accepting as part of the design.
-func (p *ProductTaskOutputInfo) ProductDockerOCIDistOutputDir(dockerID DockerID) string {
-	return ProductDistOutputDir(p.Project, p.Product, DistID(fmt.Sprintf("oci-%s", dockerID)))
+// ProductDockerOutputDir returns the output directory for the docker outputs for the docker builder with the given
+// DockerID, which is "{{ProjectDir}}/{{DockerOutputDir}}/{{ProductID}}/{{Version}}/{{DockerID}}".
+func ProductDockerOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo, dockerID DockerID) string {
+	if productOutputInfo.DockerOutputInfos == nil {
+		return ""
+	}
+	return path.Join(projectInfo.ProjectDir, productOutputInfo.DockerOutputInfos.DockerOutputDir, string(productOutputInfo.ID), projectInfo.Version, string(dockerID))
 }
 
 // ProductDistWorkDirs returns a map from DistID to the directory used to prepare the distribution for that DistID,
-// which is "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}/{{DistID}}/{{NameTemplateRendered}}".
+// which is "{{ProjectDir}}/{{DistOutputDir}}/{{ProductID}}/{{Version}}/{{DistID}}/{{NameTemplateRendered}}".
 func ProductDistWorkDirs(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) map[DistID]string {
 	if productOutputInfo.DistOutputInfos == nil {
 		return nil
@@ -168,7 +165,7 @@ func ProductDistWorkDirs(projectInfo ProjectInfo, productOutputInfo ProductOutpu
 }
 
 // ProductDistArtifactPaths returns a map from DistID to the output paths for the dist, which is
-// "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}/{{DistID}}/{{Artifacts}}".
+// "{{ProjectDir}}/{{DistOutputDir}}/{{ProductID}}/{{Version}}/{{DistID}}/{{Artifacts}}".
 func ProductDistArtifactPaths(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) map[DistID][]string {
 	if productOutputInfo.DistOutputInfos == nil {
 		return nil
