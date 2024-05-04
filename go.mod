@@ -24,7 +24,7 @@ require (
 	github.com/termie/go-shutil v0.0.0-20140729215957-bcacb06fecae
 	github.com/whilp/git-urls v1.0.0
 	golang.org/x/exp v0.0.0-20230307190834-24139beb5833
-	golang.org/x/oauth2 v0.19.0
+	golang.org/x/oauth2 v0.20.0
 	golang.org/x/tools v0.20.0
 	gopkg.in/cheggaaa/pb.v1 v1.0.22
 	gopkg.in/yaml.v2 v2.4.0
