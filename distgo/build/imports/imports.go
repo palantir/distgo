@@ -17,28 +17,27 @@ package imports
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
 	"golang.org/x/tools/go/packages"
 )
 
-// GoFiles is a map from package paths to the names of the buildable .go source files (.go files excluding Cgo and test
+// GoFiles is a list of absolute paths to all buildable .go source files (.go files excluding Cgo and test
 // files) in the package.
-type GoFiles map[string][]string
+type GoFiles []string
 
 // NewerThan returns true if the modification time of any of the GoFiles is newer than that of the provided file.
 func (g GoFiles) NewerThan(fi os.FileInfo) (bool, error) {
-	for _, files := range g {
-		for _, goFile := range files {
-			currPath := goFile
-			currFi, err := os.Stat(currPath)
-			if err != nil {
-				return false, errors.Wrapf(err, "Failed to stat file %v", currPath)
-			}
-			if currFi.ModTime().After(fi.ModTime()) {
-				return true, nil
-			}
+	for _, goFile := range g {
+		currPath := goFile
+		currFi, err := os.Stat(currPath)
+		if err != nil {
+			return false, errors.Wrapf(err, "Failed to stat file %v", currPath)
+		}
+		if currFi.ModTime().After(fi.ModTime()) {
+			return true, nil
 		}
 	}
 	return false, nil
@@ -51,7 +50,7 @@ func (g GoFiles) NewerThan(fi os.FileInfo) (bool, error) {
 // (excluding Cgo and test files).
 func AllFiles(pkgDir, goos, goarch string) (GoFiles, error) {
 	// package or module name to all non-test Go files in the package
-	pkgFiles := make(map[string][]string)
+	pkgFiles := make(GoFiles, 0)
 
 	env := os.Environ()
 	if goos != "" {
@@ -61,7 +60,7 @@ func AllFiles(pkgDir, goos, goarch string) (GoFiles, error) {
 		env = append(env, fmt.Sprintf("GOARCH=%s", goarch))
 	}
 	cfg := &packages.Config{
-		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles | packages.NeedImports,
+		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles | packages.NeedImports | packages.NeedDeps | packages.NeedModule,
 		Dir:  pkgDir,
 		Env:  env,
 	}
@@ -69,26 +68,21 @@ func AllFiles(pkgDir, goos, goarch string) (GoFiles, error) {
 	if err != nil {
 		return nil, err
 	}
-	pkgsToProcess := pkgs
+	packages.PrintErrors(pkgs)
+	if len(pkgs) == 0 {
+		return nil, errors.Errorf("no packages found in %s", pkgDir)
+	}
 
-	for len(pkgsToProcess) > 0 {
-		currPkg := pkgsToProcess[0]
-		pkgsToProcess = pkgsToProcess[1:]
-		if _, ok := pkgFiles[currPkg.PkgPath]; ok {
-			continue
-		}
-
-		// add all files for the current package to output
-		pkgFiles[currPkg.PkgPath] = currPkg.GoFiles
-
-		// convert all non-built-in imports into packages and add to packages to process
-		for importPath, importPkg := range currPkg.Imports {
-			if !strings.Contains(importPath, ".") {
-				// if import is a standard package, skip
+	goRoot := runtime.GOROOT()
+	packages.Visit(pkgs, func(pkg *packages.Package) bool {
+		for _, goFile := range pkg.GoFiles {
+			// if package is standard library, skip
+			if strings.HasPrefix(goFile, goRoot) {
 				continue
 			}
-			pkgsToProcess = append(pkgsToProcess, importPkg)
+			pkgFiles = append(pkgFiles, goFile)
 		}
-	}
+		return true
+	}, nil)
 	return pkgFiles, nil
 }
