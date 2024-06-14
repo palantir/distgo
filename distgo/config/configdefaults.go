@@ -15,7 +15,6 @@
 package config
 
 import (
-	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -175,9 +174,6 @@ func mainPkgPaths(projectDir string, exclude matcher.Matcher) ([]string, error) 
 func runGoList(dir string, args ...string) ([]string, error) {
 	goListCmd := exec.Command("go", append([]string{"list"}, args...)...)
 	goListCmd.Dir = dir
-	// explicitly set module mode to "off" -- "go list" is being used to determine main packages, and running in
-	// non-module mode is more flexible for this purpose (even when dealing with modules).
-	goListCmd.Env = append(os.Environ(), "GO111MODULE=off")
 	outputBytes, err := goListCmd.CombinedOutput()
 	output := string(outputBytes)
 	if err != nil {
