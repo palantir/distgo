@@ -70,7 +70,7 @@ func BuildProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectPa
 		productDistIDs = append(productDistIDs, distgo.ProductDistID(currProductParam.ID))
 	}
 	// run dist for products that require dist artifact generation
-	if err := dist.Products(projectInfo, projectParam, configModTime, productDistIDs, dryRun, stdout); err != nil {
+	if err := dist.Products(projectInfo, projectParam, configModTime, productDistIDs, dryRun, true, stdout); err != nil {
 		return err
 	}
 

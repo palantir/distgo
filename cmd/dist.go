@@ -37,18 +37,20 @@ var (
 				// if force flag is false, use modification time of configuration file
 				configFileModTime = distgoConfigModTime()
 			}
-			return dist.Products(projectInfo, projectParam, configFileModTime, distgo.ToProductDistIDs(args), distDryRunFlagVal, cmd.OutOrStdout())
+			return dist.Products(projectInfo, projectParam, configFileModTime, distgo.ToProductDistIDs(args), distDryRunFlagVal, distParallelRunFlagVal, cmd.OutOrStdout())
 		},
 	}
 )
 
 var (
-	distDryRunFlagVal bool
-	distForceFlagVal  bool
+	distDryRunFlagVal      bool
+	distParallelRunFlagVal bool
+	distForceFlagVal       bool
 )
 
 func init() {
 	distCmd.Flags().BoolVar(&distDryRunFlagVal, "dry-run", false, "print the operations that would be performed")
+	distCmd.Flags().BoolVar(&distParallelRunFlagVal, "parallel", true, "runs the builds in parallel")
 	distCmd.Flags().BoolVar(&distForceFlagVal, "force", false, "create distribution outputs even if they are considered up-to-date")
 
 	rootCmd.AddCommand(distCmd)

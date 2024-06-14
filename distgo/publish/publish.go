@@ -27,7 +27,7 @@ import (
 
 func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDistIDs []distgo.ProductDistID, publisher distgo.Publisher, flagVals map[distgo.PublisherFlagName]interface{}, dryRun bool, stdout io.Writer) error {
 	// run dist for products (will only run dist for productDistIDs that require dist artifact generation)
-	if err := dist.Products(projectInfo, projectParam, configModTime, productDistIDs, dryRun, stdout); err != nil {
+	if err := dist.Products(projectInfo, projectParam, configModTime, productDistIDs, dryRun, true, stdout); err != nil {
 		return err
 	}
 

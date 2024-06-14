@@ -202,7 +202,7 @@ os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-%s.tgz]
 
 		preDistTime := time.Now().Truncate(time.Second).Add(-1 * time.Second)
 		buffer := &bytes.Buffer{}
-		err = dist.Products(projectInfo, projectParam, nil, nil, false, buffer)
+		err = dist.Products(projectInfo, projectParam, nil, nil, false, true, buffer)
 		require.NoError(t, err, "Case %d: %s\nOutput: %s", i, tc.name, buffer.String())
 
 		buffer = &bytes.Buffer{}
