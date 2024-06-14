@@ -788,7 +788,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		preDistTime := time.Now().Truncate(time.Second).Add(-1 * time.Second)
-		err = dist.Products(projectInfo, projectParam, nil, nil, false, ioutil.Discard)
+		err = dist.Products(projectInfo, projectParam, nil, nil, false, true, ioutil.Discard)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		buffer := &bytes.Buffer{}

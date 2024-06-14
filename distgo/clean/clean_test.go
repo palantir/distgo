@@ -212,7 +212,7 @@ func TestClean(t *testing.T) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
 			func(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
-				err := dist.Products(projectInfo, projectParam, nil, nil, false, ioutil.Discard)
+				err := dist.Products(projectInfo, projectParam, nil, nil, false, true, ioutil.Discard)
 				require.NoError(t, err)
 
 				productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
@@ -274,7 +274,7 @@ func TestClean(t *testing.T) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
 			func(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
-				err := dist.Products(projectInfo, projectParam, nil, nil, false, ioutil.Discard)
+				err := dist.Products(projectInfo, projectParam, nil, nil, false, true, ioutil.Discard)
 				require.NoError(t, err)
 
 				productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
@@ -288,7 +288,7 @@ func TestClean(t *testing.T) {
 				require.NoError(t, err, "expected dist output to exist at %s", distArtifactPath)
 
 				projectInfo.Version = "0.1.0-dirty"
-				err = dist.Products(projectInfo, projectParam, nil, nil, false, ioutil.Discard)
+				err = dist.Products(projectInfo, projectParam, nil, nil, false, true, ioutil.Discard)
 				require.NoError(t, err)
 
 				productTaskOutputInfo, err = distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
