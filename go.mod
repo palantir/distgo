@@ -11,14 +11,14 @@ require (
 	github.com/nmiyake/pkg/gofiles v1.2.0
 	github.com/palantir/distgo/pkg/git v1.0.0
 	github.com/palantir/godel/pkg/products/v2 v2.0.0
-	github.com/palantir/godel/v2 v2.109.0
+	github.com/palantir/godel/v2 v2.110.0
 	github.com/palantir/pkg/cobracli v1.2.0
 	github.com/palantir/pkg/gittest v1.2.0
 	github.com/palantir/pkg/matcher v1.2.0
 	github.com/palantir/pkg/signals v1.1.0
 	github.com/palantir/pkg/specdir v1.2.0
 	github.com/pkg/errors v0.9.1
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
 	github.com/termie/go-shutil v0.0.0-20140729215957-bcacb06fecae
