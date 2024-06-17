@@ -32,7 +32,7 @@ import (
 	"github.com/termie/go-shutil"
 )
 
-func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDistIDs []distgo.ProductDistID, dryRun bool, stdout io.Writer) error {
+func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDistIDs []distgo.ProductDistID, dryRun, parallel bool, stdout io.Writer) error {
 	// pre-filter step: expand productDistIDs to include all dependent products
 	var allDepProductDistIDs []distgo.ProductDistID
 	for _, currDistID := range productDistIDs {
@@ -81,7 +81,7 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 	}
 	if len(productParamsToBuild) != 0 {
 		if err := build.Run(projectInfo, productParamsToBuild, build.Options{
-			Parallel: true,
+			Parallel: parallel,
 			DryRun:   dryRun,
 		}, stdout); err != nil {
 			return err
