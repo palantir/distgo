@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Handle go1.21 changes in packages.Load
+  links:
+  - https://github.com/palantir/distgo/pull/483
