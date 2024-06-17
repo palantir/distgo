@@ -15,6 +15,7 @@
 package config
 
 import (
+	"os"
 	"path"
 	"path/filepath"
 	"sort"
@@ -140,7 +141,7 @@ func nextAvailableNumName(nameWithHyphen string, currNum int, used map[distgo.Pr
 func mainPkgPaths(projectDir string, exclude matcher.Matcher) ([]string, error) {
 	// explicitly set module mode to "off" -- "go list" is being used to determine main packages, and running in
 	// non-module mode is more flexible for this purpose (even when dealing with modules).
-	env := []string{"GO111MODULE=off"}
+	env := append(os.Environ(), "GO111MODULE=off")
 
 	projectPkgOutput, err := packages.Load(&packages.Config{
 		Mode: packages.NeedName,
