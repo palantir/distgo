@@ -1,0 +1,20 @@
+./godelw verify failed after updating godel plugins and assets
+
+Command that caused error:
+./godelw verify --skip-test --skip-check
+
+Output:
+Running format...
+Running mod...
+go: downloading github.com/pierrec/lz4 v2.0.5+incompatible
+go: downloading github.com/docker/docker v24.0.5+incompatible
+go: github.com/palantir/distgo/dister/bin imports
+	github.com/mholt/archiver/v3 imports
+	github.com/pierrec/lz4: github.com/pierrec/lz4@v2.0.5+incompatible: read "https:/proxy.golang.org/@v/v2.0.5+incompatible.zip": read tcp 172.26.64.55:43524->142.250.65.209:443: read: connection timed out
+go: github.com/palantir/distgo/distgo/docker imports
+	github.com/google/go-containerregistry/pkg/authn imports
+	github.com/docker/cli/cli/config imports
+	github.com/docker/docker/pkg/homedir: github.com/docker/docker@v24.0.5+incompatible: read "https:/proxy.golang.org/@v/v24.0.5+incompatible.zip": read tcp 172.26.64.55:43524->142.250.65.209:443: read: connection timed out
+Running license...
+Failed tasks:
+	mod
