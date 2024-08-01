@@ -1,6 +1,6 @@
 module github.com/palantir/distgo
 
-go 1.21
+go 1.22
 
 require (
 	github.com/google/go-containerregistry v0.20.1
