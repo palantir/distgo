@@ -17,6 +17,8 @@ package docker
 import (
 	"fmt"
 	"io"
+	"io/fs"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -101,8 +103,13 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 		return errors.Wrapf(err, "failed to construct image index from OCI layout at path %s", productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID))
 	}
 
+	referrers, err := getOCIReferrers(dockerID, productTaskOutputInfo)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get OCI referrers for configuration %s for product %s", dockerID, productID)
+	}
+
 	for _, tag := range productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags {
-		ref, err := name.ParseReference(tag)
+		tagRef, err := name.ParseReference(tag)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse reference from tag %s", tag)
 		}
@@ -118,18 +125,111 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 		}
 		switch idxManifest.MediaType {
 		case types.OCIImageIndex:
-			if err := handleImageIndex(index, idxManifest, ref, productID, dockerID, dryRun, stdout); err != nil {
+			if err := handleImageIndex(index, idxManifest, tagRef, productID, dockerID, dryRun, stdout); err != nil {
 				return errors.Wrapf(err, "failed to publish image index for configuration %s for product %s", dockerID, productID)
 			}
 		case types.OCIManifestSchema1:
-			if err := handleImageManifest(ref, productID, dockerID, productTaskOutputInfo, dryRun, stdout); err != nil {
+			if err := handleImageManifest(tagRef, productID, dockerID, productTaskOutputInfo, dryRun, stdout); err != nil {
 				return errors.Wrapf(err, "failed to image manifest for configuration %s for product %s", dockerID, productID)
 			}
 		default:
 			return errors.Errorf("unexpected media type %s for configuration %s for product %s", idxManifest.MediaType, dockerID, productID)
 		}
+
+		// at this point, primary image has been pushed: push any referrer images
+
+		// if there are no referrers, nothing to do
+		if len(referrers) == 0 {
+			continue
+		}
+
+		// Push each referrer based on digest. Note that, if there are multiple tags that have the same repository, the
+		// same referrers will be pushed to the repository multiple times. However, OCI pushes will short-circuit if the
+		// content already exists, so this should be fine (the alternative would be to track repositories and skip push
+		// operation entirely if referrers have already been pushed for the repository).
+		currRepo := tagRef.Context()
+		for _, referrer := range referrers {
+			// compute digest-based tagRef for manifest
+			referrerHash, err := referrer.Hash()
+			if err != nil {
+				return errors.Wrapf(err, "failed to get hash for referrer %v for configuration %s for product %s", referrer, dockerID, productID)
+			}
+			digestRef := currRepo.Digest(referrerHash.String())
+			if err := referrer.writeReferrer(digestRef, tagRef, productID, dockerID, dryRun, stdout); err != nil {
+				return errors.Wrapf(err, "failed to write referrer %s for tag %s for configuration %s for product %s", digestRef, tagRef, dockerID, productID)
+			}
+		}
 	}
+
 	return nil
+}
+
+// Union type representing an ImageIndex or Image: only one of Image or ImageIndex can be non-nil.
+type ociTaggable struct {
+	ImageIndex v1.ImageIndex
+	Image      v1.Image
+}
+
+func (t *ociTaggable) writeReferrer(referrerRef, referredTag name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) error {
+	if t.ImageIndex != nil {
+		return writeReferrerIndex(t.ImageIndex, referrerRef, referredTag, productID, dockerID, dryRun, stdout)
+	} else if t.Image != nil {
+		return writeReferrerImage(t.Image, referrerRef, referredTag, productID, dockerID, dryRun, stdout)
+	} else {
+		return errors.Errorf("invalid ociTaggable: both ImageIndex and Image are nil")
+	}
+}
+
+func (t *ociTaggable) Hash() (v1.Hash, error) {
+	if t.ImageIndex != nil {
+		return t.ImageIndex.Digest()
+	} else if t.Image != nil {
+		return t.Image.Digest()
+	} else {
+		return v1.Hash{}, errors.Errorf("invalid ociTaggable: both ImageIndex and Image are nil")
+	}
+}
+
+func getOCIReferrers(dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo) ([]ociTaggable, error) {
+	referrersDir := productTaskOutputInfo.ProductDockerOCIReferrersDistOutputDir(dockerID)
+
+	// if "referrers" directory does not exist, nothing to do
+	if _, err := os.Stat(referrersDir); errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+
+	referrersIndex, err := layout.ImageIndexFromPath(referrersDir)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to construct image index from OCI referrers ImageIndex layout at path %s", referrersDir)
+	}
+
+	referrersIndexManifest, err := referrersIndex.IndexManifest()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read index manifest")
+	}
+
+	// bucket all manifests in the ImageIndex as either an ImageIndex, Image, or unknown
+	var (
+		taggablesToPush []ociTaggable
+		errManifests    []v1.Descriptor
+	)
+	for _, referrersIndexManifestEntry := range referrersIndexManifest.Manifests {
+		if manifestImageIndex, err := referrersIndex.ImageIndex(referrersIndexManifestEntry.Digest); err == nil {
+			taggablesToPush = append(taggablesToPush, ociTaggable{
+				ImageIndex: manifestImageIndex,
+			})
+		} else if manifestImage, err := referrersIndex.Image(referrersIndexManifestEntry.Digest); err == nil {
+			taggablesToPush = append(taggablesToPush, ociTaggable{
+				Image: manifestImage,
+			})
+		} else {
+			errManifests = append(errManifests, referrersIndexManifestEntry)
+		}
+	}
+	if len(errManifests) > 0 {
+		return nil, errors.Errorf("%d manifest(s) in ImageIndex were not an Image or ImageIndex: %v", len(errManifests), errManifests)
+	}
+	return taggablesToPush, nil
 }
 
 func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) error {
@@ -187,7 +287,15 @@ func handleImageManifest(ref name.Reference, productID distgo.ProductID, dockerI
 }
 
 func writeIndex(index v1.ImageIndex, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) error {
-	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing image index for tag %s of docker configuration %s of product %s...", ref, dockerID, productID), dryRun)
+	return writeIndexHelper(index, ref, fmt.Sprintf("Writing image index for tag %s of docker configuration %s of product %s...", ref, dockerID, productID), dryRun, stdout)
+}
+
+func writeReferrerIndex(index v1.ImageIndex, referrerRef, referredTag name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) error {
+	return writeIndexHelper(index, referrerRef, fmt.Sprintf("Writing referrer image index %s for tag %s of docker configuration %s of product %s...", referrerRef, referredTag, dockerID, productID), dryRun, stdout)
+}
+
+func writeIndexHelper(index v1.ImageIndex, ref name.Reference, message string, dryRun bool, stdout io.Writer) error {
+	distgo.PrintlnOrDryRunPrintln(stdout, message, dryRun)
 	if !dryRun {
 		if err := remote.WriteIndex(ref, index, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
 			return errors.Wrap(err, "failed to write image index to remote")
@@ -197,7 +305,15 @@ func writeIndex(index v1.ImageIndex, ref name.Reference, productID distgo.Produc
 }
 
 func writeImage(image v1.Image, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) error {
-	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing image for tag %s of docker configuration %s of product %s...", ref, dockerID, productID), dryRun)
+	return writeImageHelper(image, ref, fmt.Sprintf("Writing image for tag %s of docker configuration %s of product %s...", ref, dockerID, productID), dryRun, stdout)
+}
+
+func writeReferrerImage(image v1.Image, referrerRef, referredTag name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) error {
+	return writeImageHelper(image, referrerRef, fmt.Sprintf("Writing referrer image %s for tag %s of docker configuration %s of product %s...", referrerRef, referredTag, dockerID, productID), dryRun, stdout)
+}
+
+func writeImageHelper(image v1.Image, ref name.Reference, message string, dryRun bool, stdout io.Writer) error {
+	distgo.PrintlnOrDryRunPrintln(stdout, message, dryRun)
 	if !dryRun {
 		if err := remote.Write(ref, image, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
 			return errors.Wrap(err, "failed to write image to remote")

@@ -23,7 +23,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/layout"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/mholt/archiver/v3"
 	"github.com/palantir/distgo/distgo"
 	"github.com/pkg/errors"
@@ -46,12 +50,16 @@ const (
 
 type Option func(*DefaultDockerBuilder)
 
+// ReferrersCreator is a function that creates all the referrer images or image indexes for a Docker build.
+type ReferrersCreator func(primaryIndex v1.ImageIndex, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, verbose, dryRun bool, stdout io.Writer) ([]remote.Taggable, error)
+
 type DefaultDockerBuilder struct {
 	BuildArgs         []string
 	BuildArgsScript   string
 	BuildxDriverOpts  []string
 	BuildxPlatformArg string
 	OutputType        OutputType
+	ReferrersCreator  ReferrersCreator
 }
 
 func NewDefaultDockerBuilder(buildArgs []string, buildArgsScript string) distgo.DockerBuilder {
@@ -105,11 +113,11 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 	}
 
 	if d.OutputType&OCILayout != 0 {
-		destDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)
-		if err := os.MkdirAll(destDir, 0755); err != nil {
-			return errors.Wrapf(err, "failed to create directory %s for OCI output", destDir)
+		destOCIDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)
+		if err := os.MkdirAll(destOCIDir, 0755); err != nil {
+			return errors.Wrapf(err, "failed to create directory %s for OCI output", destOCIDir)
 		}
-		destFile := filepath.Join(destDir, "image.tar")
+		destFile := filepath.Join(destOCIDir, "image.tar")
 
 		ociArgs := append(args, d.BuildxPlatformArg, fmt.Sprintf("--output=type=oci,dest=%s", destFile), contextDirPath)
 		cmd := exec.Command("docker", ociArgs...)
@@ -117,8 +125,21 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 			return err
 		}
 		if !dryRun {
-			if err := d.extractToOCILayout(destDir, destFile); err != nil {
+			if err := d.extractToOCILayout(destOCIDir, destFile); err != nil {
 				return err
+			}
+			if d.ReferrersCreator != nil {
+				if err := d.createAndWriteReferrers(
+					productTaskOutputInfo.ProductDockerOCIReferrersDistOutputDir(dockerID),
+					destOCIDir,
+					dockerID,
+					productTaskOutputInfo,
+					verbose,
+					dryRun,
+					stdout,
+				); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -158,6 +179,56 @@ func (d *DefaultDockerBuilder) extractToOCILayout(destOCILayoutDir, sourceOCITar
 	return nil
 }
 
+func (d *DefaultDockerBuilder) createAndWriteReferrers(
+	destOCIReferrersDir,
+	baseOCIIndexDir string,
+	dockerID distgo.DockerID,
+	productTaskOutputInfo distgo.ProductTaskOutputInfo,
+	verbose,
+	dryRun bool,
+	stdout io.Writer,
+) error {
+
+	imageIndex, err := layout.ImageIndexFromPath(baseOCIIndexDir)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read OCI layout from path %s", baseOCIIndexDir)
+	}
+
+	referrers, err := d.ReferrersCreator(imageIndex, dockerID, productTaskOutputInfo, verbose, dryRun, stdout)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create referrers")
+	}
+
+	// done
+	if len(referrers) == 0 {
+		return nil
+	}
+
+	if err := os.MkdirAll(destOCIReferrersDir, 0755); err != nil {
+		return errors.Wrapf(err, "failed to create directory %s", destOCIReferrersDir)
+	}
+
+	referrersImageIndex := v1.ImageIndex(empty.Index)
+	for _, referrer := range referrers {
+		switch taggable := referrer.(type) {
+		case v1.ImageIndex:
+			referrersImageIndex = mutate.AppendManifests(referrersImageIndex, mutate.IndexAddendum{
+				Add: taggable,
+			})
+		case v1.Image:
+			referrersImageIndex = mutate.AppendManifests(referrersImageIndex, mutate.IndexAddendum{
+				Add: taggable,
+			})
+		default:
+			return errors.Errorf("referrer %v was not an Image or ImageIndex, but was %T", taggable, taggable)
+		}
+	}
+	if _, err := layout.Write(destOCIReferrersDir, referrersImageIndex); err != nil {
+		return errors.Wrapf(err, "failed to write OCI referrers ImageIndex")
+	}
+	return nil
+}
+
 // ensureDockerContainerDriver ensures there is a buildx builder that uses the docker-container driver, which is
 // required for building multi-arch images. If a buildx builder does not exist, creates one and sets it as the default.
 // This is required until docker finishes supporting multi-arch containers in the daemon.
@@ -192,6 +263,12 @@ func (d *DefaultDockerBuilder) ensureDockerContainerDriver(dockerID distgo.Docke
 		return err
 	}
 	return nil
+}
+
+func WithReferrersCreator(referrerCreator ReferrersCreator) Option {
+	return func(d *DefaultDockerBuilder) {
+		d.ReferrersCreator = referrerCreator
+	}
 }
 
 func WithBuildArgs(buildArgs []string) Option {

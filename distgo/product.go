@@ -154,6 +154,18 @@ func (p *ProductTaskOutputInfo) ProductDockerOCIDistOutputDir(dockerID DockerID)
 	return ProductDistOutputDir(p.Project, p.Product, DistID(fmt.Sprintf("oci-%s", dockerID)))
 }
 
+// ProductDockerOCIReferrersDistOutputDir returns the output directory for the Docker OCI dist referrer outputs, which
+// is "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}/oci-referrers-{{DockerID}}". If the builder for a given
+// DockerID uses the buildx builder for multi-architecture images and generates any referrer Images or ImageIndexes, the
+// output is written to this directory.
+//
+// Note that this scheme uses the namespace for dist outputs, so if a product has a DockerID "X" and a dist with
+// DistID "oci-referrers-X", then the output directories will be the same and the behavior will be undefined -- this is
+// a known issue/risk that we are accepting as part of the design.
+func (p *ProductTaskOutputInfo) ProductDockerOCIReferrersDistOutputDir(dockerID DockerID) string {
+	return ProductDistOutputDir(p.Project, p.Product, DistID(fmt.Sprintf("oci-referrers-%s", dockerID)))
+}
+
 // ProductDistWorkDirs returns a map from DistID to the directory used to prepare the distribution for that DistID,
 // which is "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}/{{DistID}}/{{NameTemplateRendered}}".
 func ProductDistWorkDirs(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) map[DistID]string {
