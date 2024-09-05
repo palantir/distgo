@@ -1,0 +1,8 @@
+type: improvement
+improvement:
+  description: |-
+    Uses the pkgpath module instead of "go list" to determine the main packages in a project if the distgo configuration does not declare products.
+
+    Fixes "go list" errors that occurred in repositories with multiple main packages when using Go 1.22.0 and later.
+  links:
+  - https://github.com/palantir/distgo/pull/501

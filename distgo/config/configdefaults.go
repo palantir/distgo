@@ -15,8 +15,6 @@
 package config
 
 import (
-	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"sort"
@@ -26,6 +24,7 @@ import (
 	"github.com/palantir/distgo/distgo"
 	v0 "github.com/palantir/distgo/distgo/config/internal/v0"
 	"github.com/palantir/pkg/matcher"
+	"github.com/palantir/pkg/pkgpath"
 	"github.com/pkg/errors"
 )
 
@@ -139,49 +138,24 @@ func nextAvailableNumName(nameWithHyphen string, currNum int, used map[distgo.Pr
 }
 
 func mainPkgPaths(projectDir string, exclude matcher.Matcher) ([]string, error) {
-	projectPkgOutput, err := runGoList(projectDir, "-e")
+	pkgs, err := pkgpath.PackagesInDirMatchingRootModule(projectDir, exclude)
 	if err != nil {
 		return nil, err
 	}
-	projectBasePkg := projectPkgOutput[0]
 
-	allProjectPkgsOutput, err := runGoList(projectDir, "-f", "{{.Name}} {{.ImportPath}}", "./...")
+	allPkgs, err := pkgs.Packages(pkgpath.Relative)
 	if err != nil {
 		return nil, err
 	}
 
 	var mainPkgPaths []string
-	for _, currPkgOutput := range allProjectPkgsOutput {
-		firstSpaceIdx := strings.Index(currPkgOutput, " ")
-		if firstSpaceIdx == -1 {
-			return nil, errors.Errorf("failed to find space in output %q", currPkgOutput)
-		}
-		if currPkgOutput[:firstSpaceIdx] != "main" {
+	for pkgPath, pkgName := range allPkgs {
+		if pkgName != "main" {
 			continue
 		}
-		currPkgRelPath, err := filepath.Rel(projectBasePkg, currPkgOutput[firstSpaceIdx+1:])
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert package Path to relative Path")
-		}
-		if exclude != nil && exclude.Match(currPkgRelPath) {
-			continue
-		}
-		mainPkgPaths = append(mainPkgPaths, currPkgRelPath)
+		mainPkgPaths = append(mainPkgPaths, pkgPath)
 	}
+
 	sort.Strings(mainPkgPaths)
 	return mainPkgPaths, nil
-}
-
-func runGoList(dir string, args ...string) ([]string, error) {
-	goListCmd := exec.Command("go", append([]string{"list"}, args...)...)
-	goListCmd.Dir = dir
-	// explicitly set module mode to "off" -- "go list" is being used to determine main packages, and running in
-	// non-module mode is more flexible for this purpose (even when dealing with modules).
-	goListCmd.Env = append(os.Environ(), "GO111MODULE=off")
-	outputBytes, err := goListCmd.CombinedOutput()
-	output := string(outputBytes)
-	if err != nil {
-		return nil, errors.Wrapf(err, "command %v run in directory %s failed with outputBytes %q", goListCmd.Args, dir, output)
-	}
-	return strings.Split(strings.TrimSpace(output), "\n"), nil
 }

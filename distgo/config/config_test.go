@@ -19,10 +19,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
+	"github.com/palantir/distgo/dister/disterfactory"
 	"github.com/palantir/distgo/dister/manual"
 	"github.com/palantir/distgo/dister/osarchbin"
 	"github.com/palantir/distgo/distgo"
@@ -36,6 +39,7 @@ import (
 	"github.com/palantir/pkg/matcher"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v2"
 )
 
@@ -1298,6 +1302,67 @@ products:
 		}
 		assert.Equal(t, tc.want, got, "Case %d: %s", i, tc.name)
 	}
+}
+
+func TestProjectConfigToParamForEmptyConfigFindsMainPackages(t *testing.T) {
+	projectConfig := distgoconfig.ProjectConfig{
+		Exclude: matcher.NamesPathsCfg{
+			Names: []string{
+				"vendor",
+			},
+		},
+	}
+
+	projectDirName := "test-project"
+
+	projectDir := filepath.Join(t.TempDir(), projectDirName)
+	projectFiles := []gofiles.GoFileSpec{
+		{
+			RelPath: "go.mod",
+			Src:     "module github.com/test-project",
+		},
+		{
+			RelPath: "main.go",
+			Src:     "package main",
+		},
+		{
+			RelPath: "foo/main.go",
+			Src: `package main
+
+import _ "github.com/palantir/witchcraft-go-logging/wlog-zap"
+`,
+		},
+		{
+			RelPath: "bar/main.go",
+			Src:     "package main",
+		},
+		{
+			RelPath: "baz/baz.go",
+			Src:     "package baz",
+		},
+	}
+	_, err := gofiles.Write(projectDir, projectFiles)
+	require.NoError(t, err)
+
+	disterFactory, err := disterfactory.New(nil, nil)
+	require.NoError(t, err)
+	defaultDisterCfg, err := disterfactory.DefaultConfig()
+	require.NoError(t, err)
+
+	gotParam, err := projectConfig.ToParam(projectDir, nil, disterFactory, defaultDisterCfg, nil, nil)
+	require.NoError(t, err)
+
+	// products map should have an element for each "main" package
+	assert.Equal(t, 3, len(gotParam.Products), "Products map did not have expected number of elements: %v", gotParam.Products)
+
+	// each "main" package should have its own entry
+	wantKeys := []distgo.ProductID{distgo.ProductID(projectDirName), "bar", "foo"}
+	slices.Sort(wantKeys)
+
+	gotKeys := maps.Keys(gotParam.Products)
+	slices.Sort(gotKeys)
+
+	assert.Equal(t, wantKeys, gotKeys)
 }
 
 func stringPtr(val string) *string {
