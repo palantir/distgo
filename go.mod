@@ -1,6 +1,6 @@
 module github.com/palantir/distgo
 
-go 1.22
+go 1.22.0
 
 require (
 	github.com/google/go-containerregistry v0.20.2
@@ -11,10 +11,11 @@ require (
 	github.com/nmiyake/pkg/gofiles v1.2.0
 	github.com/palantir/distgo/pkg/git v1.0.0
 	github.com/palantir/godel/pkg/products/v2 v2.0.0
-	github.com/palantir/godel/v2 v2.114.0
+	github.com/palantir/godel/v2 v2.116.0
 	github.com/palantir/pkg/cobracli v1.2.0
 	github.com/palantir/pkg/gittest v1.2.0
 	github.com/palantir/pkg/matcher v1.2.0
+	github.com/palantir/pkg/pkgpath v1.3.0
 	github.com/palantir/pkg/signals v1.1.0
 	github.com/palantir/pkg/specdir v1.2.0
 	github.com/pkg/errors v0.9.1
@@ -56,7 +57,6 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc3 // indirect
 	github.com/palantir/pkg v1.1.0 // indirect
-	github.com/palantir/pkg/pkgpath v1.2.0 // indirect
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.7.0 // indirect
