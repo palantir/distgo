@@ -1,0 +1,23 @@
+go mod operation failed. This may mean that there are legitimate dependency issues with the "go.mod" definition in the repository and the updates performed by the gomod check. This branch can be cloned locally to debug the issue.
+
+Command that caused error:
+./godelw check compiles
+
+Output:
+Running compiles...
+../local/go-dists/go1.23.1/src/runtime/time.go:174:17: cannot range over 3 (untyped int constant)
+-: This application uses version go1.21 of the source-processing packages but runs version go1.23 of 'go list'. It may fail to process source files that rely on newer language features. If so, rebuild the application using a newer version of Go.
+../local/go-dists/go1.23.1/src/reflect/iter.go:67:19: cannot range over v.Len() (value of type int)
+../local/go-dists/go1.23.1/src/reflect/iter.go:75:19: cannot range over v.Len() (value of type int)
+../local/go-dists/go1.23.1/src/reflect/iter.go:131:19: cannot range over v.Len() (value of type int)
+../local/go-dists/go1.23.1/src/reflect/iter.go:139:19: cannot range over v.Len() (value of type int)
+../local/go-dists/go1.23.1/src/reflect/type.go:2320:19: cannot range over num (variable of type int)
+-: This application uses version go1.21 of the source-processing packages but runs version go1.23 of 'go list'. It may fail to process source files that rely on newer language features. If so, rebuild the application using a newer version of Go.
+../local/go-dists/go1.23.1/src/slices/iter.go:50:17: cannot range over seq (variable of type iter.Seq[E])
+-: This application uses version go1.21 of the source-processing packages but runs version go1.23 of 'go list'. It may fail to process source files that rely on newer language features. If so, rebuild the application using a newer version of Go.
+../local/go-dists/go1.23.1/src/unique/clone.go:76:12: cannot range over atyp.Len (variable of type uintptr)
+-: This application uses version go1.21 of the source-processing packages but runs version go1.23 of 'go list'. It may fail to process source files that rely on newer language features. If so, rebuild the application using a newer version of Go.
+../local/go-dists/go1.23.1/src/maps/iter.go:51:20: cannot range over seq (variable of type iter.Seq2[K, V])
+-: This application uses version go1.21 of the source-processing packages but runs version go1.23 of 'go list'. It may fail to process source files that rely on newer language features. If so, rebuild the application using a newer version of Go.
+Finished compiles
+Check(s) produced output: [compiles]
