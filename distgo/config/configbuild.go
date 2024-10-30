@@ -45,13 +45,14 @@ func (cfg *BuildConfig) ToParam(scriptIncludes string, defaultCfg BuildConfig) (
 	}
 
 	return distgo.BuildParam{
-		NameTemplate:    getConfigStringValue(cfg.NameTemplate, defaultCfg.NameTemplate, "{{Product}}"),
-		OutputDir:       outputDir,
-		MainPkg:         mainPkg,
-		BuildArgsScript: distgo.CreateScriptContent(getConfigStringValue(cfg.BuildArgsScript, defaultCfg.BuildArgsScript, ""), scriptIncludes),
-		VersionVar:      getConfigStringValue(cfg.VersionVar, defaultCfg.VersionVar, ""),
-		Script:          getConfigStringValue(cfg.Script, defaultCfg.Script, ""),
-		Environment:     getConfigValue(cfg.Environment, defaultCfg.Environment, nil).(map[string]string),
-		OSArchs:         getConfigValue(cfg.OSArchs, defaultCfg.OSArchs, []osarch.OSArch{osarch.Current()}).([]osarch.OSArch),
+		NameTemplate:      getConfigStringValue(cfg.NameTemplate, defaultCfg.NameTemplate, "{{Product}}"),
+		OutputDir:         outputDir,
+		MainPkg:           mainPkg,
+		BuildArgsScript:   distgo.CreateScriptContent(getConfigStringValue(cfg.BuildArgsScript, defaultCfg.BuildArgsScript, ""), scriptIncludes),
+		VersionVar:        getConfigStringValue(cfg.VersionVar, defaultCfg.VersionVar, ""),
+		Script:            getConfigStringValue(cfg.Script, defaultCfg.Script, ""),
+		Environment:       getConfigValue(cfg.Environment, defaultCfg.Environment, nil).(map[string]string),
+		OSArchEnvironment: getConfigValue(cfg.OSArchEnvironment, defaultCfg.OSArchEnvironment, nil).(map[string]map[string]string),
+		OSArchs:           getConfigValue(cfg.OSArchs, defaultCfg.OSArchs, []osarch.OSArch{osarch.Current()}).([]osarch.OSArch),
 	}, nil
 }
