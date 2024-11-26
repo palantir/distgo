@@ -52,6 +52,7 @@ func (cfg *BuildConfig) ToParam(scriptIncludes string, defaultCfg BuildConfig) (
 		VersionVar:         getConfigStringValue(cfg.VersionVar, defaultCfg.VersionVar, ""),
 		Script:             getConfigStringValue(cfg.Script, defaultCfg.Script, ""),
 		Environment:        getConfigValue(cfg.Environment, defaultCfg.Environment, nil).(map[string]string),
+		OSEnvironment:      getConfigValue(cfg.OSEnvironment, defaultCfg.OSEnvironment, nil).(map[string]map[string]string),
 		OSArchsEnvironment: getConfigValue(cfg.OSArchsEnvironment, defaultCfg.OSArchsEnvironment, nil).(map[string]map[string]string),
 		OSArchs:            getConfigValue(cfg.OSArchs, defaultCfg.OSArchs, []osarch.OSArch{osarch.Current()}).([]osarch.OSArch),
 	}, nil
