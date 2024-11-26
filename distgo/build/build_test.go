@@ -237,15 +237,13 @@ echo "-X \"main.testVersionVar=$VALUE\""`
 }
 
 func TestBuildEnvVars(t *testing.T) {
-	tmp, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
-
-	for i, tc := range []struct {
+	for _, tc := range []struct {
+		name             string
 		productParam     distgo.ProductParam
 		wantBuildOutputs []string
 	}{
 		{
+			name: "Environment variables are set for product, OS, and OS-Arch targets based on configuration",
 			productParam: createBuildProductParam(func(param *distgo.ProductParam) {
 				param.Build.MainPkg = "./foo"
 				param.Build.OSArchs = []osarch.OSArch{
@@ -292,45 +290,47 @@ func TestBuildEnvVars(t *testing.T) {
 			},
 		},
 	} {
-		currTmpDir, err := ioutil.TempDir(tmp, "")
-		require.NoError(t, err, "Case %d", i)
+		t.Run(tc.name, func(t *testing.T) {
+			currTmpDir := t.TempDir()
 
-		gittest.InitGitDir(t, currTmpDir)
-		gittest.CreateGitTag(t, currTmpDir, testVersionValue)
+			gittest.InitGitDir(t, currTmpDir)
+			gittest.CreateGitTag(t, currTmpDir, testVersionValue)
 
-		const (
-			mainFileContent = testMain
-			mainFilePath    = "foo/main.go"
-		)
+			const (
+				mainFileContent = testMain
+				mainFilePath    = "foo/main.go"
+			)
 
-		err = os.MkdirAll(path.Dir(mainFilePath), 0755)
-		require.NoError(t, err, "Case %d", i)
+			err := os.MkdirAll(path.Dir(mainFilePath), 0755)
+			require.NoError(t, err)
 
-		err = ioutil.WriteFile(path.Join(currTmpDir, "go.mod"), []byte("module foo"), 0644)
-		require.NoError(t, err, "Case %d", i)
+			err = os.WriteFile(path.Join(currTmpDir, "go.mod"), []byte("module foo"), 0644)
+			require.NoError(t, err)
 
-		err = ioutil.WriteFile(mainFilePath, []byte(mainFileContent), 0644)
-		require.NoError(t, err, "Case %d", i)
+			err = os.WriteFile(mainFilePath, []byte(mainFileContent), 0644)
+			require.NoError(t, err)
 
-		version, err := git.ProjectVersion(currTmpDir)
-		require.NoError(t, err, "Case %d", i)
+			version, err := git.ProjectVersion(currTmpDir)
+			require.NoError(t, err)
 
-		projectInfo := distgo.ProjectInfo{
-			ProjectDir: currTmpDir,
-			Version:    version,
-		}
+			projectInfo := distgo.ProjectInfo{
+				ProjectDir: currTmpDir,
+				Version:    version,
+			}
 
-		outBuf := &bytes.Buffer{}
-		err = build.Run(projectInfo, []distgo.ProductParam{
-			tc.productParam,
-		}, build.Options{
-			Parallel: false,
-			DryRun:   true,
-		}, outBuf)
+			outBuf := &bytes.Buffer{}
+			err = build.Run(projectInfo, []distgo.ProductParam{
+				tc.productParam,
+			}, build.Options{
+				Parallel: false,
+				DryRun:   true,
+			}, outBuf)
+			require.NoError(t, err)
 
-		for _, wantRegexp := range tc.wantBuildOutputs {
-			assert.Regexp(t, wantRegexp, outBuf.String(), "Case %d", i)
-		}
+			for _, wantRegexp := range tc.wantBuildOutputs {
+				assert.Regexp(t, wantRegexp, outBuf.String())
+			}
+		})
 	}
 }
 
