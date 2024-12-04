@@ -298,8 +298,9 @@ func TestBuildEnvVars(t *testing.T) {
 
 			const (
 				mainFileContent = testMain
-				mainFilePath    = "foo/main.go"
 			)
+
+			mainFilePath := path.Join(currTmpDir, "foo/main.go")
 
 			err := os.MkdirAll(path.Dir(mainFilePath), 0755)
 			require.NoError(t, err)
