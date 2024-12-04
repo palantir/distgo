@@ -1,0 +1,7 @@
+type: improvement
+improvement:
+  description: Adds the `os-environment` and `os-archs-environment` fields to build
+    configuration to make it possible to specify environment variables that should
+    be set when building binaries on a per-OS or per-OS/Architecture level.
+  links:
+  - https://github.com/palantir/distgo/pull/516

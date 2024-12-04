@@ -63,6 +63,20 @@ type BuildConfig struct {
 	//     CGO_ENABLED: "0"
 	Environment *map[string]string `yaml:"environment,omitempty"`
 
+	// OSEnvironment specifies values for the environment variables that should be set for the build that are specific
+	// to an OS. The key is the OS portion of the "{OS}-{Arch}" target and the value is a map with the same structure as
+	// the "Environment" map. Values in this map are set after the "Environment" map but before the "OSArchsEnvironment"
+	// map. For example, a value of map[string]map[string]string{"linux":{"CGO_ENABLED": "0"} would set "CGO_ENABLED"
+	// when building binaries for the "linux" OS.
+	OSEnvironment *map[string]map[string]string `yaml:"os-environment,omitempty"`
+
+	// OSArchsEnvironment specifies values for the environment variables that should be set for the build that are
+	// specific to an OS/Architecture. The key is the OS/Arch formatted in the form "{OS}-{Arch}" and the value is a
+	// map with the same structure as the "Environment" map. Values in this map are set after the "Environment" and
+	// "OSEnvironment" maps. For example, a value of map[string]map[string]string{"darwin-arm64":{"CC": "/usr/osxcross/bin/o64-clang"}
+	// would set "CC=/usr/osxcross/bin/o64-clang" when building binaries for the "darwin-arm64" OS/Arch.
+	OSArchsEnvironment *map[string]map[string]string `yaml:"os-archs-environment,omitempty"`
+
 	// Script is the content of a script that is written to a file and run before the build processes start. The script
 	// process inherits the environment variables of the Go process and also has project-related environment variables.
 	// Refer to the documentation for the distgo.BuildScriptEnvVariables function for the extra environment variables.

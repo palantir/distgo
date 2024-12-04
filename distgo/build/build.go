@@ -209,6 +209,12 @@ func doBuildAction(unit buildUnit, outputArtifactPath string, dryRun bool, stdou
 	for k, v := range unit.buildParam.Environment {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
+	for k, v := range unit.buildParam.OSEnvironment[osArch.OS] {
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	}
+	for k, v := range unit.buildParam.OSArchsEnvironment[osArch.String()] {
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	}
 	cmd.Env = append(os.Environ(), env...)
 
 	args := []string{cmd.Path}

@@ -236,6 +236,104 @@ echo "-X \"main.testVersionVar=$VALUE\""`
 	}
 }
 
+func TestBuildEnvVars(t *testing.T) {
+	for _, tc := range []struct {
+		name             string
+		productParam     distgo.ProductParam
+		wantBuildOutputs []string
+	}{
+		{
+			name: "Environment variables are set for product, OS, and OS-Arch targets based on configuration",
+			productParam: createBuildProductParam(func(param *distgo.ProductParam) {
+				param.Build.MainPkg = "./foo"
+				param.Build.OSArchs = []osarch.OSArch{
+					{
+						OS:   "darwin",
+						Arch: "amd64",
+					},
+					{
+						OS:   "darwin",
+						Arch: "arm64",
+					},
+					{
+						OS:   "linux",
+						Arch: "amd64",
+					},
+					{
+						OS:   "windows",
+						Arch: "amd64",
+					},
+				}
+				param.Build.Environment = map[string]string{
+					"TEST_ENV_VAR_KEY": "TEST_ENV_VAR_VALUE",
+				}
+				param.Build.OSEnvironment = map[string]map[string]string{
+					"darwin": {
+						"TEST_DARWIN_ENV_VAR_KEY":   "TEST_DARWIN_ENV_VAR_VALUE",
+						"TEST_DARWIN_ENV_VAR_KEY_2": "TEST_DARWIN_ENV_VAR_VALUE_2",
+					},
+				}
+				param.Build.OSArchsEnvironment = map[string]map[string]string{
+					"darwin-amd64": {
+						"TEST_DARWIN_AMD_64_ENV_VAR_KEY": "TEST_DARWIN_AMD_64_ENV_VAR_VALUE",
+					},
+					"darwin-arm64": {
+						"TEST_DARWIN_ENV_VAR_KEY_2": "TEST_DARWIN_ENV_VAR_KEY_2_OVERRIDE",
+					},
+				}
+			}),
+			wantBuildOutputs: []string{
+				regexp.QuoteMeta(`[DRY RUN] Run: `) + `.+/darwin-amd64/.+ \./foo with additional environment variables ` + regexp.QuoteMeta(`[GOOS=darwin GOARCH=amd64 TEST_ENV_VAR_KEY=TEST_ENV_VAR_VALUE TEST_DARWIN_ENV_VAR_KEY=TEST_DARWIN_ENV_VAR_VALUE TEST_DARWIN_ENV_VAR_KEY_2=TEST_DARWIN_ENV_VAR_VALUE_2 TEST_DARWIN_AMD_64_ENV_VAR_KEY=TEST_DARWIN_AMD_64_ENV_VAR_VALUE]`),
+				regexp.QuoteMeta(`[DRY RUN] Run: `) + `.+/darwin-arm64/.+ \./foo with additional environment variables ` + regexp.QuoteMeta(`[GOOS=darwin GOARCH=arm64 TEST_ENV_VAR_KEY=TEST_ENV_VAR_VALUE TEST_DARWIN_ENV_VAR_KEY=TEST_DARWIN_ENV_VAR_VALUE TEST_DARWIN_ENV_VAR_KEY_2=TEST_DARWIN_ENV_VAR_VALUE_2 TEST_DARWIN_ENV_VAR_KEY_2=TEST_DARWIN_ENV_VAR_KEY_2_OVERRIDE]`),
+				regexp.QuoteMeta(`[DRY RUN] Run: `) + `.+/linux-amd64/.+ \./foo with additional environment variables ` + regexp.QuoteMeta(`[GOOS=linux GOARCH=amd64 TEST_ENV_VAR_KEY=TEST_ENV_VAR_VALUE]`),
+				regexp.QuoteMeta(`[DRY RUN] Run: `) + `.+/windows-amd64/.+ \./foo with additional environment variables ` + regexp.QuoteMeta(`[GOOS=windows GOARCH=amd64 TEST_ENV_VAR_KEY=TEST_ENV_VAR_VALUE]`),
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			currTmpDir := t.TempDir()
+
+			gittest.InitGitDir(t, currTmpDir)
+			gittest.CreateGitTag(t, currTmpDir, testVersionValue)
+
+			const (
+				mainFileContent = testMain
+				mainFilePath    = "foo/main.go"
+			)
+
+			err := os.MkdirAll(path.Dir(mainFilePath), 0755)
+			require.NoError(t, err)
+
+			err = os.WriteFile(path.Join(currTmpDir, "go.mod"), []byte("module foo"), 0644)
+			require.NoError(t, err)
+
+			err = os.WriteFile(mainFilePath, []byte(mainFileContent), 0644)
+			require.NoError(t, err)
+
+			version, err := git.ProjectVersion(currTmpDir)
+			require.NoError(t, err)
+
+			projectInfo := distgo.ProjectInfo{
+				ProjectDir: currTmpDir,
+				Version:    version,
+			}
+
+			outBuf := &bytes.Buffer{}
+			err = build.Run(projectInfo, []distgo.ProductParam{
+				tc.productParam,
+			}, build.Options{
+				Parallel: false,
+				DryRun:   true,
+			}, outBuf)
+			require.NoError(t, err)
+
+			for _, wantRegexp := range tc.wantBuildOutputs {
+				assert.Regexp(t, wantRegexp, outBuf.String())
+			}
+		})
+	}
+}
+
 func TestBuildOnlySpecifiedOSArchs(t *testing.T) {
 	tmp, cleanup, err := dirs.TempDir("", "")
 	defer cleanup()
