@@ -17,12 +17,14 @@ package build
 import (
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -206,14 +208,14 @@ func doBuildAction(unit buildUnit, outputArtifactPath string, dryRun bool, stdou
 	if osArch.Arch != "" {
 		env = append(env, "GOARCH="+osArch.Arch)
 	}
-	for k, v := range unit.buildParam.Environment {
-		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	for _, k := range slices.Sorted(maps.Keys(unit.buildParam.Environment)) {
+		env = append(env, fmt.Sprintf("%s=%s", k, unit.buildParam.Environment[k]))
 	}
-	for k, v := range unit.buildParam.OSEnvironment[osArch.OS] {
-		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	for _, k := range slices.Sorted(maps.Keys(unit.buildParam.OSEnvironment[osArch.OS])) {
+		env = append(env, fmt.Sprintf("%s=%s", k, unit.buildParam.OSEnvironment[osArch.OS][k]))
 	}
-	for k, v := range unit.buildParam.OSArchsEnvironment[osArch.String()] {
-		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	for _, k := range slices.Sorted(maps.Keys(unit.buildParam.OSArchsEnvironment[osArch.String()])) {
+		env = append(env, fmt.Sprintf("%s=%s", k, unit.buildParam.OSArchsEnvironment[osArch.String()][k]))
 	}
 	cmd.Env = append(os.Environ(), env...)
 
