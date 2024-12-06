@@ -158,18 +158,23 @@ func (d *DefaultDockerBuilder) extractToOCILayout(destOCILayoutDir, sourceOCITar
 	return nil
 }
 
+func UsesDockerContainerDriver() (bool, error) {
+	cmd := exec.Command("docker", "buildx", "inspect")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to check for existence of buildx drivers: %s", string(out))
+	}
+	return bytes.Contains(out, []byte("docker-container")), nil
+}
+
 // ensureDockerContainerDriver ensures there is a buildx builder that uses the docker-container driver, which is
 // required for building multi-arch images. If a buildx builder does not exist, creates one and sets it as the default.
 // This is required until docker finishes supporting multi-arch containers in the daemon.
 // https://docs.docker.com/engine/reference/commandline/buildx_create/#driver
 func (d *DefaultDockerBuilder) ensureDockerContainerDriver(dockerID distgo.DockerID, verbose, dryRun bool, stdout io.Writer) error {
-	cmd := exec.Command("docker", "buildx", "inspect")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return errors.Wrapf(err, "failed to check for existence of buildx drivers: %s", string(out))
-	}
-
-	if bytes.Contains(out, []byte("docker-container")) {
+	if usesDockerContainerDriver, err := UsesDockerContainerDriver(); err != nil {
+		return err
+	} else if usesDockerContainerDriver {
 		return nil
 	}
 	var driverOptArgs []string
@@ -187,7 +192,7 @@ func (d *DefaultDockerBuilder) ensureDockerContainerDriver(dockerID distgo.Docke
 	}
 
 	args := []string{"buildx", "create", string(dockerID), "--bootstrap", "--use", "--driver", "docker-container"}
-	cmd = exec.Command("docker", append(args, driverOptArgs...)...)
+	cmd := exec.Command("docker", append(args, driverOptArgs...)...)
 	if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 		return err
 	}

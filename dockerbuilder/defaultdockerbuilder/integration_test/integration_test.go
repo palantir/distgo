@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/nmiyake/pkg/gofiles"
+	"github.com/palantir/distgo/dockerbuilder/defaultdockerbuilder"
 	"github.com/palantir/distgo/dockerbuilder/dockerbuildertester"
 	"github.com/palantir/godel/v2/framework/pluginapitester"
 	"github.com/palantir/godel/v2/pkg/products"
@@ -26,6 +27,9 @@ import (
 )
 
 func TestDocker(t *testing.T) {
+	usesDockerContainerDriver, err := defaultdockerbuilder.UsesDockerContainerDriver()
+	require.NoError(t, err)
+
 	const godelYML = `exclude:
   names:
     - "\\..+"
@@ -85,8 +89,14 @@ products:
 					"--dry-run",
 				},
 				WantOutput: func(projectDir string) string {
-					return fmt.Sprintf(`[DRY RUN] Running Docker build for configuration tester of product foo...
-[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile -t tester-tag:latest-and-greatest --output=type=docker %s/testContextDir]
+					wantOutput := `[DRY RUN] Running Docker build for configuration tester of product foo...
+`
+					if !usesDockerContainerDriver {
+						wantOutput += `[DRY RUN] Run [docker context create tester]
+[DRY RUN] Run [docker buildx create tester --bootstrap --use --driver docker-container]
+`
+					}
+					return wantOutput + fmt.Sprintf(`[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile -t tester-tag:latest-and-greatest --output=type=docker %s/testContextDir]
 `, projectDir, projectDir)
 				},
 			},
@@ -141,8 +151,14 @@ products:
 					"--dry-run",
 				},
 				WantOutput: func(projectDir string) string {
-					return fmt.Sprintf(`[DRY RUN] Running Docker build for configuration tester of product foo...
-[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile -t tester-tag:latest-and-greatest --rm --build-arg arg=2.3 --output=type=docker %s/testContextDir]
+					wantOutput := `[DRY RUN] Running Docker build for configuration tester of product foo...
+`
+					if !usesDockerContainerDriver {
+						wantOutput += `[DRY RUN] Run [docker context create tester]
+[DRY RUN] Run [docker buildx create tester --bootstrap --use --driver docker-container]
+`
+					}
+					return wantOutput + fmt.Sprintf(`[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile -t tester-tag:latest-and-greatest --rm --build-arg arg=2.3 --output=type=docker %s/testContextDir]
 `, projectDir, projectDir)
 				},
 			},
@@ -192,8 +208,14 @@ products:
 					"--tags=release",
 				},
 				WantOutput: func(projectDir string) string {
-					return fmt.Sprintf(`[DRY RUN] Running Docker build for configuration tester of product foo...
-[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile -t tester-tag:1.0.0 --output=type=docker %s/testContextDir]
+					wantOutput := `[DRY RUN] Running Docker build for configuration tester of product foo...
+`
+					if !usesDockerContainerDriver {
+						wantOutput += `[DRY RUN] Run [docker context create tester]
+[DRY RUN] Run [docker buildx create tester --bootstrap --use --driver docker-container]
+`
+					}
+					return wantOutput + fmt.Sprintf(`[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile -t tester-tag:1.0.0 --output=type=docker %s/testContextDir]
 `, projectDir, projectDir)
 				},
 			},
