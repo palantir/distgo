@@ -22,7 +22,6 @@ import (
 	"github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/dockerbuilder/dockerbuilderfactory"
 	"github.com/palantir/distgo/projectversioner/projectversionerfactory"
-	"github.com/palantir/distgo/publisher/publisherfactory"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,10 +34,8 @@ func NewProjectParam(t *testing.T, projectConfig config.ProjectConfig, projectDi
 	require.NoError(t, err, failMsg)
 	dockerBuilderFactory, err := dockerbuilderfactory.New(nil, nil)
 	require.NoError(t, err, failMsg)
-	publisherFactory, err := publisherfactory.New(nil, nil)
-	require.NoError(t, err, failMsg)
 
-	projectParam, err := projectConfig.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
+	projectParam, err := projectConfig.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory)
 	require.NoError(t, err, failMsg)
 	return projectParam
 }
@@ -52,8 +49,6 @@ func NewProjectParamReturnError(t *testing.T, projectConfig config.ProjectConfig
 	require.NoError(t, err, failMsg)
 	dockerBuilderFactory, err := dockerbuilderfactory.New(nil, nil)
 	require.NoError(t, err, failMsg)
-	publisherFactory, err := publisherfactory.New(nil, nil)
-	require.NoError(t, err, failMsg)
 
-	return projectConfig.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
+	return projectConfig.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory)
 }

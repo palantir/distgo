@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Remove unused publisherFactory
+  links:
+  - https://github.com/palantir/distgo/pull/474
