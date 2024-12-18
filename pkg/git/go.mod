@@ -1,6 +1,6 @@
 module github.com/palantir/distgo/pkg/git
 
-go 1.23
+go 1.23.0
 
 require (
 	github.com/nmiyake/pkg/dirs v1.0.0
