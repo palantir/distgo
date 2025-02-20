@@ -76,7 +76,7 @@ func (d *assetDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productTas
 		if errOutput == "" {
 			errOutput = fmt.Sprintf("failed to run Docker builder %s", d.assetPath)
 		}
-		return errors.Wrapf(err, strings.TrimSpace(strings.TrimPrefix(errOutput, "Error: ")))
+		return errors.Wrap(err, strings.TrimSpace(strings.TrimPrefix(errOutput, "Error: ")))
 	}
 	return nil
 }

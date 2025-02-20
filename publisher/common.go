@@ -199,7 +199,7 @@ func (b *BasicConnectionInfo) UploadFile(fileInfo FileInfo, baseURL, artifactNam
 			errMsgParts = append(errMsgParts, filePath)
 		}
 		errMsgParts = append(errMsgParts, fmt.Sprintf("already exists at %s, skipping upload.\n", rawUploadURL))
-		_, _ = fmt.Fprintf(stdout, strings.Join(errMsgParts, " "))
+		_, _ = fmt.Fprint(stdout, strings.Join(errMsgParts, " "))
 		return rawUploadURL, nil
 	}
 
@@ -244,7 +244,7 @@ func (b *BasicConnectionInfo) UploadFile(fileInfo FileInfo, baseURL, artifactNam
 				errMsgParts = append(errMsgParts, filePath)
 			}
 			errMsgParts = append(errMsgParts, "to", rawUploadURL)
-			return rawUploadURL, errors.Wrapf(err, strings.Join(errMsgParts, " "))
+			return rawUploadURL, errors.Wrap(err, strings.Join(errMsgParts, " "))
 		}
 		defer func() {
 			if err := resp.Body.Close(); err != nil && rErr == nil {
@@ -259,14 +259,14 @@ func (b *BasicConnectionInfo) UploadFile(fileInfo FileInfo, baseURL, artifactNam
 			}
 			msgParts = append(msgParts, fmt.Sprintf("to %s resulted in response %q", rawUploadURL, resp.Status))
 
-			msg := fmt.Sprintf(strings.Join(msgParts, " "))
+			msg := fmt.Sprint(strings.Join(msgParts, " "))
 			if body, err := ioutil.ReadAll(resp.Body); err == nil {
 				bodyStr := string(body)
 				if bodyStr != "" {
 					msg += ":\n" + bodyStr
 				}
 			}
-			return rawUploadURL, fmt.Errorf(msg)
+			return rawUploadURL, fmt.Errorf("%s", msg)
 		}
 	}
 	return rawUploadURL, nil
