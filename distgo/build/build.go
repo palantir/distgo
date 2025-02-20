@@ -251,7 +251,7 @@ func doBuildAction(unit buildUnit, outputArtifactPath string, dryRun bool, stdou
 			err = fmt.Errorf("build command %v run in directory %s with additional environment variables %v failed with output:\n%s", cmd.Args, cmd.Dir, env, errOutput)
 			if regexp.MustCompile(installPermissionDenied).MatchString(errOutput) {
 				// if "install" command failed due to lack of permissions, return error that contains explanation
-				return fmt.Errorf(goInstallErrorMsg(osArch, err))
+				return fmt.Errorf("%s", goInstallErrorMsg(osArch, err))
 			}
 			return err
 		}

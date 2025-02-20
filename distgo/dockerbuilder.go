@@ -53,7 +53,7 @@ func RunCommandWithVerboseOption(cmd *exec.Cmd, verbose, dryRun bool, stdout io.
 			if !verbose {
 				output += fmt.Sprintf(" with output:\n%s", buffer.String())
 			}
-			return errors.Wrapf(err, output)
+			return errors.Wrap(err, output)
 		}
 	}
 	return nil
