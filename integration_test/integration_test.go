@@ -568,10 +568,10 @@ products:
     publish:
       group-id: com.test.foo
       info:
-        bintray:
+        github:
           config:
-            username: username
-            password: password
+            user: user
+            token: token
 script-includes: |
                  #!/usr/bin/env bash
 exclude:
@@ -618,10 +618,10 @@ products:
     publish:
       group-id: com.test.foo
       info:
-        bintray:
+        github:
           config:
-            username: username
-            password: password
+            user: user
+            token: token
 script-includes: |
                  #!/usr/bin/env bash
 exclude:

@@ -87,7 +87,7 @@ products:
     publish:
       group-id: com.test.foo
       info:
-        bintray:
+        github:
           config:
             username: username
             password: password
@@ -168,7 +168,7 @@ echo "main.year=$YEAR"
 						Publish: distgoconfig.ToPublishConfig(&distgoconfig.PublishConfig{
 							GroupID: stringPtr("com.test.foo"),
 							PublishInfo: distgoconfig.ToPublishInfo(&map[distgo.PublisherTypeID]distgoconfig.PublisherConfig{
-								"bintray": {
+								"github": {
 									Config: &yaml.MapSlice{
 										{
 											Key:   "username",
