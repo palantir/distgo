@@ -19,8 +19,6 @@ import (
 	"github.com/palantir/distgo/publisher"
 	"github.com/palantir/distgo/publisher/artifactory"
 	artifactoryconfig "github.com/palantir/distgo/publisher/artifactory/config"
-	"github.com/palantir/distgo/publisher/bintray"
-	bintrayconfig "github.com/palantir/distgo/publisher/bintray/config"
 	"github.com/palantir/distgo/publisher/github"
 	githubconfig "github.com/palantir/distgo/publisher/github/config"
 	"github.com/palantir/distgo/publisher/mavenlocal"
@@ -41,10 +39,6 @@ func builtinPublishers() map[string]creatorWithUpgrader {
 		artifactory.TypeName: {
 			Creator:  artifactory.PublisherCreator(),
 			Upgrader: distgo.NewConfigUpgrader(artifactory.TypeName, artifactoryconfig.UpgradeConfig),
-		},
-		bintray.TypeName: {
-			Creator:  bintray.PublisherCreator(),
-			Upgrader: distgo.NewConfigUpgrader(bintray.TypeName, bintrayconfig.UpgradeConfig),
 		},
 		github.TypeName: {
 			Creator:  github.PublisherCreator(),
