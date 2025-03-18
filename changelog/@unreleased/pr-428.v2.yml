@@ -1,0 +1,7 @@
+type: improvement
+improvement:
+  description: Adds an "output-dir" concept for DockerConfig that is analogous to
+    what exists for BuildConfig and DistConfig. Also updates the existing OCI output
+    to use this concept.
+  links:
+  - https://github.com/palantir/distgo/pull/428
