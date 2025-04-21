@@ -44,7 +44,7 @@ func (cfg *ProjectConfig) ToParam(
 	disterFactory distgo.DisterFactory,
 	defaultDisterCfg DisterConfig,
 	dockerBuilderFactory distgo.DockerBuilderFactory,
-	publisherFactory distgo.PublisherFactory) (distgo.ProjectParam, error) {
+) (distgo.ProjectParam, error) {
 
 	var exclude matcher.Matcher
 	if !cfg.Exclude.Empty() {
