@@ -124,6 +124,11 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 	}
 	if d.OutputType&DockerDaemon != 0 {
 		daemonArgs := append(args, "--output=type=docker", contextDirPath)
+		// Although this output type only supports single-platform image (https://docs.docker.com/reference/cli/docker/buildx/build/#docker),
+		// still pass the platform arg to allow cross platform build use case.
+		if d.BuildxPlatformArg != "" {
+			daemonArgs = append(daemonArgs, d.BuildxPlatformArg)
+		}
 		cmd := exec.Command("docker", daemonArgs...)
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 			return err
