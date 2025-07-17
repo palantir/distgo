@@ -105,7 +105,7 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 	}
 
 	if d.OutputType&OCILayout != 0 {
-		destDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)
+		destDir := distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID)
 		if err := os.MkdirAll(destDir, 0755); err != nil {
 			return errors.Wrapf(err, "failed to create directory %s for OCI output", destDir)
 		}

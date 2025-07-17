@@ -41,11 +41,21 @@ type DockerParam struct {
 	// Repository is the Docker repository. This value is made available to TagTemplates as {{Repository}}.
 	Repository string
 
+	// OutputDir specifies the default output directory for any on-disk artifacts created by the "docker build" task --
+	// for example, OCI image layouts, metadata, etc. Different from the ContextDir in that the ContextDir is used as
+	// the location in which inputs are placed and where images are built, whereas the OutputDir dictates where any
+	// output may be written. Not all Docker build tasks have output, so the output directory may not be created or may
+	// be empty even on successful executions. The docker output directory is written to
+	// "{{OutputDir}}/{{ID}}/{{Version}}/{{DockerID}}/{{NameTemplate}}", and the artifacts are written to
+	// "{{OutputDir}}/{{ID}}/{{Version}}/{{DockerID}}".
+	OutputDir string
+
 	// DockerBuilderParams contains the Docker params for this distribution.
 	DockerBuilderParams map[DockerID]DockerBuilderParam
 }
 
 type DockerOutputInfos struct {
+	DockerOutputDir          string                               `json:"dockerOutputDir"`
 	DockerIDs                []DockerID                           `json:"dockerIds"`
 	Repository               string                               `json:"repository"`
 	DockerBuilderOutputInfos map[DockerID]DockerBuilderOutputInfo `json:"dockerBuilderOutputInfos"`
@@ -122,6 +132,7 @@ func (p *DockerParam) ToDockerOutputInfos(productName, version string) (DockerOu
 	}
 	sort.Sort(ByDockerID(dockerIDs))
 	return DockerOutputInfos{
+		DockerOutputDir:          p.OutputDir,
 		DockerIDs:                dockerIDs,
 		Repository:               p.Repository,
 		DockerBuilderOutputInfos: dockerOutputInfos,

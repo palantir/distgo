@@ -25,6 +25,14 @@ type DockerConfig struct {
 	// Repository is the repository that is made available to the tag and Dockerfile templates.
 	Repository *string `yaml:"repository,omitempty"`
 
+	// OutputDir specifies the default distribution output directory for on-disk artifacts created by the "docker"
+	// task. The output directory is written to
+	// "{{OutputDir}}/{{ID}}/{{Version}}/{{NameTemplate}}", and the artifacts are written to
+	// "{{OutputDir}}/{{ID}}/{{Version}}".
+	//
+	// If a value is not specified, "out/docker" is used as the default value.
+	OutputDir *string `yaml:"output-dir,omitempty"`
+
 	// DockerBuilderParams contains the Docker params for this distribution.
 	DockerBuildersConfig *DockerBuildersConfig `yaml:"docker-builders,omitempty"`
 }

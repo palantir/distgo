@@ -491,6 +491,7 @@ products:
 						ID:   "test-1",
 						Name: "test-1",
 						Docker: &distgo.DockerParam{
+							OutputDir: "out/docker",
 							DockerBuilderParams: map[distgo.DockerID]distgo.DockerBuilderParam{
 								"default": {
 									DockerBuilder:  defaultdockerbuilder.NewDefaultDockerBuilder(nil, ""),
@@ -635,6 +636,7 @@ products:
 						ID:   "test-1",
 						Name: "test-1",
 						Docker: &distgo.DockerParam{
+							OutputDir: "out/docker",
 							DockerBuilderParams: map[distgo.DockerID]distgo.DockerBuilderParam{
 								"default": {
 									DockerBuilder:  defaultdockerbuilder.NewDefaultDockerBuilder(nil, ""),
@@ -942,6 +944,7 @@ func TestProjectConfig_DefaultProducts(t *testing.T) {
 				},
 			},
 			Docker: &distgo.DockerParam{
+				OutputDir:           "out/docker",
 				DockerBuilderParams: map[distgo.DockerID]distgo.DockerBuilderParam{},
 			},
 		}

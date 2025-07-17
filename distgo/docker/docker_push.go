@@ -89,16 +89,17 @@ func runSingleDockerPush(
 	stdout io.Writer) (rErr error) {
 
 	// if an OCI artifact exists, push that. Otherwise, default to pushing the artifact in the docker daemon
-	if _, err := layout.FromPath(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)); err == nil {
+	if _, err := layout.FromPath(distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID)); err == nil {
 		return runOCIPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
 	}
 	return runDockerDaemonPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
 }
 
 func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, stdout io.Writer) error {
-	index, err := layout.ImageIndexFromPath(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID))
+	outputDir := distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID)
+	index, err := layout.ImageIndexFromPath(outputDir)
 	if err != nil {
-		return errors.Wrapf(err, "failed to construct image index from OCI layout at path %s", productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID))
+		return errors.Wrapf(err, "failed to construct image index from OCI layout at path %s", outputDir)
 	}
 
 	for _, tag := range productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags {
@@ -175,7 +176,7 @@ func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref na
 }
 
 func handleImageManifest(ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, stdout io.Writer) error {
-	path := filepath.Join(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID), "image.tar")
+	path := filepath.Join(distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID), "image.tar")
 	image, err := tarball.ImageFromPath(path, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read image from path %s", path)
