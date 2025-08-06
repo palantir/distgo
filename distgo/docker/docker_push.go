@@ -33,7 +33,7 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-func PushProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productDockerIDs []distgo.ProductDockerID, tagKeys []string, dryRun bool, stdout io.Writer) error {
+func PushProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productDockerIDs []distgo.ProductDockerID, tagKeys []string, dryRun bool, insecure bool, stdout io.Writer) error {
 	// determine products that match specified productDockerIDs
 	productParams, err := distgo.ProductParamsForDockerProductArgs(projectParam.Products, productDockerIDs...)
 	if err != nil {
@@ -43,14 +43,14 @@ func PushProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectPar
 
 	// run push only for specified products
 	for _, currParam := range productParams {
-		if err := RunPush(projectInfo, currParam, dryRun, stdout); err != nil {
+		if err := RunPush(projectInfo, currParam, dryRun, insecure, stdout); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func RunPush(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, dryRun bool, stdout io.Writer) error {
+func RunPush(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, dryRun bool, insecure bool, stdout io.Writer) error {
 	if productParam.Docker == nil {
 		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("%s does not have Docker outputs; skipping build", productParam.ID), dryRun)
 		return nil
@@ -73,6 +73,7 @@ func RunPush(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, d
 			dockerID,
 			productTaskOutputInfo,
 			dryRun,
+			insecure,
 			stdout,
 		); err != nil {
 			return err
@@ -86,23 +87,28 @@ func runSingleDockerPush(
 	dockerID distgo.DockerID,
 	productTaskOutputInfo distgo.ProductTaskOutputInfo,
 	dryRun bool,
+	insecure bool,
 	stdout io.Writer) (rErr error) {
 
 	// if an OCI artifact exists, push that. Otherwise, default to pushing the artifact in the docker daemon
 	if _, err := layout.FromPath(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)); err == nil {
-		return runOCIPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
+		return runOCIPush(productID, dockerID, productTaskOutputInfo, dryRun, insecure, stdout)
 	}
 	return runDockerDaemonPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
 }
 
-func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, stdout io.Writer) error {
+func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, insecure bool, stdout io.Writer) error {
 	index, err := layout.ImageIndexFromPath(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID))
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct image index from OCI layout at path %s", productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID))
 	}
 
 	for _, tag := range productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags {
-		ref, err := name.ParseReference(tag)
+		var opts []name.Option
+		if insecure {
+			opts = append(opts, name.Insecure)
+		}
+		ref, err := name.ParseReference(tag, opts...)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse reference from tag %s", tag)
 		}

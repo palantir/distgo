@@ -318,7 +318,7 @@ func TestDockerPublish(t *testing.T) {
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		buffer := &bytes.Buffer{}
-		err = docker.PushProducts(projectInfo, projectParam, tc.dockerIDs, tc.tagKeys, true, buffer)
+		err = docker.PushProducts(projectInfo, projectParam, tc.dockerIDs, tc.tagKeys, true, false, buffer)
 		if tc.wantErrorRegexp == "" {
 			require.NoError(t, err, "Case %d: %s", i, tc.name)
 		} else {
