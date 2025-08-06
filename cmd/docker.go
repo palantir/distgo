@@ -50,7 +50,7 @@ var (
 			if dockerPushRepositoryFlagVal != "" {
 				docker.SetDockerRepository(projectParam, dockerPushRepositoryFlagVal)
 			}
-			return docker.PushProducts(projectInfo, projectParam, distgo.ToProductDockerIDs(args), dockerPushTagKeysFlagVal, dockerPushDryRunFlagVal, cmd.OutOrStdout())
+			return docker.PushProducts(projectInfo, projectParam, distgo.ToProductDockerIDs(args), dockerPushTagKeysFlagVal, dockerPushDryRunFlagVal, dockerPushInsecureFlagVal, cmd.OutOrStdout())
 		},
 	}
 )
@@ -64,6 +64,7 @@ var (
 	dockerPushRepositoryFlagVal string
 	dockerPushDryRunFlagVal     bool
 	dockerPushTagKeysFlagVal    []string
+	dockerPushInsecureFlagVal   bool
 )
 
 func init() {
@@ -76,6 +77,7 @@ func init() {
 	addRepositoryFlag(dockerPushSubCmd, &dockerPushRepositoryFlagVal)
 	addDryRunFlag(dockerPushSubCmd, &dockerPushDryRunFlagVal)
 	addTagKeysFlag(dockerPushSubCmd, &dockerPushTagKeysFlagVal)
+	dockerPushSubCmd.Flags().BoolVar(&dockerPushInsecureFlagVal, "insecure", false, "allow push to insecure Docker registries")
 	dockerCmd.AddCommand(dockerPushSubCmd)
 
 	rootCmd.AddCommand(dockerCmd)

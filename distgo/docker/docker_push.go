@@ -33,7 +33,7 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-func PushProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productDockerIDs []distgo.ProductDockerID, tagKeys []string, dryRun bool, stdout io.Writer) error {
+func PushProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productDockerIDs []distgo.ProductDockerID, tagKeys []string, dryRun bool, insecure bool, stdout io.Writer) error {
 	// determine products that match specified productDockerIDs
 	productParams, err := distgo.ProductParamsForDockerProductArgs(projectParam.Products, productDockerIDs...)
 	if err != nil {
@@ -43,14 +43,14 @@ func PushProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectPar
 
 	// run push only for specified products
 	for _, currParam := range productParams {
-		if err := RunPush(projectInfo, currParam, dryRun, stdout); err != nil {
+		if err := RunPush(projectInfo, currParam, dryRun, insecure, stdout); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func RunPush(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, dryRun bool, stdout io.Writer) error {
+func RunPush(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, dryRun bool, insecure bool, stdout io.Writer) error {
 	if productParam.Docker == nil {
 		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("%s does not have Docker outputs; skipping build", productParam.ID), dryRun)
 		return nil
@@ -73,6 +73,7 @@ func RunPush(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, d
 			dockerID,
 			productTaskOutputInfo,
 			dryRun,
+			insecure,
 			stdout,
 		); err != nil {
 			return err
@@ -86,23 +87,30 @@ func runSingleDockerPush(
 	dockerID distgo.DockerID,
 	productTaskOutputInfo distgo.ProductTaskOutputInfo,
 	dryRun bool,
+	insecure bool,
 	stdout io.Writer) (rErr error) {
 
 	// if an OCI artifact exists, push that. Otherwise, default to pushing the artifact in the docker daemon
 	if _, err := layout.FromPath(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)); err == nil {
-		return runOCIPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
+		return runOCIPush(productID, dockerID, productTaskOutputInfo, dryRun, insecure, stdout)
 	}
 	return runDockerDaemonPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
 }
 
-func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, stdout io.Writer) error {
+func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, insecure bool, stdout io.Writer) error {
 	index, err := layout.ImageIndexFromPath(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID))
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct image index from OCI layout at path %s", productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID))
 	}
 
 	for _, tag := range productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags {
-		ref, err := name.ParseReference(tag)
+		var ref name.Reference
+		var err error
+		if insecure {
+			ref, err = name.ParseReference(tag, name.Insecure)
+		} else {
+			ref, err = name.ParseReference(tag)
+		}
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse reference from tag %s", tag)
 		}
@@ -118,11 +126,11 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 		}
 		switch idxManifest.MediaType {
 		case types.OCIImageIndex:
-			if err := handleImageIndex(index, idxManifest, ref, productID, dockerID, dryRun, stdout); err != nil {
+			if err := handleImageIndex(index, idxManifest, ref, productID, dockerID, dryRun, insecure, stdout); err != nil {
 				return errors.Wrapf(err, "failed to publish image index for configuration %s for product %s", dockerID, productID)
 			}
 		case types.OCIManifestSchema1:
-			if err := handleImageManifest(ref, productID, dockerID, productTaskOutputInfo, dryRun, stdout); err != nil {
+			if err := handleImageManifest(ref, productID, dockerID, productTaskOutputInfo, dryRun, insecure, stdout); err != nil {
 				return errors.Wrapf(err, "failed to image manifest for configuration %s for product %s", dockerID, productID)
 			}
 		default:
@@ -132,7 +140,7 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 	return nil
 }
 
-func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) error {
+func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, insecure bool, stdout io.Writer) error {
 	manifestMetadata, err := manifestMetadataFromIndexManifest(idxManifest)
 	if err != nil {
 		return errors.Wrap(err, "encountered unexpected index manifest state")
@@ -145,14 +153,14 @@ func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref na
 		if err != nil {
 			return errors.Wrapf(err, "failed to read image index digest %s from OCI layout", manifestMetadata.digest)
 		}
-		if err := writeIndex(innerIndex, ref, productID, dockerID, dryRun, stdout); err != nil {
+		if err := writeIndex(innerIndex, ref, productID, dockerID, dryRun, insecure, stdout); err != nil {
 			return errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
 		}
 		return nil
 	case types.OCIManifestSchema1:
 		if manifestMetadata.hasPlatformInfo {
 			// if we have platform information, we should push our current image index
-			if err := writeIndex(index, ref, productID, dockerID, dryRun, stdout); err != nil {
+			if err := writeIndex(index, ref, productID, dockerID, dryRun, insecure, stdout); err != nil {
 				return errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
 			}
 			return nil
@@ -165,7 +173,7 @@ func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref na
 		if err != nil {
 			return errors.Wrapf(err, "failed to read image digest %s from OCI layout", manifestMetadata.digest)
 		}
-		if err := writeImage(image, ref, productID, dockerID, dryRun, stdout); err != nil {
+		if err := writeImage(image, ref, productID, dockerID, dryRun, insecure, stdout); err != nil {
 			return errors.Wrapf(err, "failed to write image for tag %s of configuration %s for product %s", ref, dockerID, productID)
 		}
 		return nil
@@ -174,19 +182,19 @@ func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref na
 	}
 }
 
-func handleImageManifest(ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, stdout io.Writer) error {
+func handleImageManifest(ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, insecure bool, stdout io.Writer) error {
 	path := filepath.Join(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID), "image.tar")
 	image, err := tarball.ImageFromPath(path, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read image from path %s", path)
 	}
-	if err := writeImage(image, ref, productID, dockerID, dryRun, stdout); err != nil {
+	if err := writeImage(image, ref, productID, dockerID, dryRun, insecure, stdout); err != nil {
 		return errors.Wrapf(err, "failed to write image for tag %s of configuration %s for product %s", ref, dockerID, productID)
 	}
 	return nil
 }
 
-func writeIndex(index v1.ImageIndex, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) error {
+func writeIndex(index v1.ImageIndex, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, insecure bool, stdout io.Writer) error {
 	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing image index for tag %s of docker configuration %s of product %s...", ref, dockerID, productID), dryRun)
 	if !dryRun {
 		if err := remote.WriteIndex(ref, index, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
@@ -196,7 +204,7 @@ func writeIndex(index v1.ImageIndex, ref name.Reference, productID distgo.Produc
 	return nil
 }
 
-func writeImage(image v1.Image, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) error {
+func writeImage(image v1.Image, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, insecure bool, stdout io.Writer) error {
 	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing image for tag %s of docker configuration %s of product %s...", ref, dockerID, productID), dryRun)
 	if !dryRun {
 		if err := remote.Write(ref, image, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
