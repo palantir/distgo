@@ -27,7 +27,7 @@ require (
 	golang.org/x/exp v0.0.0-20230307190834-24139beb5833
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/tools v0.36.0
-	gopkg.in/cheggaaa/pb.v1 v1.0.22
+	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gopkg.in/yaml.v2 v2.4.0
 )
 
