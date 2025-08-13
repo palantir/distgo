@@ -37,7 +37,7 @@ require (
 	github.com/cheggaaa/pb/v3 v3.0.2 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.16.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/cli v28.2.2+incompatible // indirect
+	github.com/docker/cli v28.3.3+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
