@@ -395,6 +395,52 @@ products:
 `, osarch.Current().String(), osarch.Current().String())
 				},
 			},
+			{
+				Name: "appends properties with flat-dir",
+				Specs: []gofiles.GoFileSpec{
+					{
+						RelPath: "go.mod",
+						Src:     `module foo`,
+					},
+					{
+						RelPath: "foo/foo.go",
+						Src:     `package main; func main() {}`,
+					},
+				},
+				ConfigFiles: map[string]string{
+					"godel/config/godel.yml": godelYML,
+					"godel/config/dist-plugin.yml": `
+products:
+  foo:
+    build:
+      main-pkg: ./foo
+    dist:
+      disters:
+        type: os-arch-bin
+    publish:
+      group-id: com.test.group
+      info:
+        artifactory:
+          config:
+            url: http://artifactory.domain.com
+            username: testUsername
+            password: testPassword
+            repository: testRepo
+            flat-dir: true
+            no-pom: true
+            properties:
+              key1: value1
+              key2: value2
+`,
+				},
+				Args: []string{
+					"--dry-run",
+				},
+				WantOutput: func(projectDir string) string {
+					return fmt.Sprintf(`[DRY RUN] Uploading out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to http://artifactory.domain.com/artifactory/testRepo;key1=value1;key2=value2/foo-1.0.0-%s.tgz
+`, osarch.Current().String(), osarch.Current().String())
+				},
+			},
 		},
 	)
 }
@@ -418,7 +464,6 @@ func TestArtifactoryPublishRendersPropertiesGoTemplates(t *testing.T) {
 		nil,
 		"artifactory",
 		[]publishertester.TestCase{
-
 			{
 				Name: "appends properties with env vars to publish URL",
 				Specs: []gofiles.GoFileSpec{
