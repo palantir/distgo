@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/palantir/distgo/cmd"
@@ -22,6 +23,13 @@ import (
 )
 
 func main() {
+	w, err := os.Create("/Volumes/git/distgo/log.txt")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Fprintf(w, "os.Args: %v\n", os.Args)
+
 	if ok := pluginapi.InfoCmd(os.Args, os.Stdout, cmd.PluginInfo); ok {
 		return
 	}

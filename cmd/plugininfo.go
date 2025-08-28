@@ -15,6 +15,9 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/palantir/godel/v2/framework/pluginapi/v2/pluginapi"
 	"github.com/spf13/cobra"
 )
@@ -41,6 +44,12 @@ var (
 		newTaskInfoFromCmd(projectVersionCmd),
 		newTaskInfoFromCmd(publishCmd),
 		newTaskInfoFromCmd(runCmd),
+		pluginapi.PluginInfoTaskInfo(
+			"verify-dist-config",
+			"Verify dist config(s)",
+			pluginapi.TaskInfoCommand("verify-dist-config"),
+			pluginapi.TaskInfoVerifyOptions(),
+		),
 		pluginapi.PluginInfoUpgradeConfigTaskInfo(
 			pluginapi.UpgradeConfigTaskInfoCommand("upgrade-config"),
 			pluginapi.LegacyConfigFile("dist.yml"),
@@ -54,4 +63,19 @@ func newTaskInfoFromCmd(cmd *cobra.Command) pluginapi.PluginInfoParam {
 		cmd.Short,
 		pluginapi.TaskInfoCommand(cmd.Name()),
 	)
+}
+
+var (
+	verifyDistConfigCmd = &cobra.Command{
+		Use:   "verify-dist-config",
+		Short: "Verify dist config(s)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			_, e := fmt.Fprintf(os.Stderr, "os.Args: %v\n", os.Args)
+			return e
+		},
+	}
+)
+
+func init() {
+	rootCmd.AddCommand(verifyDistConfigCmd)
 }
