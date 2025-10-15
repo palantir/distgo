@@ -24,6 +24,9 @@ type Config struct {
 	publisher.BasicConnectionInfo `yaml:",inline,omitempty"`
 	Repository                    string `yaml:"repository,omitempty"`
 	NoPOM                         bool   `yaml:"no-pom,omitempty"`
+	// FlatDir, if true, publishes the filename directly to the repository with no directory structure.
+	// If false, a maven repository layout is used.
+	FlatDir bool `yaml:"flat-dir"`
 	// Properties is a map of properties to attach to an artifact on publishing:
 	// https://www.jfrog.com/confluence/display/RTF/Using+Properties+in+Deployment+and+Resolution
 	// The values are processed as Go templates. In particular, it is possible to get the value of an

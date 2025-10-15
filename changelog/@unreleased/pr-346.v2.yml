@@ -1,0 +1,10 @@
+type: improvement
+improvement:
+  description: |-
+    Add FlatDir publishing configuration for Artifactory
+
+    If a product's artifactory publish configuration contains `flat-dir: true`, the published artifacts are written to the repository root, omitting the default maven-style directory structure.
+
+    Fixes #198
+  links:
+  - https://github.com/palantir/distgo/pull/346
