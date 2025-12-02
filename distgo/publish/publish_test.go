@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"regexp"
@@ -180,15 +179,15 @@ os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-%s.tgz]
 			},
 		},
 	} {
-		projectDir, err := ioutil.TempDir(tmp, "")
+		projectDir, err := os.MkdirTemp(tmp, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		gittest.InitGitDir(t, projectDir)
 		err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		err = ioutil.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
+		err = os.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		err = ioutil.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
+		err = os.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 		gittest.CommitAllFiles(t, projectDir, "Commit")
 

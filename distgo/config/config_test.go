@@ -16,7 +16,6 @@ package config_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -1053,7 +1052,7 @@ product-defaults:
 			},
 		},
 	} {
-		currProjectDir, err := ioutil.TempDir(tmpDir, "")
+		currProjectDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		err = files.WriteGoFiles(currProjectDir, tc.gofiles)

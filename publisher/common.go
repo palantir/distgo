@@ -22,7 +22,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -44,7 +43,7 @@ type FileInfo struct {
 }
 
 func NewFileInfo(pathToFile string) (FileInfo, error) {
-	bytes, err := ioutil.ReadFile(pathToFile)
+	bytes, err := os.ReadFile(pathToFile)
 	if err != nil {
 		return FileInfo{}, errors.Wrapf(err, "failed to read file %s", pathToFile)
 	}
@@ -232,7 +231,7 @@ func (b *BasicConnectionInfo) UploadFile(fileInfo FileInfo, baseURL, artifactNam
 			Method:        http.MethodPut,
 			URL:           uploadURL,
 			Header:        header,
-			Body:          ioutil.NopCloser(reader),
+			Body:          io.NopCloser(reader),
 			ContentLength: int64(len(fileInfo.Bytes)),
 		}
 		req.SetBasicAuth(b.Username, b.Password)
@@ -260,7 +259,7 @@ func (b *BasicConnectionInfo) UploadFile(fileInfo FileInfo, baseURL, artifactNam
 			msgParts = append(msgParts, fmt.Sprintf("to %s resulted in response %q", rawUploadURL, resp.Status))
 
 			msg := fmt.Sprint(strings.Join(msgParts, " "))
-			if body, err := ioutil.ReadAll(resp.Body); err == nil {
+			if body, err := io.ReadAll(resp.Body); err == nil {
 				bodyStr := string(body)
 				if bodyStr != "" {
 					msg += ":\n" + bodyStr

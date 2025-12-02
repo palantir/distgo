@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"regexp"
@@ -66,7 +65,7 @@ func (b *printDockerfileDockerBuilder) TypeName() (string, error) {
 func (b *printDockerfileDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, verbose, dryRun bool, stdout io.Writer) error {
 	dockerBuilderOutputInfo := productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID]
 	fullDockerfilePath := path.Join(productTaskOutputInfo.Project.ProjectDir, dockerBuilderOutputInfo.ContextDir, dockerBuilderOutputInfo.DockerfilePath)
-	bytes, err := ioutil.ReadFile(fullDockerfilePath)
+	bytes, err := os.ReadFile(fullDockerfilePath)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read Dockerfile at %s", fullDockerfilePath)
 	}
@@ -129,7 +128,7 @@ func TestDockerBuild(t *testing.T) {
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = ioutil.WriteFile(dockerfile, []byte(testDockerfile), 0644)
+				err = os.WriteFile(dockerfile, []byte(testDockerfile), 0644)
 				require.NoError(t, err)
 				gittest.CommitAllFiles(t, projectDir, "Commit files")
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
@@ -186,7 +185,7 @@ func TestDockerBuild(t *testing.T) {
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = ioutil.WriteFile(dockerfile, []byte(testDockerfile), 0644)
+				err = os.WriteFile(dockerfile, []byte(testDockerfile), 0644)
 				require.NoError(t, err)
 				gittest.CommitAllFiles(t, projectDir, "Commit files")
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
@@ -244,7 +243,7 @@ func TestDockerBuild(t *testing.T) {
 				require.NoError(t, err)
 
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = ioutil.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+				err = os.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
 RUN echo 'Version: {{Version}}'
 RUN echo 'Repository: {{Repository}}'
@@ -272,7 +271,7 @@ RUN echo 'Tag for foo: registry-host:5000/foo:latest'
 RUN echo 'Tags for foo: [registry-host:5000/foo:latest]'
 `, osarch.Current().String(), osarch.Current().String()),
 			func(caseNum int, name, projectDir string) {
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
 				require.NoError(t, err)
 				originalDockerfileContent := fmt.Sprintf(`FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
@@ -318,7 +317,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 				require.NoError(t, err)
 
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = ioutil.WriteFile(dockerfile, []byte(`FROM alpine:3.5
+				err = os.WriteFile(dockerfile, []byte(`FROM alpine:3.5
 RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 `), 0644)
 
@@ -332,7 +331,7 @@ FROM alpine:3.5
 RUN echo 'Tags for foo: [foo:5 foo:3 foo:2 foo:0 foo:1 foo:4]'
 `,
 			func(caseNum int, name, projectDir string) {
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
 				require.NoError(t, err)
 				originalDockerfileContent := `FROM alpine:3.5
 RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
@@ -379,7 +378,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 				require.NoError(t, err)
 
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = ioutil.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+				err = os.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
 RUN echo 'Version: {{Version}}'
 RUN echo 'Repository: {{Repository}}'
@@ -402,7 +401,7 @@ RUN echo 'RepositoryLiteral: registry-host:5000'
 RUN echo 'InputBuildArtifact for bar: input-products/foo/build/%s/foo'
 `, osarch.Current().String()),
 			func(caseNum int, name, projectDir string) {
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
 				require.NoError(t, err)
 				originalDockerfileContent := fmt.Sprintf(`FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
@@ -466,7 +465,7 @@ tar -cf "$DIST_DIR/$DIST_NAME".tar -C "$DIST_WORK_DIR" out.txt`),
 				require.NoError(t, err)
 
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = ioutil.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+				err = os.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
 RUN echo 'Version: {{Version}}'
 RUN echo 'Repository: {{Repository}}'
@@ -489,7 +488,7 @@ RUN echo 'RepositoryLiteral: registry-host:5000'
 RUN echo 'InputDistArtifacts for bar: [input-products/foo/dist/manual/foo-0.1.0.tar]'
 `,
 			func(caseNum int, name, projectDir string) {
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
 				require.NoError(t, err)
 				originalDockerfileContent := `FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
@@ -544,7 +543,7 @@ RUN echo 'InputDistArtifacts for bar: {{InputDistArtifacts "foo" "manual"}}'
 				require.NoError(t, err)
 
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = ioutil.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+				err = os.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
 RUN echo 'Version: {{Version}}'
 RUN echo 'Repository: {{Repository}}'
@@ -570,7 +569,7 @@ RUN echo 'InputDistArtifacts for foo: [input-products/foo/dist/os-arch-bin/foo-0
 RUN echo 'Tags for foo: [foo:latest]'
 `, osarch.Current().String(), osarch.Current().String()),
 			func(caseNum int, name, projectDir string) {
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
 				require.NoError(t, err)
 				originalDockerfileContent := fmt.Sprintf(`FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
@@ -629,7 +628,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 				require.NoError(t, err)
 
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = ioutil.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+				err = os.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
 RUN echo 'Version: {{Version}}'
 RUN echo 'Repository: {{Repository}}'
@@ -653,7 +652,7 @@ RUN echo 'InputDistArtifacts for foo: {{InputDistArtifacts "foo" "os-arch-bin"}}
 RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 `, osarch.Current().String()),
 			func(caseNum int, name, projectDir string) {
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
 				require.NoError(t, err)
 				originalDockerfileContent := fmt.Sprintf(`FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
@@ -713,7 +712,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 				require.NoError(t, err)
 
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = ioutil.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+				err = os.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
 RUN echo 'Version: {{Version}}'
 RUN echo 'Repository: {{Repository}}'
@@ -739,7 +738,7 @@ RUN echo 'InputDistArtifacts for foo: [input-products/foo/dist/os-arch-bin/foo-0
 RUN echo 'Tags for foo: [registry-host:5000/foo:latest]'
 `, osarch.Current().String(), osarch.Current().String()),
 			func(caseNum int, name, projectDir string) {
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
 				require.NoError(t, err)
 				originalDockerfileContent := fmt.Sprintf(`FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
@@ -754,15 +753,15 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 			},
 		},
 	} {
-		projectDir, err := ioutil.TempDir(tmp, "")
+		projectDir, err := os.MkdirTemp(tmp, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		gittest.InitGitDir(t, projectDir)
 		err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		err = ioutil.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
+		err = os.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		err = ioutil.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
+		err = os.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 		gittest.CommitAllFiles(t, projectDir, "Commit")
 
@@ -788,7 +787,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		preDistTime := time.Now().Truncate(time.Second).Add(-1 * time.Second)
-		err = dist.Products(projectInfo, projectParam, nil, nil, false, true, ioutil.Discard)
+		err = dist.Products(projectInfo, projectParam, nil, nil, false, true, io.Discard)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		buffer := &bytes.Buffer{}

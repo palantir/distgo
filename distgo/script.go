@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -27,7 +26,7 @@ import (
 )
 
 func WriteScript(projectInfo ProjectInfo, script string) (name string, cleanup func() error, rErr error) {
-	tmpFile, err := ioutil.TempFile(projectInfo.ProjectDir, "")
+	tmpFile, err := os.CreateTemp(projectInfo.ProjectDir, "")
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "Failed to create script file")
 	}

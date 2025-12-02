@@ -17,7 +17,6 @@ package mavenlocal
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -113,7 +112,7 @@ func (p *mavenLocalPublisher) RunPublish(productTaskOutputInfo distgo.ProductTas
 		pomPath := path.Join(productPath, pomName)
 		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing POM to %s", pomPath), dryRun)
 		if !dryRun {
-			if err := ioutil.WriteFile(pomPath, []byte(pomContent), 0644); err != nil {
+			if err := os.WriteFile(pomPath, []byte(pomContent), 0644); err != nil {
 				return errors.Wrapf(err, "failed to write POM")
 			}
 		}

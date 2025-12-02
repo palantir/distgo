@@ -16,7 +16,6 @@ package integration_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -39,7 +38,7 @@ func TestRun(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir(".", "")
 	require.NoError(t, err)
 	defer cleanup()
-	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
 	require.NoError(t, err)
@@ -146,14 +145,14 @@ products:
 			wantStdout: "[--foo-arg flag: arg3]\n",
 		},
 	} {
-		projectDir, err := ioutil.TempDir(tmpDir, "")
+		projectDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 
 		err = files.WriteGoFiles(projectDir, tc.filesToCreate)
 		require.NoError(t, err, "Case %d", i)
 
 		configFile := path.Join(projectDir, "config.yml")
-		err = ioutil.WriteFile(configFile, []byte(tc.config), 0644)
+		err = os.WriteFile(configFile, []byte(tc.config), 0644)
 		require.NoError(t, err)
 
 		var output []byte
@@ -187,12 +186,12 @@ func TestRunWithStdin(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir(".", "")
 	require.NoError(t, err)
 	defer cleanup()
-	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
 	require.NoError(t, err)
 
-	projectDir, err := ioutil.TempDir(tmpDir, "")
+	projectDir, err := os.MkdirTemp(tmpDir, "")
 	require.NoError(t, err)
 
 	filesToCreate := []gofiles.GoFileSpec{
@@ -230,7 +229,7 @@ products:
 	require.NoError(t, err)
 
 	configFile := path.Join(projectDir, "config.yml")
-	err = ioutil.WriteFile(configFile, []byte(config), 0644)
+	err = os.WriteFile(configFile, []byte(config), 0644)
 	require.NoError(t, err)
 
 	var output []byte

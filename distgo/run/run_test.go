@@ -16,7 +16,7 @@ package run_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path"
 	"regexp"
@@ -38,28 +38,26 @@ const (
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 )
 
 func main() {
 	fmt.Println("testMainOutput")
-	ioutil.WriteFile(path.Join("{{OUTPUT_PATH}}", "runTestMainOutput.txt"), []byte(fmt.Sprintf("%v", os.Args[1:])), 0644)
+	os.WriteFile(path.Join("{{OUTPUT_PATH}}", "runTestMainOutput.txt"), []byte(fmt.Sprintf("%v", os.Args[1:])), 0644)
 }
 `
 	runTestMainBar = `package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 )
 
 func main() {
 	bar("testMainOutput")
-	ioutil.WriteFile(path.Join("{{OUTPUT_PATH}}", "runTestMainOutput.txt"), []byte(fmt.Sprintf("%v", os.Args[1:])), 0644)
+	os.WriteFile(path.Join("{{OUTPUT_PATH}}", "runTestMainOutput.txt"), []byte(fmt.Sprintf("%v", os.Args[1:])), 0644)
 }
 `
 )
@@ -85,12 +83,12 @@ func TestRun(t *testing.T) {
 			},
 			nil,
 			func(projectDir string) {
-				err := ioutil.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(runTestMain, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
+				err := os.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(runTestMain, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
 				require.NoError(t, err)
 			},
 			func(runErr error, caseNum int, projectDir string) {
 				assert.NoError(t, runErr, "Case %d", caseNum)
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
 				require.NoError(t, err, "Case %d", caseNum)
 				assert.Equal(t, "[]", string(bytes))
 			},
@@ -111,12 +109,12 @@ func TestRun(t *testing.T) {
 			},
 			nil,
 			func(projectDir string) {
-				err := ioutil.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(runTestMain, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
+				err := os.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(runTestMain, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
 				require.NoError(t, err)
 			},
 			func(runErr error, caseNum int, projectDir string) {
 				assert.NoError(t, runErr, "Case %d", caseNum)
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
 				require.NoError(t, err, "Case %d", caseNum)
 				assert.Equal(t, "[foo bar $GOPATH]", string(bytes))
 			},
@@ -130,12 +128,12 @@ func TestRun(t *testing.T) {
 			},
 			[]string{"foo", "bar", "$GOPATH"},
 			func(projectDir string) {
-				err := ioutil.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(runTestMain, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
+				err := os.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(runTestMain, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
 				require.NoError(t, err)
 			},
 			func(runErr error, caseNum int, projectDir string) {
 				assert.NoError(t, runErr, "Case %d", caseNum)
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
 				require.NoError(t, err, "Case %d", caseNum)
 				assert.Equal(t, "[foo bar $GOPATH]", string(bytes))
 			},
@@ -156,12 +154,12 @@ func TestRun(t *testing.T) {
 			},
 			[]string{"runArg_foo", "runArg_bar", "$runArg"},
 			func(projectDir string) {
-				err := ioutil.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(runTestMain, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
+				err := os.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(runTestMain, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
 				require.NoError(t, err)
 			},
 			func(runErr error, caseNum int, projectDir string) {
 				assert.NoError(t, runErr, "Case %d", caseNum)
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
 				require.NoError(t, err, "Case %d", caseNum)
 				assert.Equal(t, "[cfgArg_foo cfgArg_bar $cfgArg runArg_foo runArg_bar $runArg]", string(bytes))
 			},
@@ -179,22 +177,22 @@ func TestRun(t *testing.T) {
 				currMainContent := `package main
 
 import (
-	"io/ioutil"
+	"os"
 	"path"
 )
 
 var testVersionVar = "defaultVersion"
 
 func main() {
-	ioutil.WriteFile(path.Join("{{OUTPUT_PATH}}", "runTestMainOutput.txt"), []byte(testVersionVar), 0644)
+	os.WriteFile(path.Join("{{OUTPUT_PATH}}", "runTestMainOutput.txt"), []byte(testVersionVar), 0644)
 }
 `
-				err := ioutil.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(currMainContent, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
+				err := os.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(currMainContent, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
 				require.NoError(t, err)
 			},
 			func(runErr error, caseNum int, projectDir string) {
 				assert.NoError(t, runErr, "Case %d", caseNum)
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
 				require.NoError(t, err, "Case %d", caseNum)
 				assert.Equal(t, "0.1.0", string(bytes))
 			},
@@ -211,16 +209,16 @@ func main() {
 				err := os.MkdirAll(path.Join(projectDir, "foo"), 0755)
 				require.NoError(t, err)
 
-				err = ioutil.WriteFile(path.Join(projectDir, "foo", "main_file.go"), []byte(strings.Replace(runTestMainBar, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
+				err = os.WriteFile(path.Join(projectDir, "foo", "main_file.go"), []byte(strings.Replace(runTestMainBar, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
 				require.NoError(t, err)
-				err = ioutil.WriteFile(path.Join(projectDir, "foo", "other_main_file.go"), []byte(`package main
+				err = os.WriteFile(path.Join(projectDir, "foo", "other_main_file.go"), []byte(`package main
 import "fmt"
 func bar(a ...interface{}) (n int, err error) {
 	return fmt.Println(a...)
 }
 `), 0644)
 				require.NoError(t, err)
-				err = ioutil.WriteFile(path.Join(projectDir, "foo", "main_test.go"), []byte(`package main_test
+				err = os.WriteFile(path.Join(projectDir, "foo", "main_test.go"), []byte(`package main_test
 func Bar() string {
 	return "bar"
 }
@@ -229,7 +227,7 @@ func Bar() string {
 			},
 			func(runErr error, caseNum int, projectDir string) {
 				assert.NoError(t, runErr, "Case %d", caseNum)
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
 				require.NoError(t, err, "Case %d", caseNum)
 				assert.Equal(t, "[]", string(bytes))
 			},
@@ -246,9 +244,9 @@ func Bar() string {
 				err := os.MkdirAll(path.Join(projectDir, "foo"), 0755)
 				require.NoError(t, err)
 
-				err = ioutil.WriteFile(path.Join(projectDir, "foo", "main_file.go"), []byte(strings.Replace(runTestMain, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
+				err = os.WriteFile(path.Join(projectDir, "foo", "main_file.go"), []byte(strings.Replace(runTestMain, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
 				require.NoError(t, err)
-				err = ioutil.WriteFile(path.Join(projectDir, "foo", "main_test.go"), []byte(`package main
+				err = os.WriteFile(path.Join(projectDir, "foo", "main_test.go"), []byte(`package main
 import "testing"
 func TestBar(t *testing.T) {
 }
@@ -257,7 +255,7 @@ func TestBar(t *testing.T) {
 			},
 			func(runErr error, caseNum int, projectDir string) {
 				assert.NoError(t, runErr, "Case %d", caseNum)
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
 				require.NoError(t, err, "Case %d", caseNum)
 				assert.Equal(t, "[]", string(bytes))
 			},
@@ -274,7 +272,7 @@ func TestBar(t *testing.T) {
 				err := os.MkdirAll(path.Join(projectDir, "foo"), 0755)
 				require.NoError(t, err)
 
-				err = ioutil.WriteFile(path.Join(projectDir, "foo", "not_main_pkg.go"), []byte(`package foo
+				err = os.WriteFile(path.Join(projectDir, "foo", "not_main_pkg.go"), []byte(`package foo
 func main() {
 }
 `), 0644)
@@ -297,14 +295,14 @@ func main() {
 				err := os.MkdirAll(path.Join(projectDir, "foo"), 0755)
 				require.NoError(t, err)
 
-				err = ioutil.WriteFile(path.Join(projectDir, "foo", "no_main_func.go"), []byte(`package main
+				err = os.WriteFile(path.Join(projectDir, "foo", "no_main_func.go"), []byte(`package main
 func Foo() string {
 	return "foo"
 }
 `), 0644)
 				require.NoError(t, err)
 
-				err = ioutil.WriteFile(path.Join(projectDir, "foo", "main_func_not_main_pkg.go"), []byte(`package main_test
+				err = os.WriteFile(path.Join(projectDir, "foo", "main_func_not_main_pkg.go"), []byte(`package main_test
 func main() {
 }
 `), 0644)
@@ -316,7 +314,7 @@ func main() {
 			},
 		},
 	} {
-		projectDir, err := ioutil.TempDir(tmp, "")
+		projectDir, err := os.MkdirTemp(tmp, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		if tc.preRunAction != nil {
@@ -336,7 +334,7 @@ func main() {
 		productParam, err := tc.productConfig.ToParam("foo", "", distgoconfig.ProductConfig{}, disterFactory, dockerBuilderFactory)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		err = run.Product(projectInfo, productParam, tc.runArgs, ioutil.Discard, ioutil.Discard)
+		err = run.Product(projectInfo, productParam, tc.runArgs, io.Discard, io.Discard)
 		if tc.validate != nil {
 			tc.validate(err, i, projectDir)
 		}

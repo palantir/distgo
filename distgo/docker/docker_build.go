@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -194,7 +193,7 @@ func runSingleDockerBuild(
 
 		pathToContextDir := path.Join(projectInfo.ProjectDir, dockerBuilderParam.ContextDir)
 		dockerfilePath := path.Join(pathToContextDir, dockerBuilderParam.DockerfilePath)
-		originalDockerfileBytes, err := ioutil.ReadFile(dockerfilePath)
+		originalDockerfileBytes, err := os.ReadFile(dockerfilePath)
 		if err != nil {
 			return errors.Wrapf(err, "failed to read Dockerfile %s", dockerBuilderParam.DockerfilePath)
 		}
@@ -217,7 +216,7 @@ func runSingleDockerBuild(
 		if renderedDockerfile != string(originalDockerfileBytes) {
 			// Dockerfile contained templates and rendering them changes file: overwrite file with rendered version
 			// and restore afterwards
-			if err := ioutil.WriteFile(dockerfilePath, []byte(renderedDockerfile), 0644); err != nil {
+			if err := os.WriteFile(dockerfilePath, []byte(renderedDockerfile), 0644); err != nil {
 				return errors.Wrapf(err, "failed to write rendered Dockerfile")
 			}
 
@@ -230,7 +229,7 @@ func runSingleDockerBuild(
 			go func() {
 				select {
 				case <-cleanupCtx.Done():
-					if err := ioutil.WriteFile(dockerfilePath, originalDockerfileBytes, 0644); err != nil && rErr == nil {
+					if err := os.WriteFile(dockerfilePath, originalDockerfileBytes, 0644); err != nil && rErr == nil {
 						rErr = errors.Wrapf(err, "failed to restore original Dockerfile content")
 					}
 				}

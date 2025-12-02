@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -201,7 +200,7 @@ func distgoProjectParamFromVals(projectDir, distgoConfigFile, godelConfigFile st
 }
 
 func loadConfigFromFile(cfgFile string) (config.ProjectConfig, error) {
-	cfgBytes, err := ioutil.ReadFile(cfgFile)
+	cfgBytes, err := os.ReadFile(cfgFile)
 	if os.IsNotExist(err) {
 		return config.ProjectConfig{}, nil
 	}

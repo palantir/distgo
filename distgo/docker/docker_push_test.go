@@ -17,7 +17,6 @@ package docker_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"regexp"
@@ -94,7 +93,7 @@ func TestDockerPublish(t *testing.T) {
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = ioutil.WriteFile(dockerfile, []byte(testDockerfile), 0644)
+				err = os.WriteFile(dockerfile, []byte(testDockerfile), 0644)
 				require.NoError(t, err)
 				gittest.CommitAllFiles(t, projectDir, "Commit files")
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
@@ -147,7 +146,7 @@ func TestDockerPublish(t *testing.T) {
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = ioutil.WriteFile(dockerfile, []byte(testDockerfile), 0644)
+				err = os.WriteFile(dockerfile, []byte(testDockerfile), 0644)
 				require.NoError(t, err)
 				gittest.CommitAllFiles(t, projectDir, "Commit files")
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
@@ -203,7 +202,7 @@ func TestDockerPublish(t *testing.T) {
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = ioutil.WriteFile(dockerfile, []byte(testDockerfile), 0644)
+				err = os.WriteFile(dockerfile, []byte(testDockerfile), 0644)
 				require.NoError(t, err)
 				gittest.CommitAllFiles(t, projectDir, "Commit files")
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
@@ -274,7 +273,7 @@ func TestDockerPublish(t *testing.T) {
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = ioutil.WriteFile(dockerfile, []byte(testDockerfile), 0644)
+				err = os.WriteFile(dockerfile, []byte(testDockerfile), 0644)
 				require.NoError(t, err)
 				gittest.CommitAllFiles(t, projectDir, "Commit files")
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
@@ -286,13 +285,13 @@ func TestDockerPublish(t *testing.T) {
 `,
 		},
 	} {
-		projectDir, err := ioutil.TempDir(tmp, "")
+		projectDir, err := os.MkdirTemp(tmp, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		gittest.InitGitDir(t, projectDir)
 		err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		err = ioutil.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
+		err = os.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 		gittest.CommitAllFiles(t, projectDir, "Commit")
 

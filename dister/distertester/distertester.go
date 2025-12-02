@@ -17,7 +17,6 @@ package distertester
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -79,7 +78,7 @@ func RunAssetDistTest(t *testing.T,
 	require.NoError(t, err)
 
 	for i, tc := range testCases {
-		projectDir, err := ioutil.TempDir(tmpDir, "")
+		projectDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 
 		gittest.InitGitDir(t, projectDir)
@@ -94,7 +93,7 @@ func RunAssetDistTest(t *testing.T,
 		for _, k := range sortedKeys {
 			err = os.MkdirAll(path.Dir(path.Join(projectDir, k)), 0755)
 			require.NoError(t, err)
-			err = ioutil.WriteFile(path.Join(projectDir, k), []byte(tc.ConfigFiles[k]), 0644)
+			err = os.WriteFile(path.Join(projectDir, k), []byte(tc.ConfigFiles[k]), 0644)
 			require.NoError(t, err)
 		}
 
@@ -204,13 +203,13 @@ func RunRepeatedDistTest(t *testing.T,
 	tmpDir, err = filepath.EvalSymlinks(tmpDir)
 	require.NoError(t, err)
 
-	projectDir, err := ioutil.TempDir(tmpDir, "")
+	projectDir, err := os.MkdirTemp(tmpDir, "")
 	require.NoError(t, err)
 
 	for filename, contents := range internalFiles {
 		err = os.MkdirAll(path.Dir(path.Join(projectDir, filename)), 0755)
 		require.NoError(t, err)
-		err = ioutil.WriteFile(path.Join(projectDir, filename), contents, 0644)
+		err = os.WriteFile(path.Join(projectDir, filename), contents, 0644)
 		require.NoError(t, err)
 	}
 	// write files required for test framework

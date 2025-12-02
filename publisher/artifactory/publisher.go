@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -134,7 +133,7 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 				_ = resp.Body.Close()
 			}()
 
-			if bytes, err := ioutil.ReadAll(resp.Body); err == nil {
+			if bytes, err := io.ReadAll(resp.Body); err == nil {
 				var jsonMap map[string]*json.RawMessage
 				if err := json.Unmarshal(bytes, &jsonMap); err == nil {
 					if checksumJSON, ok := jsonMap["Checksums"]; ok && checksumJSON != nil {
@@ -219,7 +218,7 @@ func (p *artifactoryPublisher) artifactorySetSHA256Checksum(cfg config.Artifacto
 		Method:        http.MethodPost,
 		URL:           uploadURL,
 		Header:        header,
-		Body:          ioutil.NopCloser(reader),
+		Body:          io.NopCloser(reader),
 		ContentLength: int64(len([]byte(jsonContent))),
 	}
 	req.SetBasicAuth(cfg.Username, cfg.Password)

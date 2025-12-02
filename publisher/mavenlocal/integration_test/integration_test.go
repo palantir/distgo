@@ -16,7 +16,6 @@ package integration_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -235,7 +234,7 @@ Copying artifact from out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to out/pub
 				},
 				Validate: func(projectDir string) {
 					pomFile := path.Join(projectDir, "out", "publish", "com", "test", "group", "foo", "1.0.0", "foo-1.0.0.pom")
-					bytes, err := ioutil.ReadFile(pomFile)
+					bytes, err := os.ReadFile(pomFile)
 					require.NoError(t, err)
 					want := `<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">

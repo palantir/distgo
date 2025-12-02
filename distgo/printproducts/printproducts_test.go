@@ -17,7 +17,7 @@ package printproducts_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"testing"
 
@@ -118,7 +118,7 @@ foo
 			},
 		},
 	} {
-		projectDir, err := ioutil.TempDir(rootDir, "")
+		projectDir, err := os.MkdirTemp(rootDir, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		gittest.InitGitDir(t, projectDir)
