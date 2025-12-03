@@ -17,7 +17,7 @@ package build_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -170,7 +170,7 @@ echo "-X \"main.testVersionVar=$VALUE\""`
 			wantOutput: "defaultVersion",
 		},
 	} {
-		currTmpDir, err := ioutil.TempDir(tmp, "")
+		currTmpDir, err := os.MkdirTemp(tmp, "")
 		require.NoError(t, err, "Case %d", i)
 
 		gittest.InitGitDir(t, currTmpDir)
@@ -181,10 +181,10 @@ echo "-X \"main.testVersionVar=$VALUE\""`
 		err = os.MkdirAll(path.Dir(mainFilePath), 0755)
 		require.NoError(t, err, "Case %d", i)
 
-		err = ioutil.WriteFile(path.Join(currTmpDir, "go.mod"), []byte("module foo"), 0644)
+		err = os.WriteFile(path.Join(currTmpDir, "go.mod"), []byte("module foo"), 0644)
 		require.NoError(t, err, "Case %d", i)
 
-		err = ioutil.WriteFile(mainFilePath, []byte(tc.mainFileContent), 0644)
+		err = os.WriteFile(mainFilePath, []byte(tc.mainFileContent), 0644)
 		require.NoError(t, err, "Case %d", i)
 
 		foundExecForCurrOSArch := false
@@ -343,7 +343,7 @@ func TestBuildOnlySpecifiedOSArchs(t *testing.T) {
 	mainFilePath := path.Join(tmp, "foo/main.go")
 	err = os.MkdirAll(path.Dir(mainFilePath), 0755)
 	require.NoError(t, err)
-	err = ioutil.WriteFile(mainFilePath, []byte(testMain), 0644)
+	err = os.WriteFile(mainFilePath, []byte(testMain), 0644)
 	require.NoError(t, err)
 
 	for i, tc := range []struct {
@@ -381,7 +381,7 @@ func TestBuildOnlySpecifiedOSArchs(t *testing.T) {
 			ProjectDir: tmp,
 		}
 
-		err = ioutil.WriteFile(path.Join(tmp, "go.mod"), []byte("module foo"), 0644)
+		err = os.WriteFile(path.Join(tmp, "go.mod"), []byte("module foo"), 0644)
 		require.NoError(t, err, "Case %d", i)
 
 		productParam := createBuildProductParam(func(param *distgo.ProductParam) {
@@ -409,7 +409,7 @@ func TestBuildErrorMessage(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir(".", "")
 	require.NoError(t, err)
 	defer cleanup()
-	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
 	require.NoError(t, err)
@@ -417,7 +417,7 @@ func TestBuildErrorMessage(t *testing.T) {
 	mainFilePath := path.Join(tmpDir, "foo/main.go")
 	err = os.MkdirAll(path.Dir(mainFilePath), 0755)
 	require.NoError(t, err)
-	err = ioutil.WriteFile(mainFilePath, []byte(`package main; asdfa`), 0644)
+	err = os.WriteFile(mainFilePath, []byte(`package main; asdfa`), 0644)
 	require.NoError(t, err)
 
 	projectInfo := distgo.ProjectInfo{
@@ -469,7 +469,7 @@ func TestBuildErrorMessage(t *testing.T) {
 //	mainFilePath := path.Join(tmp, "foo/main.go")
 //	err = os.MkdirAll(path.Dir(mainFilePath), 0755)
 //	require.NoError(t, err)
-//	err = ioutil.WriteFile(mainFilePath, []byte(`package main`), 0644)
+//	err = os.WriteFile(mainFilePath, []byte(`package main`), 0644)
 //	require.NoError(t, err)
 //
 //	projectInfo := distgo.ProjectInfo{
@@ -557,16 +557,16 @@ func TestBuildAllParallel(t *testing.T) {
 			},
 		},
 	} {
-		currTmpDir, err := ioutil.TempDir(tmp, "")
+		currTmpDir, err := os.MkdirTemp(tmp, "")
 		require.NoError(t, err)
 
-		err = ioutil.WriteFile(path.Join(currTmpDir, "go.mod"), []byte("module foo"), 0644)
+		err = os.WriteFile(path.Join(currTmpDir, "go.mod"), []byte("module foo"), 0644)
 		require.NoError(t, err, "Case %d", i)
 
 		for file, content := range tc.mainFiles {
 			err := os.MkdirAll(path.Join(currTmpDir, path.Dir(file)), 0755)
 			require.NoError(t, err)
-			err = ioutil.WriteFile(path.Join(currTmpDir, file), []byte(content), 0644)
+			err = os.WriteFile(path.Join(currTmpDir, file), []byte(content), 0644)
 			require.NoError(t, err)
 		}
 
@@ -576,7 +576,7 @@ func TestBuildAllParallel(t *testing.T) {
 		}
 		err = build.Run(projectInfo, tc.productParams, build.Options{
 			Parallel: true,
-		}, ioutil.Discard)
+		}, io.Discard)
 		assert.NoError(t, err, "Case %d", i)
 	}
 }

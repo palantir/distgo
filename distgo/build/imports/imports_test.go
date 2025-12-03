@@ -16,7 +16,6 @@ package imports_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -35,7 +34,7 @@ func TestAllFilesGoModOff(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir(".", "")
 	require.NoError(t, err)
 	defer cleanup()
-	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
 	require.NoError(t, err)
@@ -175,7 +174,7 @@ func TestAllFilesGoModOff(t *testing.T) {
 		},
 	} {
 		t.Run(currCase.name, func(t *testing.T) {
-			currProjectDir, err := ioutil.TempDir(tmpDir, "")
+			currProjectDir, err := os.MkdirTemp(tmpDir, "")
 			require.NoError(t, err, "Case %d", i)
 
 			err = files.WriteGoFiles(currProjectDir, currCase.filesFn(currProjectDir))
@@ -192,7 +191,7 @@ func TestAllFilesGoModOn(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir(".", "")
 	require.NoError(t, err)
 	defer cleanup()
-	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
 	require.NoError(t, err)
@@ -345,7 +344,7 @@ func TestAllFilesGoModOn(t *testing.T) {
 		},
 	} {
 		t.Run(currCase.name, func(t *testing.T) {
-			currProjectDir, err := ioutil.TempDir(tmpDir, "")
+			currProjectDir, err := os.MkdirTemp(tmpDir, "")
 			require.NoError(t, err, "Case %d", i)
 
 			err = files.WriteGoFiles(currProjectDir, currCase.files)
@@ -362,12 +361,12 @@ func TestNewerThanFileIsNewer(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir(".", "")
 	require.NoError(t, err)
 	defer cleanup()
-	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
 	require.NoError(t, err)
 
-	tmpFile, err := ioutil.TempFile(tmpDir, "")
+	tmpFile, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
 	fi, err := tmpFile.Stat()
 	require.NoError(t, err)
@@ -377,7 +376,7 @@ func TestNewerThanFileIsNewer(t *testing.T) {
 	// sleep for 1 second to ensure that mtimes differ
 	time.Sleep(time.Second)
 
-	err = ioutil.WriteFile(path.Join(tmpDir, "main.go"), []byte(`package main; import "fmt"; func main() {}`), 0644)
+	err = os.WriteFile(path.Join(tmpDir, "main.go"), []byte(`package main; import "fmt"; func main() {}`), 0644)
 	require.NoError(t, err)
 
 	goFiles, err := imports.AllFiles(tmpDir, "", "")
@@ -392,12 +391,12 @@ func TestNewerThanFileIsNotNewer(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir(".", "")
 	require.NoError(t, err)
 	defer cleanup()
-	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
 	require.NoError(t, err)
 
-	err = ioutil.WriteFile(path.Join(tmpDir, "main.go"), []byte(`package main; import "fmt"; func main() {}`), 0644)
+	err = os.WriteFile(path.Join(tmpDir, "main.go"), []byte(`package main; import "fmt"; func main() {}`), 0644)
 	require.NoError(t, err)
 
 	goFiles, err := imports.AllFiles(tmpDir, "", "")
@@ -406,7 +405,7 @@ func TestNewerThanFileIsNotNewer(t *testing.T) {
 	// sleep for 1 second to ensure that mtimes differ
 	time.Sleep(time.Second)
 
-	tmpFile, err := ioutil.TempFile(tmpDir, "")
+	tmpFile, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
 	fi, err := tmpFile.Stat()
 	require.NoError(t, err)

@@ -16,7 +16,6 @@ package script
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -43,7 +42,7 @@ func (v *ProjectVersioner) TypeName() (string, error) {
 }
 
 func (v *ProjectVersioner) ProjectVersion(projectDir string) (rVersion string, rErr error) {
-	tmpDir, err := ioutil.TempDir("", "godel-distgo-project-versioner-script")
+	tmpDir, err := os.MkdirTemp("", "godel-distgo-project-versioner-script")
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create temporary directory")
 	}
@@ -54,7 +53,7 @@ func (v *ProjectVersioner) ProjectVersion(projectDir string) (rVersion string, r
 	}()
 
 	versionScript := path.Join(tmpDir, "version")
-	if err := ioutil.WriteFile(versionScript, []byte(v.ScriptContent), 0755); err != nil {
+	if err := os.WriteFile(versionScript, []byte(v.ScriptContent), 0755); err != nil {
 		return "", errors.Wrapf(err, "failed to write version script to %s", versionScript)
 	}
 	versionScriptCmd := exec.Command(versionScript)

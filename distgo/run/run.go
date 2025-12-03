@@ -20,7 +20,6 @@ import (
 	"go/parser"
 	"go/token"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -79,7 +78,7 @@ func Product(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, r
 // Returns an error if there are no files in the "main" package that declares a "main" function (or if there are
 // multiple such files).
 func mainPkgGoFiles(mainPkgDir string) ([]string, error) {
-	fileInfos, err := ioutil.ReadDir(mainPkgDir)
+	fileInfos, err := os.ReadDir(mainPkgDir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list files in directory %v", mainPkgDir)
 	}

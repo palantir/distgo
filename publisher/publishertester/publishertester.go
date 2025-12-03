@@ -16,7 +16,6 @@ package publishertester
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -92,7 +91,7 @@ func RunAssetPublishTestWithAssets(t *testing.T,
 	require.NoError(t, err)
 
 	for i, tc := range testCases {
-		projectDir, err := ioutil.TempDir(tmpDir, "")
+		projectDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 
 		gittest.InitGitDir(t, projectDir)
@@ -107,7 +106,7 @@ func RunAssetPublishTestWithAssets(t *testing.T,
 		for _, k := range sortedKeys {
 			err = os.MkdirAll(path.Dir(path.Join(projectDir, k)), 0755)
 			require.NoError(t, err)
-			err = ioutil.WriteFile(path.Join(projectDir, k), []byte(tc.ConfigFiles[k]), 0644)
+			err = os.WriteFile(path.Join(projectDir, k), []byte(tc.ConfigFiles[k]), 0644)
 			require.NoError(t, err)
 		}
 

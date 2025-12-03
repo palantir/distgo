@@ -15,7 +15,7 @@
 package git_test
 
 import (
-	"io/ioutil"
+	"os"
 	"path"
 	"regexp"
 	"testing"
@@ -52,7 +52,7 @@ func TestProjectVersion(t *testing.T) {
 		{
 			gitOperations: func(gitDir string) {
 				gittest.CommitRandomFile(t, gitDir, "Second commit")
-				err = ioutil.WriteFile(path.Join(gitDir, "foo"), []byte("foo"), 0644)
+				err = os.WriteFile(path.Join(gitDir, "foo"), []byte("foo"), 0644)
 				require.NoError(t, err)
 			},
 			want: "^unspecified$",
@@ -86,7 +86,7 @@ func TestProjectVersion(t *testing.T) {
 		{
 			gitOperations: func(gitDir string) {
 				gittest.CreateGitTag(t, gitDir, "0.0.1")
-				err = ioutil.WriteFile(path.Join(gitDir, "foo"), []byte("foo"), 0644)
+				err = os.WriteFile(path.Join(gitDir, "foo"), []byte("foo"), 0644)
 				require.NoError(t, err)
 			},
 			want: "^" + regexp.QuoteMeta("0.0.1.dirty") + "$",
@@ -102,7 +102,7 @@ func TestProjectVersion(t *testing.T) {
 			gitOperations: func(gitDir string) {
 				gittest.CreateGitTag(t, gitDir, "0.0.1")
 				gittest.CommitRandomFile(t, gitDir, "Second commit")
-				err = ioutil.WriteFile(path.Join(gitDir, "foo"), []byte("foo"), 0644)
+				err = os.WriteFile(path.Join(gitDir, "foo"), []byte("foo"), 0644)
 				require.NoError(t, err)
 			},
 			want: "^" + regexp.QuoteMeta("0.0.1-1-g") + "[a-f0-9]{7}" + regexp.QuoteMeta(".dirty") + "$",
@@ -142,7 +142,7 @@ func TestProjectVersion(t *testing.T) {
 			want: "^" + regexp.QuoteMeta("0.0.2") + "$",
 		},
 	} {
-		currTmp, err := ioutil.TempDir(tmp, "")
+		currTmp, err := os.MkdirTemp(tmp, "")
 		require.NoError(t, err)
 
 		gittest.InitGitDir(t, currTmp)
@@ -204,7 +204,7 @@ func TestProjectVersionWithPrefix(t *testing.T) {
 			want:      "^" + regexp.QuoteMeta("@org/product-2@0.0.2-1-g") + "[a-f0-9]{7}$",
 		},
 	} {
-		currTmp, err := ioutil.TempDir(tmp, "")
+		currTmp, err := os.MkdirTemp(tmp, "")
 		require.NoError(t, err)
 
 		gittest.InitGitDir(t, currTmp)

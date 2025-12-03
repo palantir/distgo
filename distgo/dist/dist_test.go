@@ -16,7 +16,7 @@ package dist_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path"
 	"regexp"
@@ -248,19 +248,19 @@ func main() {}
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
 			validate: func(caseNum int, name, projectDir string) {
-				bytes, err := ioutil.ReadFile(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "dep-product-ids.txt"))
+				bytes, err := os.ReadFile(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "dep-product-ids.txt"))
 				assert.NoError(t, err, "Case %d: %s", caseNum, name)
 				assert.Equal(t, "1 bar\n", string(bytes), "Case %d: %s", caseNum, name)
 
-				bytes, err = ioutil.ReadFile(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "bar-build-dir.txt"))
+				bytes, err = os.ReadFile(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "bar-build-dir.txt"))
 				assert.NoError(t, err, "Case %d: %s", caseNum, name)
 				assert.Equal(t, fmt.Sprintf("%s\n", path.Join(projectDir, "out", "build", "bar", "0.1.0")), string(bytes), "Case %d: %s", caseNum, name)
 
-				bytes, err = ioutil.ReadFile(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "bar-dist-artifacts.txt"))
+				bytes, err = os.ReadFile(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "bar-dist-artifacts.txt"))
 				assert.NoError(t, err, "Case %d: %s", caseNum, name)
 				assert.Equal(t, fmt.Sprintf("bar-0.1.0-%v.tgz\n", osarch.Current()), string(bytes), "Case %d: %s", caseNum, name)
 
-				bytes, err = ioutil.ReadFile(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "bar-dist-dir.txt"))
+				bytes, err = os.ReadFile(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "bar-dist-dir.txt"))
 				assert.NoError(t, err, "Case %d: %s", caseNum, name)
 				assert.Equal(t, fmt.Sprintf("%s\n", path.Join(projectDir, "out", "dist", "bar", "0.1.0", "os-arch-bin")), string(bytes), "Case %d: %s", caseNum, name)
 			},
@@ -348,13 +348,13 @@ func main() {}
 				inputFile := path.Join(projectDir, "input-dir", "bar.txt")
 				err = os.MkdirAll(path.Dir(inputFile), 0755)
 				require.NoError(t, err)
-				err = ioutil.WriteFile(inputFile, []byte("bar\n"), 0644)
+				err = os.WriteFile(inputFile, []byte("bar\n"), 0644)
 				require.NoError(t, err)
 
 				inputFile = path.Join(projectDir, "input-dir", "foo-dir", "foo.txt")
 				err := os.MkdirAll(path.Dir(inputFile), 0755)
 				require.NoError(t, err)
-				err = ioutil.WriteFile(inputFile, []byte("foo\n"), 0644)
+				err = os.WriteFile(inputFile, []byte("foo\n"), 0644)
 				require.NoError(t, err)
 
 				gittest.CommitAllFiles(t, projectDir, "Commit input directory")
@@ -439,15 +439,15 @@ func main() {}
 			},
 		},
 	} {
-		projectDir, err := ioutil.TempDir(tmp, "")
+		projectDir, err := os.MkdirTemp(tmp, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		gittest.InitGitDir(t, projectDir)
 		err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		err = ioutil.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
+		err = os.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		err = ioutil.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
+		err = os.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 		gittest.CommitAllFiles(t, projectDir, "Commit")
 
@@ -459,7 +459,7 @@ func main() {}
 		projectInfo, err := projectParam.ProjectInfo(projectDir)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		err = dist.Products(projectInfo, projectParam, nil, tc.productDistIDs, false, true, ioutil.Discard)
+		err = dist.Products(projectInfo, projectParam, nil, tc.productDistIDs, false, true, io.Discard)
 		if tc.wantErrorRegexp == "" {
 			require.NoError(t, err, "Case %d: %s", i, tc.name)
 		} else {

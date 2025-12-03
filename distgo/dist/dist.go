@@ -17,7 +17,6 @@ package dist
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -175,7 +174,7 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, dryRu
 }
 
 func copyInputDir(inputDir string, exclude matcher.Matcher, dstDir string) error {
-	inputDirFiles, err := ioutil.ReadDir(inputDir)
+	inputDirFiles, err := os.ReadDir(inputDir)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list files in input directory %s", inputDir)
 	}

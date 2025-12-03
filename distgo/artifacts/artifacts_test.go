@@ -17,7 +17,8 @@ package artifacts_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"os"
 	"path"
 	"path/filepath"
 	"testing"
@@ -115,7 +116,7 @@ out/build/foo/unspecified/%v/foo
 			},
 		},
 	} {
-		projectDir, err := ioutil.TempDir(tmpDir, "")
+		projectDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		gittest.InitGitDir(t, projectDir)
@@ -224,7 +225,7 @@ func TestBuildArtifacts(t *testing.T) {
 			},
 		},
 	} {
-		currProjectDir, err := ioutil.TempDir(tmpDir, "")
+		currProjectDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 
 		projectInfo := distgo.ProjectInfo{
@@ -241,7 +242,7 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir(".", "")
 	require.NoError(t, err)
 	defer cleanup()
-	err = ioutil.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
 	require.NoError(t, err)
@@ -316,7 +317,7 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 				// build products
 				err := build.Run(projectInfo, productParams, build.Options{
 					Parallel: false,
-				}, ioutil.Discard)
+				}, io.Discard)
 				require.NoError(t, err)
 			},
 			want: func(projectDir string) map[distgo.ProductID][]string {
@@ -336,14 +337,14 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 				// build products
 				err := build.Run(projectInfo, params, build.Options{
 					Parallel: false,
-				}, ioutil.Discard)
+				}, io.Discard)
 				require.NoError(t, err)
 
 				// sleep to ensure that modification time will differ
 				time.Sleep(time.Second)
 
 				// update source file
-				err = ioutil.WriteFile(path.Join(projectInfo.ProjectDir, "main.go"), []byte("package main; func main(){}"), 0644)
+				err = os.WriteFile(path.Join(projectInfo.ProjectDir, "main.go"), []byte("package main; func main(){}"), 0644)
 				require.NoError(t, err)
 			},
 			want: func(projectDir string) map[distgo.ProductID][]string {
@@ -357,10 +358,10 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 			},
 		},
 	} {
-		currProjectDir, err := ioutil.TempDir(tmpDir, "")
+		currProjectDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 
-		err = ioutil.WriteFile(path.Join(currProjectDir, "main.go"), []byte("package main; func main(){}"), 0644)
+		err = os.WriteFile(path.Join(currProjectDir, "main.go"), []byte("package main; func main(){}"), 0644)
 		require.NoError(t, err)
 
 		projectInfo := distgo.ProjectInfo{
@@ -436,7 +437,7 @@ func TestDistArtifacts(t *testing.T) {
 			},
 		},
 	} {
-		currProjectDir, err := ioutil.TempDir(tmpDir, "")
+		currProjectDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 
 		projectInfo := distgo.ProjectInfo{
@@ -497,7 +498,7 @@ func TestPrintDockerArtifacts(t *testing.T) {
 		}),
 	}
 
-	projectDir, err := ioutil.TempDir(tmpDir, "")
+	projectDir, err := os.MkdirTemp(tmpDir, "")
 	require.NoError(t, err)
 	gittest.InitGitDir(t, projectDir)
 	gittest.CreateGitTag(t, projectDir, "0.1.0")
@@ -606,7 +607,7 @@ func TestDockerArtifacts(t *testing.T) {
 			},
 		},
 	} {
-		projectDir, err := ioutil.TempDir(tmpDir, "")
+		projectDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 		gittest.InitGitDir(t, projectDir)
 		gittest.CreateGitTag(t, projectDir, "0.1.0")

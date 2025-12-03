@@ -17,7 +17,6 @@ package clean
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"sort"
@@ -156,15 +155,20 @@ func removeDirIfEmpty(dirPath string, removedPaths map[string]struct{}, dryRun b
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		return false, nil
 	}
-	dirFiles, err := ioutil.ReadDir(dirPath)
+	dirEntries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to read directory: %s", dirPath)
 	}
 
+	var dirFiles []os.FileInfo
 	// if this is a dry run, determine the files that "should" exist
 	if dryRun {
 		var dryRunDirFiles []os.FileInfo
-		for _, currDirFile := range dirFiles {
+		for _, currDirEntry := range dirEntries {
+			currDirFile, err := currDirEntry.Info()
+			if err != nil {
+				return false, errors.Wrapf(err, "failed to read file info: %s", currDirEntry.Name())
+			}
 			if _, ok := removedPaths[path.Join(dirPath, currDirFile.Name())]; ok {
 				// path is a path marked for removal: do not consider it
 				continue

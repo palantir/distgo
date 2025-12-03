@@ -17,7 +17,6 @@ package osarchbin
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -103,7 +102,7 @@ func (d *Dister) GenerateDistArtifacts(distID distgo.DistID, productTaskOutputIn
 		}
 
 		workDir := filepath.Join(distWorkDir, currOSArch.String())
-		items, err := ioutil.ReadDir(workDir)
+		items, err := os.ReadDir(workDir)
 		if err != nil {
 			return errors.Wrap(err, "failed to list distribution items")
 		}

@@ -15,7 +15,6 @@
 package integration_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -174,7 +173,7 @@ Finished creating os-arch-bin distribution for foo
 					)
 					require.NoError(t, wantLayout.Validate(path.Join(projectDir, "out", "dist", "foo", "1.0.0"), nil))
 
-					dir, err := ioutil.TempDir("", "")
+					dir, err := os.MkdirTemp("", "")
 					require.NoError(t, err)
 
 					defer func() {
@@ -184,7 +183,7 @@ Finished creating os-arch-bin distribution for foo
 					dist := filepath.Join(projectDir, "out", "dist", "foo", "1.0.0", "os-arch-bin", "foo-1.0.0-linux-amd64.tgz")
 					require.NoError(t, archiver.DefaultTarGz.Unarchive(dist, dir))
 
-					arch, err := ioutil.ReadFile(filepath.Join(dir, "os-arch"))
+					arch, err := os.ReadFile(filepath.Join(dir, "os-arch"))
 					require.NoError(t, err)
 
 					binInfo, err := os.Stat(filepath.Join(dir, "foo"))

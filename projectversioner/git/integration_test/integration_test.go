@@ -15,7 +15,7 @@
 package integration
 
 import (
-	"io/ioutil"
+	"os"
 	"path"
 	"regexp"
 	"testing"
@@ -105,7 +105,7 @@ project-versioner:
 				Setup: func(testDir string) {
 					gittest.CommitRandomFile(t, testDir, "Initial commit")
 					gittest.CreateGitTag(t, testDir, "1.0.0")
-					err := ioutil.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
+					err := os.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
 					require.NoError(t, err)
 				},
 				WantOutput: func(projectDir string) *regexp.Regexp {
@@ -143,7 +143,7 @@ project-versioner:
 					gittest.CommitRandomFile(t, testDir, "Initial commit")
 					gittest.CreateGitTag(t, testDir, "1.0.0")
 					gittest.CommitRandomFile(t, testDir, "Test commit message")
-					err := ioutil.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
+					err := os.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
 					require.NoError(t, err)
 				},
 				WantOutput: func(projectDir string) *regexp.Regexp {

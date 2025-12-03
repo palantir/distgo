@@ -16,7 +16,7 @@ package projectversion_test
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"path"
 	"regexp"
 	"testing"
@@ -61,7 +61,7 @@ func TestProjectVersionDefaultParam(t *testing.T) {
 			func(testDir string) {
 				gittest.CommitRandomFile(t, testDir, "Initial commit")
 				gittest.CreateGitTag(t, testDir, "1.0.0")
-				err := ioutil.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
+				err := os.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
 				require.NoError(t, err)
 			},
 			`^` + regexp.QuoteMeta("1.0.0.dirty") + `\n$`,
@@ -82,13 +82,13 @@ func TestProjectVersionDefaultParam(t *testing.T) {
 				gittest.CommitRandomFile(t, testDir, "Initial commit")
 				gittest.CreateGitTag(t, testDir, "1.0.0")
 				gittest.CommitRandomFile(t, testDir, "Test commit message")
-				err := ioutil.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
+				err := os.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
 				require.NoError(t, err)
 			},
 			`^` + regexp.QuoteMeta("1.0.0-1-g") + `[a-f0-9]{7}` + regexp.QuoteMeta(`.dirty`) + `\n$`,
 		},
 	} {
-		projectDir, err := ioutil.TempDir(rootDir, "")
+		projectDir, err := os.MkdirTemp(rootDir, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		gittest.InitGitDir(t, projectDir)
@@ -136,7 +136,7 @@ echo "3.2.1"
 			`^` + regexp.QuoteMeta("3.2.1") + `\n$`,
 		},
 	} {
-		projectDir, err := ioutil.TempDir(rootDir, "")
+		projectDir, err := os.MkdirTemp(rootDir, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		gittest.InitGitDir(t, projectDir)
