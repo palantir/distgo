@@ -157,7 +157,7 @@ func init() {
 }
 
 func distgoProjectParamFromFlags() (distgo.ProjectInfo, distgo.ProjectParam, error) {
-	return distgoProjectParamFromVals(projectDirFlagVal, distgoConfigFileFlagVal, godelConfigFileFlagVal, cliProjectVersionerFactory, cliDisterFactory, cliDefaultDisterCfg, cliDockerBuilderFactory, cliPublisherFactory)
+	return distgoProjectParamFromVals(projectDirFlagVal, distgoConfigFileFlagVal, godelConfigFileFlagVal, cliProjectVersionerFactory, cliDisterFactory, cliDefaultDisterCfg, cliDockerBuilderFactory)
 }
 
 func distgoConfigModTime() *time.Time {
@@ -172,7 +172,7 @@ func distgoConfigModTime() *time.Time {
 	return &modTime
 }
 
-func distgoProjectParamFromVals(projectDir, distgoConfigFile, godelConfigFile string, projectVersionerFactory distgo.ProjectVersionerFactory, disterFactory distgo.DisterFactory, defaultDisterCfg config.DisterConfig, dockerBuilderFactory distgo.DockerBuilderFactory, publisherFactory distgo.PublisherFactory) (distgo.ProjectInfo, distgo.ProjectParam, error) {
+func distgoProjectParamFromVals(projectDir, distgoConfigFile, godelConfigFile string, projectVersionerFactory distgo.ProjectVersionerFactory, disterFactory distgo.DisterFactory, defaultDisterCfg config.DisterConfig, dockerBuilderFactory distgo.DockerBuilderFactory) (distgo.ProjectInfo, distgo.ProjectParam, error) {
 	var distgoCfg config.ProjectConfig
 	if distgoConfigFile != "" {
 		cfg, err := loadConfigFromFile(distgoConfigFile)
@@ -188,7 +188,7 @@ func distgoProjectParamFromVals(projectDir, distgoConfigFile, godelConfigFile st
 		}
 		distgoCfg.Exclude.Add(excludes)
 	}
-	projectParam, err := distgoCfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
+	projectParam, err := distgoCfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory)
 	if err != nil {
 		return distgo.ProjectInfo{}, distgo.ProjectParam{}, err
 	}

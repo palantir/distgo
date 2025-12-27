@@ -37,7 +37,6 @@ import (
 	"github.com/palantir/distgo/dockerbuilder/dockerbuilderfactory"
 	"github.com/palantir/distgo/internal/files"
 	"github.com/palantir/distgo/projectversioner/projectversionerfactory"
-	"github.com/palantir/distgo/publisher/publisherfactory"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/gittest"
 	"github.com/stretchr/testify/assert"
@@ -511,10 +510,8 @@ func TestPrintDockerArtifacts(t *testing.T) {
 	require.NoError(t, err)
 	dockerBuilderFactory, err := dockerbuilderfactory.New(nil, nil)
 	require.NoError(t, err)
-	publisherFactory, err := publisherfactory.New(nil, nil)
-	require.NoError(t, err)
 
-	projectParam, err := cfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
+	projectParam, err := cfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory)
 	require.NoError(t, err)
 
 	projectInfo, err := projectParam.ProjectInfo(projectDir)
@@ -620,10 +617,8 @@ func TestDockerArtifacts(t *testing.T) {
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 		dockerBuilderFactory, err := dockerbuilderfactory.New(nil, nil)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		publisherFactory, err := publisherfactory.New(nil, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		projectParam, err := tc.cfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
+		projectParam, err := tc.cfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		projectInfo, err := projectParam.ProjectInfo(projectDir)
