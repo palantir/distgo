@@ -56,7 +56,7 @@ func (p *testPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	return nil, nil
 }
 
-func (p *testPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]interface{}, dryRun bool, stdout io.Writer) error {
+func (p *testPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
 	productDistArtifactPaths := productTaskOutputInfo.ProductDistArtifactPaths()
 	var distIDs []distgo.DistID
 	for distID := range productDistArtifactPaths {
@@ -222,7 +222,7 @@ func stringPtr(in string) *string {
 	return &in
 }
 
-func mustMapSlicePtr(in interface{}) *yaml.MapSlice {
+func mustMapSlicePtr(in any) *yaml.MapSlice {
 	out, err := distgo.ToMapSlice(in)
 	if err != nil {
 		panic(err)

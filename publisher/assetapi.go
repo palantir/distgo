@@ -106,7 +106,7 @@ func newRunPublishCmd(publisher distgo.Publisher) *cobra.Command {
 			if err := json.Unmarshal([]byte(productTaskOutputInfoFlagVal), &productTaskOutputInfo); err != nil {
 				return errors.Wrapf(err, "failed to unmarshal JSON %s", productTaskOutputInfoFlagVal)
 			}
-			var flagVals map[distgo.PublisherFlagName]interface{}
+			var flagVals map[distgo.PublisherFlagName]any
 			if err := json.Unmarshal([]byte(flagValsFlagVal), &flagVals); err != nil {
 				return errors.Wrapf(err, "failed to unmarshal JSON %s", flagValsFlagVal)
 			}
@@ -115,7 +115,7 @@ func newRunPublishCmd(publisher distgo.Publisher) *cobra.Command {
 	}
 	runDistCmd.Flags().StringVar(&productTaskOutputInfoFlagVal, runPublishCmdProductTaskOutputInfoFlagName, "", "JSON representation of distgo.ProductTaskOutputInfo")
 	runDistCmd.Flags().StringVar(&configYMLFlagVal, runPublishCmdConfigYMLFlagName, "", "the configuration YML for this publish operation")
-	runDistCmd.Flags().StringVar(&flagValsFlagVal, runPublishCmdFlagValsFlagName, "", "JSON representation of map[distgo.PublisherFlag]interface{}")
+	runDistCmd.Flags().StringVar(&flagValsFlagVal, runPublishCmdFlagValsFlagName, "", "JSON representation of map[distgo.PublisherFlag]any")
 	runDistCmd.Flags().BoolVar(&dryRunFlagVal, runPublishCmdDryRunFlagName, false, "true if the operation should be run as a dry run")
 	mustMarkFlagsRequired(runDistCmd,
 		runPublishCmdProductTaskOutputInfoFlagName,

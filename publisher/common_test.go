@@ -29,7 +29,7 @@ func TestSetConfigValueString(t *testing.T) {
 		Name: "foo",
 		Type: distgo.StringFlag,
 	}
-	flagVals := map[distgo.PublisherFlagName]interface{}{
+	flagVals := map[distgo.PublisherFlagName]any{
 		flag.Name: valProvidedInFlag,
 	}
 	cfg := struct {
@@ -50,7 +50,7 @@ func TestSetConfigValueBool(t *testing.T) {
 		Name: "foo",
 		Type: distgo.BoolFlag,
 	}
-	flagVals := map[distgo.PublisherFlagName]interface{}{
+	flagVals := map[distgo.PublisherFlagName]any{
 		flag.Name: valProvidedInFlag,
 	}
 	cfg := struct {
@@ -69,7 +69,7 @@ func TestSetConfigValueDoesNotChangeIfFlagNotSet(t *testing.T) {
 		Name: "foo",
 		Type: distgo.StringFlag,
 	}
-	flagVals := map[distgo.PublisherFlagName]interface{}{}
+	flagVals := map[distgo.PublisherFlagName]any{}
 	cfg := struct {
 		FooVal string
 	}{
@@ -88,7 +88,7 @@ func TestSetConfigValueFailsIfTypeDoesNotMatch(t *testing.T) {
 		Name: "foo",
 		Type: distgo.BoolFlag,
 	}
-	flagVals := map[distgo.PublisherFlagName]interface{}{
+	flagVals := map[distgo.PublisherFlagName]any{
 		flag.Name: valProvidedInFlag,
 	}
 	cfg := struct {
@@ -105,7 +105,7 @@ func TestSetConfigValueFailsIfProvidedValNotPointer(t *testing.T) {
 		Name: "foo",
 		Type: distgo.StringFlag,
 	}
-	flagVals := map[distgo.PublisherFlagName]interface{}{
+	flagVals := map[distgo.PublisherFlagName]any{
 		flag.Name: valProvidedInFlag,
 	}
 	cfg := struct {

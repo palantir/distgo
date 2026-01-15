@@ -121,7 +121,7 @@ func (p *DisterParam) ToDistOutputInfo(productName, version string) (DistOutputI
 	}, nil
 }
 
-func ToMapSlice(in interface{}) (yaml.MapSlice, error) {
+func ToMapSlice(in any) (yaml.MapSlice, error) {
 	bytes, err := yaml.Marshal(in)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal input as YAML")

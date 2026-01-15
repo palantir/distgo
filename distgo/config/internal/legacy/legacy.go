@@ -179,7 +179,7 @@ type DistInfo struct {
 	Type string `yaml:"type,omitempty"`
 
 	// Info is the configuration content of the dist info.
-	Info interface{} `yaml:"info,omitempty"`
+	Info any `yaml:"info,omitempty"`
 }
 
 type DistInfoType string
@@ -243,7 +243,7 @@ type SLSDist struct {
 	ProductType string `yaml:"product-type,omitempty"`
 
 	// ManifestExtensions contain the SLS manifest extensions for the distribution.
-	ManifestExtensions map[string]interface{} `yaml:"manifest-extensions,omitempty"`
+	ManifestExtensions map[string]any `yaml:"manifest-extensions,omitempty"`
 
 	// Reloadable will enable the `init.sh reload` command which sends SIGHUP to the process.
 	Reloadable bool `yaml:"reloadable,omitempty"`
@@ -292,16 +292,16 @@ type DockerImage struct {
 }
 
 type DockerImageInfo struct {
-	Type string      `yaml:"type,omitempty"`
-	Data interface{} `yaml:"data,omitempty"`
+	Type string `yaml:"type,omitempty"`
+	Data any    `yaml:"data,omitempty"`
 }
 
 type SLSDockerImageInfo struct {
 	Legacy bool `yaml:"legacy-config,omitempty"`
 
-	GroupID      string                 `yaml:"group-id,omitempty"`
-	ProuductType string                 `yaml:"product-type,omitempty"`
-	Extensions   map[string]interface{} `yaml:"manifest-extensions,omitempty"`
+	GroupID      string         `yaml:"group-id,omitempty"`
+	ProuductType string         `yaml:"product-type,omitempty"`
+	Extensions   map[string]any `yaml:"manifest-extensions,omitempty"`
 }
 
 type Publish struct {
@@ -324,7 +324,7 @@ type Almanac struct {
 
 type RawDistConfigs []Dist
 
-func (out *RawDistConfigs) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (out *RawDistConfigs) UnmarshalYAML(unmarshal func(any) error) error {
 	var multiple []Dist
 	if err := unmarshal(&multiple); err == nil {
 		if len(multiple) == 0 {
@@ -343,7 +343,7 @@ func (out *RawDistConfigs) UnmarshalYAML(unmarshal func(interface{}) error) erro
 	return nil
 }
 
-func (cfg *DistInfo) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (cfg *DistInfo) UnmarshalYAML(unmarshal func(any) error) error {
 	// unmarshal type alias (uses default unmarshal strategy)
 	type rawDistInfoConfigAlias DistInfo
 	var rawAliasConfig rawDistInfoConfigAlias
@@ -408,7 +408,7 @@ func (cfg *DistInfo) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-func (cfg *DockerImageInfo) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (cfg *DockerImageInfo) UnmarshalYAML(unmarshal func(any) error) error {
 	// unmarshal type alias (uses default unmarshal strategy)
 	type rawImageInfoConfigAlias DockerImageInfo
 	var rawAliasConfig rawImageInfoConfigAlias

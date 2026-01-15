@@ -54,7 +54,7 @@ func (p *assetPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	return flags, nil
 }
 
-func (p *assetPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]interface{}, dryRun bool, stdout io.Writer) error {
+func (p *assetPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
 	productTaskOutputInfoJSON, err := json.Marshal(productTaskOutputInfo)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal JSON for productTaskOutputInfo")

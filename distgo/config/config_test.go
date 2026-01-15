@@ -152,11 +152,11 @@ echo "main.year=$YEAR"
 											Value: yaml.MapSlice{
 												{
 													Key:   "names",
-													Value: []interface{}{"foo"},
+													Value: []any{"foo"},
 												},
 												{
 													Key:   "paths",
-													Value: []interface{}{"bar"},
+													Value: []any{"bar"},
 												},
 											},
 										},
@@ -248,7 +248,7 @@ products:
 									Config: &yaml.MapSlice{
 										{
 											Key: "os-archs",
-											Value: []interface{}{
+											Value: []any{
 												yaml.MapSlice{
 													{
 														Key:   "os",

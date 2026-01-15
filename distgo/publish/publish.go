@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDistIDs []distgo.ProductDistID, publisher distgo.Publisher, flagVals map[distgo.PublisherFlagName]interface{}, dryRun bool, stdout io.Writer) error {
+func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDistIDs []distgo.ProductDistID, publisher distgo.Publisher, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
 	// run dist for products (will only run dist for productDistIDs that require dist artifact generation)
 	if err := dist.Products(projectInfo, projectParam, configModTime, productDistIDs, dryRun, true, stdout); err != nil {
 		return err
@@ -46,7 +46,7 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 // Run executes the publish action for the specified product. Produces both the dist output directory and the dist
 // artifacts for the product. The outputs for the dependent products for the provided product must already exist in the
 // proper locations.
-func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publisher distgo.Publisher, flagVals map[distgo.PublisherFlagName]interface{}, dryRun bool, stdout io.Writer) error {
+func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publisher distgo.Publisher, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
 	if productParam.Dist == nil {
 		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("%s does not have dist outputs; skipping publish", productParam.ID), dryRun)
 		return nil

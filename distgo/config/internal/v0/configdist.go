@@ -68,7 +68,7 @@ type InputDirConfig struct {
 	Exclude matcher.NamesPathsCfg `yaml:"exclude,omitempty"`
 }
 
-func (cfg InputDirConfig) MarshalYAML() (interface{}, error) {
+func (cfg InputDirConfig) MarshalYAML() (any, error) {
 	if cfg.Exclude.Empty() {
 		// if exclude configuration is empty, marshal as string (shorthand form)
 		return cfg, nil
@@ -80,7 +80,7 @@ func (cfg InputDirConfig) MarshalYAML() (interface{}, error) {
 	return cfgVal, nil
 }
 
-func (cfg *InputDirConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (cfg *InputDirConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	// if configuration is specified as string only, consider as just a path
 	var pathVal string
 	if err := unmarshal(&pathVal); err == nil && pathVal != "" {
@@ -102,7 +102,7 @@ func (cfg *InputDirConfig) UnmarshalYAML(unmarshal func(interface{}) error) erro
 
 type DistersConfig map[distgo.DistID]DisterConfig
 
-func (cfgs *DistersConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (cfgs *DistersConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	var single DisterConfig
 	if err := unmarshal(&single); err == nil && single.Type != nil {
 		// only consider single configuration valid if it unmarshals and "type" key is explicitly specified
