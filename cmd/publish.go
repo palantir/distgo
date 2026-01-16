@@ -53,7 +53,7 @@ func addPublishSubcommands(publisherTypes []string, publishers []distgo.Publishe
 				if err != nil {
 					return err
 				}
-				flagVals := make(map[distgo.PublisherFlagName]interface{})
+				flagVals := make(map[distgo.PublisherFlagName]any)
 				for _, currFlag := range currFlags {
 					// if flag was not explicitly provided, don't add it to the flagVals map
 					if !cmd.Flags().Changed(string(currFlag.Name)) {

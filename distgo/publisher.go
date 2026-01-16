@@ -31,7 +31,7 @@ type Publisher interface {
 	// RunPublish runs the publish task. When this function is called, the distribution artifacts for the product should
 	// already exist. If dryRun is true, then the task should print the operations that would occur without actually
 	// executing them.
-	RunPublish(productTaskOutputInfo ProductTaskOutputInfo, cfgYML []byte, flagVals map[PublisherFlagName]interface{}, dryRun bool, stdout io.Writer) error
+	RunPublish(productTaskOutputInfo ProductTaskOutputInfo, cfgYML []byte, flagVals map[PublisherFlagName]any, dryRun bool, stdout io.Writer) error
 }
 
 type PublisherFactory interface {
@@ -50,7 +50,7 @@ type PublisherFlag struct {
 
 // AddFlag adds the flag represented by PublisherFlag to the provided pflag.FlagSet. Returns the pointer to the value
 // that can be used to retrieve the value.
-func (f PublisherFlag) AddFlag(fset *pflag.FlagSet) (interface{}, error) {
+func (f PublisherFlag) AddFlag(fset *pflag.FlagSet) (any, error) {
 	switch f.Type {
 	case StringFlag:
 		return fset.String(string(f.Name), "", f.Description), nil
@@ -61,8 +61,8 @@ func (f PublisherFlag) AddFlag(fset *pflag.FlagSet) (interface{}, error) {
 	}
 }
 
-func (f PublisherFlag) GetFlagValue(fset *pflag.FlagSet) (interface{}, error) {
-	var val interface{}
+func (f PublisherFlag) GetFlagValue(fset *pflag.FlagSet) (any, error) {
+	var val any
 	var err error
 	switch f.Type {
 	case StringFlag:
@@ -77,7 +77,7 @@ func (f PublisherFlag) GetFlagValue(fset *pflag.FlagSet) (interface{}, error) {
 
 // ToFlagArgs takes the input parameter (which should be the value returned by calling AddFlag for the receiver) and
 // returns a string slice that reconstructs the flag arguments for the given flag.
-func (f PublisherFlag) ToFlagArgs(flagVal interface{}) ([]string, error) {
+func (f PublisherFlag) ToFlagArgs(flagVal any) ([]string, error) {
 	switch f.Type {
 	case StringFlag:
 		flagValStr := flagVal.(*string)

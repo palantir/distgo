@@ -96,7 +96,7 @@ func (p *githubPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	}, nil
 }
 
-func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]interface{}, dryRun bool, stdout io.Writer) error {
+func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
 	var cfg config.GitHub
 	if err := yaml.Unmarshal(cfgYML, &cfg); err != nil {
 		return errors.Wrapf(err, "failed to unmarshal configuration")
@@ -224,7 +224,7 @@ func uploadURIForProduct(githubUploadURLTemplate, name string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse upload URI template %q", githubUploadURLTemplate)
 	}
-	uploadURI, err := t.Expand(map[string]interface{}{
+	uploadURI, err := t.Expand(map[string]any{
 		nameTemplate: name,
 	})
 	if err != nil {

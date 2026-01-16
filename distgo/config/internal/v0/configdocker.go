@@ -93,7 +93,7 @@ type TagTemplatesMap struct {
 	OrderedKeys []distgo.DockerTagID
 }
 
-func (t *TagTemplatesMap) MarshalYAML() (interface{}, error) {
+func (t *TagTemplatesMap) MarshalYAML() (any, error) {
 	if t == nil || t.Templates == nil {
 		return nil, nil
 	}
@@ -107,7 +107,7 @@ func (t *TagTemplatesMap) MarshalYAML() (interface{}, error) {
 	return out, nil
 }
 
-func (t *TagTemplatesMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (t *TagTemplatesMap) UnmarshalYAML(unmarshal func(any) error) error {
 	var strVal string
 	if err := unmarshal(&strVal); err == nil && strVal != "" {
 		// value is specified as single string: unmarshal with default key

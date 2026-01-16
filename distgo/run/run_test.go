@@ -213,7 +213,7 @@ func main() {
 				require.NoError(t, err)
 				err = os.WriteFile(path.Join(projectDir, "foo", "other_main_file.go"), []byte(`package main
 import "fmt"
-func bar(a ...interface{}) (n int, err error) {
+func bar(a ...any) (n int, err error) {
 	return fmt.Println(a...)
 }
 `), 0644)

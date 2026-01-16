@@ -63,7 +63,7 @@ func (p *mavenLocalPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	}, nil
 }
 
-func (p *mavenLocalPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]interface{}, dryRun bool, stdout io.Writer) error {
+func (p *mavenLocalPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
 	var cfg config.MavenLocal
 	if err := yaml.Unmarshal(cfgYML, &cfg); err != nil {
 		return errors.Wrapf(err, "failed to unmarshal configuration")

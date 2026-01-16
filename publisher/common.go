@@ -143,7 +143,7 @@ type BasicConnectionInfo struct {
 	Password string `yaml:"password,omitempty"`
 }
 
-func (b *BasicConnectionInfo) SetValuesFromFlags(flagVals map[distgo.PublisherFlagName]interface{}) error {
+func (b *BasicConnectionInfo) SetValuesFromFlags(flagVals map[distgo.PublisherFlagName]any) error {
 	if err := SetRequiredStringConfigValue(flagVals, ConnectionInfoURLFlag, &b.URL); err != nil {
 		return err
 	}
@@ -286,7 +286,7 @@ func MavenProductPath(productTaskOutputInfo distgo.ProductTaskOutputInfo, groupI
 // contains a non-empty string value for the GroupIDFlag, that value is used. Otherwise, if the PublishOutputInfo for
 // the provided ProductTaskOutputInfo is non-nil, its GroupID value is returned. Returns an empty string if no GroupID
 // value is specified.
-func GetRequiredGroupID(flagVals map[distgo.PublisherFlagName]interface{}, productTaskOutputInfo distgo.ProductTaskOutputInfo) (string, error) {
+func GetRequiredGroupID(flagVals map[distgo.PublisherFlagName]any, productTaskOutputInfo distgo.ProductTaskOutputInfo) (string, error) {
 	if flagVal, ok := flagVals[GroupIDFlag.Name]; ok {
 		if groupIDFlagVal := flagVal.(string); groupIDFlagVal != "" {
 			return groupIDFlagVal, nil
@@ -301,7 +301,7 @@ func GetRequiredGroupID(flagVals map[distgo.PublisherFlagName]interface{}, produ
 // GetArtifactNamesFilterFlagValue returns the regular expression specified by the ArtifactNamesFilterFlag in the
 // provided flagVals map. Returns nil if a value was not specified for the flag or if it was blank. Returns an error if
 // a regular expression was specified but is not valid.
-func GetArtifactNamesFilterFlagValue(flagVals map[distgo.PublisherFlagName]interface{}) (*regexp.Regexp, error) {
+func GetArtifactNamesFilterFlagValue(flagVals map[distgo.PublisherFlagName]any) (*regexp.Regexp, error) {
 	re, err := getRegularExpressionFlagValue(flagVals, ArtifactNamesFilterFlag.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid value for flag %q", ArtifactNamesFilterFlag.Name)
@@ -312,7 +312,7 @@ func GetArtifactNamesFilterFlagValue(flagVals map[distgo.PublisherFlagName]inter
 // GetArtifactNamesExcludeFlagValue returns the regular expression specified by the ArtifactNamesExcludeFlag in the
 // provided flagVals map. Returns nil if a value was not specified for the flag or if it was blank. Returns an error if
 // a regular expression was specified but is not valid.
-func GetArtifactNamesExcludeFlagValue(flagVals map[distgo.PublisherFlagName]interface{}) (*regexp.Regexp, error) {
+func GetArtifactNamesExcludeFlagValue(flagVals map[distgo.PublisherFlagName]any) (*regexp.Regexp, error) {
 	re, err := getRegularExpressionFlagValue(flagVals, ArtifactNamesExcludeFlag.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid value for flag %q", ArtifactNamesExcludeFlag.Name)
@@ -320,7 +320,7 @@ func GetArtifactNamesExcludeFlagValue(flagVals map[distgo.PublisherFlagName]inte
 	return re, nil
 }
 
-func getRegularExpressionFlagValue(flagVals map[distgo.PublisherFlagName]interface{}, flagName distgo.PublisherFlagName) (*regexp.Regexp, error) {
+func getRegularExpressionFlagValue(flagVals map[distgo.PublisherFlagName]any, flagName distgo.PublisherFlagName) (*regexp.Regexp, error) {
 	if flagVal, ok := flagVals[flagName]; ok {
 		if regexpFlagVal := flagVal.(string); regexpFlagVal != "" {
 			re, err := regexp.Compile(regexpFlagVal)
@@ -363,7 +363,7 @@ func PropertyNotSpecifiedError(flag distgo.PublisherFlag) error {
 	return errors.Errorf("%s was not specified -- it must be specified in configuration or using a flag", flag.Name)
 }
 
-func SetRequiredStringConfigValues(flagVals map[distgo.PublisherFlagName]interface{}, flagAndStringPtrs ...interface{}) error {
+func SetRequiredStringConfigValues(flagVals map[distgo.PublisherFlagName]any, flagAndStringPtrs ...any) error {
 	if len(flagAndStringPtrs)%2 != 0 {
 		return errors.Errorf("flagsAndStringPtrs parameters must be specified in pairs, got %d", len(flagAndStringPtrs))
 	}
@@ -375,7 +375,7 @@ func SetRequiredStringConfigValues(flagVals map[distgo.PublisherFlagName]interfa
 	return nil
 }
 
-func SetRequiredStringConfigValue(flagVals map[distgo.PublisherFlagName]interface{}, flag distgo.PublisherFlag, stringPtr *string) error {
+func SetRequiredStringConfigValue(flagVals map[distgo.PublisherFlagName]any, flag distgo.PublisherFlag, stringPtr *string) error {
 	if err := SetConfigValue(flagVals, flag, stringPtr); err != nil {
 		return err
 	}
@@ -385,7 +385,7 @@ func SetRequiredStringConfigValue(flagVals map[distgo.PublisherFlagName]interfac
 	return nil
 }
 
-func SetConfigValues(flagVals map[distgo.PublisherFlagName]interface{}, flagAndPtrs ...interface{}) error {
+func SetConfigValues(flagVals map[distgo.PublisherFlagName]any, flagAndPtrs ...any) error {
 	if len(flagAndPtrs)%2 != 0 {
 		return errors.Errorf("flagAndPtrs parameters must be specified in pairs, got %d", len(flagAndPtrs))
 	}
@@ -397,7 +397,7 @@ func SetConfigValues(flagVals map[distgo.PublisherFlagName]interface{}, flagAndP
 	return nil
 }
 
-func SetConfigValue(flagVals map[distgo.PublisherFlagName]interface{}, flag distgo.PublisherFlag, configValPtr interface{}) error {
+func SetConfigValue(flagVals map[distgo.PublisherFlagName]any, flag distgo.PublisherFlag, configValPtr any) error {
 	configValPtrType := reflect.TypeOf(configValPtr)
 	if configValPtrType.Kind() != reflect.Ptr {
 		return errors.Errorf("configValPtr type %q is not a pointer type", configValPtrType)

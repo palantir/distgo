@@ -39,7 +39,7 @@ const TypeName = "artifactory" // publishes output artifacts to Artifactory
 
 type Publisher interface {
 	distgo.Publisher
-	ArtifactoryRunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]interface{}, dryRun bool, stdout io.Writer) ([]string, error)
+	ArtifactoryRunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) ([]string, error)
 }
 
 func PublisherCreator() publisher.Creator {
@@ -76,12 +76,12 @@ func (p *artifactoryPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	), nil
 }
 
-func (p *artifactoryPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]interface{}, dryRun bool, stdout io.Writer) error {
+func (p *artifactoryPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
 	_, err := p.ArtifactoryRunPublish(productTaskOutputInfo, cfgYML, flagVals, dryRun, stdout)
 	return err
 }
 
-func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]interface{}, dryRun bool, stdout io.Writer) ([]string, error) {
+func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) ([]string, error) {
 	var cfg config.Artifactory
 	if err := yaml.Unmarshal(cfgYML, &cfg); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal configuration")

@@ -60,17 +60,17 @@ func RepositoryLiteralTemplateFunction(repository string) TemplateFunction {
 	return TemplateValueFunction("RepositoryLiteral", repository)
 }
 
-func TemplateValueFunction(key string, val interface{}) TemplateFunction {
+func TemplateValueFunction(key string, val any) TemplateFunction {
 	return func(fnMap template.FuncMap) {
-		fnMap[key] = func() interface{} {
+		fnMap[key] = func() any {
 			return val
 		}
 	}
 }
 
-func RenderTemplate(tmplContent string, data interface{}, fns ...TemplateFunction) (string, error) {
+func RenderTemplate(tmplContent string, data any, fns ...TemplateFunction) (string, error) {
 	tmpl := template.New("distgoTemplate")
-	tmplFuncs := make(map[string]interface{})
+	tmplFuncs := make(map[string]any)
 	for _, fn := range fns {
 		fn(tmplFuncs)
 	}

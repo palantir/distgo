@@ -37,7 +37,7 @@ func getConfigStringValue(primaryPtr, secondaryPtr *string, defaultVal string) s
 // pointer value of "secondaryValPtr" is non-nil, its value is returned. If the pointer values of both "primaryValPtr"
 // and "secondaryValPtr" are nil, "defaultVal" is returned. As a special case, if "defaultVal" is a raw/untyped nil,
 // then the defaultVal will be the zero value of the type pointed to by the valPtr inputs.
-func getConfigValue(primaryValPtr, secondaryValPtr, defaultVal interface{}) interface{} {
+func getConfigValue(primaryValPtr, secondaryValPtr, defaultVal any) any {
 	t1 := reflect.TypeOf(primaryValPtr)
 	t2 := reflect.TypeOf(secondaryValPtr)
 	if t1 != t2 {
