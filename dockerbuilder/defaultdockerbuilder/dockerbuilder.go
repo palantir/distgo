@@ -81,6 +81,7 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		"buildx",
 		"build",
 		"--file", filepath.Join(contextDirPath, dockerBuilderOutputInfo.DockerfilePath),
+		"--build-arg", "SOURCE_DATE_EPOCH=0",
 	}
 	for _, tag := range dockerBuilderOutputInfo.RenderedTags {
 		args = append(args,
@@ -111,7 +112,7 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		}
 		destFile := filepath.Join(destDir, "image.tar")
 
-		ociArgs := append(args, d.BuildxPlatformArg, fmt.Sprintf("--output=type=oci,dest=%s", destFile), contextDirPath)
+		ociArgs := append(args, d.BuildxPlatformArg, fmt.Sprintf("--output=type=oci,rewrite-timestamp=true,dest=%s", destFile), contextDirPath)
 		cmd := exec.Command("docker", ociArgs...)
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 			return err
@@ -123,7 +124,7 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		}
 	}
 	if d.OutputType&DockerDaemon != 0 {
-		daemonArgs := append(args, "--output=type=docker", contextDirPath)
+		daemonArgs := append(args, "--output=type=docker,rewrite-timestamp=true", contextDirPath)
 		cmd := exec.Command("docker", daemonArgs...)
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 			return err
