@@ -139,7 +139,11 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 // we know all the rendered tags at publish time, we can move the "actual" image index back to the top level and do a
 // publish per-tag.
 func (d *DefaultDockerBuilder) extractToOCILayout(destOCILayoutDir, sourceOCITarball string) error {
-	if err := archiver.DefaultTar.Unarchive(sourceOCITarball, destOCILayoutDir); err != nil {
+	unarchiver := &archiver.Tar{
+		OverwriteExisting: true,
+		MkdirAll:          true,
+	}
+	if err := unarchiver.Unarchive(sourceOCITarball, destOCILayoutDir); err != nil {
 		return errors.Wrapf(err, "failed to extract OCI tarball %s to location %s", sourceOCITarball, destOCILayoutDir)
 	}
 	index, err := layout.ImageIndexFromPath(destOCILayoutDir)
