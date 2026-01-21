@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Publish now ignore distributions missing on disk if run with `--dry-run`
+  links:
+  - https://github.com/palantir/distgo/pull/360
