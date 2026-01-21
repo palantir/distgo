@@ -35,7 +35,6 @@ import (
 	"github.com/palantir/distgo/dockerbuilder"
 	"github.com/palantir/distgo/dockerbuilder/dockerbuilderfactory"
 	"github.com/palantir/distgo/projectversioner/projectversionerfactory"
-	"github.com/palantir/distgo/publisher/publisherfactory"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/gittest"
 	"github.com/pkg/errors"
@@ -777,10 +776,8 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 		dockerBuilderFactory, err := dockerbuilderfactory.New([]dockerbuilder.Creator{dockerbuilder.NewCreator(printDockerfileDockerBuilderTypeName, newPrintDockerfileBuilder)}, nil)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		publisherFactory, err := publisherfactory.New(nil, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		projectParam, err := tc.projectCfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
+		projectParam, err := tc.projectCfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory)
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		projectInfo, err := projectParam.ProjectInfo(projectDir)
