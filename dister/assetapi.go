@@ -17,8 +17,8 @@ package dister
 import (
 	"encoding/json"
 
-	"github.com/palantir/distgo/assetapi"
 	"github.com/palantir/distgo/distgo"
+	"github.com/palantir/distgo/internal/assetapi"
 	"github.com/palantir/godel/v2/framework/pluginapi"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
