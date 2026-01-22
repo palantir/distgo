@@ -77,17 +77,21 @@ func restoreRootFlagsFn() func() {
 // LoadAssets loads the distgo assets from the global program arguments and stores the returned assets in the
 // loadedAssets package-level variable.
 func LoadAssets(args []string) error {
+	// create the restoreFn to defer. Don't want to inline as part of defer
+	// itself because it's the function returned by restoreRootFlagsFn that
+	// should be deferred (and the logic to create it needs to run before defer).
 	restoreFn := restoreRootFlagsFn()
+	// restore the root flags to undo any parsing done by rootCmd.ParseFlags
+	defer restoreFn()
+
 	// parse the flags to retrieve the value of the "--assets" flag. Ignore any errors that occur in flag parsing so
 	// that, if provided flags are invalid, the regular logic handles the error printing.
 	_ = rootCmd.ParseFlags(args)
 	allAssets, err := assetapi.LoadAssets(assetsFlagVal)
-	loadedAssets = allAssets
-	// restore the root flags to undo any parsing done by rootCmd.ParseFlags
-	restoreFn()
 	if err != nil {
 		return errors.Wrapf(err, "failed to load distgo assets")
 	}
+	loadedAssets = allAssets
 	return nil
 }
 
@@ -151,7 +155,7 @@ func init() {
 	}
 }
 
-// addPublishCommandsFromAssets adds the publish commands provided by assets.
+// addPublishSubcommandsFromAssets adds the publish commands provided by assets.
 func addPublishSubcommandsFromAssets(publisherAssets []string) error {
 	assetPublishers, upgraderPublishers, err := publisher.AssetPublisherCreators(publisherAssets...)
 	if err != nil {
@@ -168,7 +172,7 @@ func addPublishSubcommandsFromAssets(publisherAssets []string) error {
 	for _, typeName := range publisherTypeNames {
 		currPublisher, err := cliPublisherFactory.NewPublisher(typeName)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create currPublisher %q", typeName)
+			return errors.Wrapf(err, "failed to create publisher %q", typeName)
 		}
 		publishers = append(publishers, currPublisher)
 	}
