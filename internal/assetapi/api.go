@@ -1,4 +1,4 @@
-// Copyright 2016 Palantir Technologies, Inc.
+// Copyright 2026 Palantir Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,8 +22,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// AssetType is the name of the type of asset.
 type AssetType string
 
+// Asset types supported by distgo.
 const (
 	Dister        AssetType = "dister"
 	Publisher     AssetType = "publisher"
@@ -45,18 +47,6 @@ func NewAssetTypeCmd(assetType AssetType) *cobra.Command {
 			return nil
 		},
 	}
-}
-
-func LoadAssets(assets []string) (map[AssetType][]string, error) {
-	loadedAssets := make(map[AssetType][]string)
-	for _, currAsset := range assets {
-		assetType, err := getAssetType(currAsset)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get asset type for asset %s", currAsset)
-		}
-		loadedAssets[assetType] = append(loadedAssets[assetType], currAsset)
-	}
-	return loadedAssets, nil
 }
 
 func getAssetType(assetPath string) (AssetType, error) {

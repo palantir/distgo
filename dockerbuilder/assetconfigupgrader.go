@@ -18,7 +18,7 @@ import (
 	"encoding/base64"
 	"os/exec"
 
-	"github.com/palantir/distgo/assetapi"
+	"github.com/palantir/distgo/internal/assetapi"
 	"github.com/pkg/errors"
 )
 
