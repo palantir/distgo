@@ -43,6 +43,9 @@ var (
 	godelConfigFileFlagVal  string
 	assetsFlagVal           []string
 
+	// stores the loaded assets. Assigned once at program startup.
+	loadedAssets map[assetapi.AssetType][]string
+
 	cliProjectVersionerFactory distgo.ProjectVersionerFactory
 	cliDisterFactory           distgo.DisterFactory
 	cliDefaultDisterCfg        config.DisterConfig
@@ -71,20 +74,86 @@ func restoreRootFlagsFn() func() {
 	}
 }
 
-func InitAssetCmds(args []string) error {
+// LoadAssets loads the distgo assets from the global program arguments and stores the returned assets in the
+// loadedAssets package-level variable.
+func LoadAssets(args []string) error {
 	restoreFn := restoreRootFlagsFn()
 	// parse the flags to retrieve the value of the "--assets" flag. Ignore any errors that occur in flag parsing so
 	// that, if provided flags are invalid, the regular logic handles the error printing.
 	_ = rootCmd.ParseFlags(args)
 	allAssets, err := assetapi.LoadAssets(assetsFlagVal)
+	loadedAssets = allAssets
 	// restore the root flags to undo any parsing done by rootCmd.ParseFlags
 	restoreFn()
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to load distgo assets")
 	}
+	return nil
+}
 
-	// load publisher assets
-	assetPublishers, upgraderPublishers, err := publisher.AssetPublisherCreators(allAssets[assetapi.Publisher]...)
+// AddAssetCommands adds commands provided by assets. It is guaranteed that LoadAssets has been called before this
+// function, and thus loadedAssets is set/initialized.
+func AddAssetCommands() error {
+	// add publish subcommands from Publisher assets
+	if err := addPublishSubcommandsFromAssets(loadedAssets[assetapi.Publisher]); err != nil {
+		return errors.Wrapf(err, "failed to add publish subcommands from distgo assets")
+	}
+	return nil
+}
+
+func init() {
+	pluginapi.AddDebugPFlagPtr(rootCmd.PersistentFlags(), &debugFlagVal)
+	pluginapi.AddProjectDirPFlagPtr(rootCmd.PersistentFlags(), &projectDirFlagVal)
+	pluginapi.AddConfigPFlagPtr(rootCmd.PersistentFlags(), &distgoConfigFileFlagVal)
+	pluginapi.AddGodelConfigPFlagPtr(rootCmd.PersistentFlags(), &godelConfigFileFlagVal)
+	pluginapi.AddAssetsPFlagPtr(rootCmd.PersistentFlags(), &assetsFlagVal)
+
+	// Performs global initialization that can return errors.
+	// The logic in the function is run after the CLI command tree has been set up, so it cannot add or modify state
+	// that impacts the CLI command tree. Logic for adding commands from assets should be put in the AddAssetCommands
+	// function.
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		// initialize ProjectVersionerFactory
+		var err error
+		// sets value of package-level variable
+		// arguments to New will become non-nil if/when support for projectversioner assets are added
+		if cliProjectVersionerFactory, err = projectversionerfactory.New(nil, nil); err != nil {
+			return err
+		}
+
+		allAssets := loadedAssets
+
+		// initialize disters from Dister assets
+		assetDisters, upgraderDisters, err := dister.AssetDisterCreators(allAssets[assetapi.Dister]...)
+		if err != nil {
+			return err
+		}
+		// sets value of package-level variable
+		if cliDisterFactory, err = disterfactory.New(assetDisters, upgraderDisters); err != nil {
+			return err
+		}
+		// sets value of package-level variable
+		if cliDefaultDisterCfg, err = disterfactory.DefaultConfig(); err != nil {
+			return err
+		}
+
+		// initialize docker builders from DockerBuilder assets
+		assetDockerBuilders, upgraderDockerBuilders, err := dockerbuilder.AssetDockerBuilderCreators(allAssets[assetapi.DockerBuilder]...)
+		if err != nil {
+			return err
+		}
+		// sets value of package-level variable
+		if cliDockerBuilderFactory, err = dockerbuilderfactory.New(assetDockerBuilders, upgraderDockerBuilders); err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
+
+// addPublishCommandsFromAssets adds the publish commands provided by assets.
+func addPublishSubcommandsFromAssets(publisherAssets []string) error {
+	assetPublishers, upgraderPublishers, err := publisher.AssetPublisherCreators(publisherAssets...)
 	if err != nil {
 		return err
 	}
@@ -97,63 +166,16 @@ func InitAssetCmds(args []string) error {
 	publisherTypeNames := cliPublisherFactory.Types()
 	var publishers []distgo.Publisher
 	for _, typeName := range publisherTypeNames {
-		publisher, err := cliPublisherFactory.NewPublisher(typeName)
+		currPublisher, err := cliPublisherFactory.NewPublisher(typeName)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create publisher %q", typeName)
+			return errors.Wrapf(err, "failed to create currPublisher %q", typeName)
 		}
-		publishers = append(publishers, publisher)
+		publishers = append(publishers, currPublisher)
 	}
 
-	// add publish commands based on assets
+	// add publish commands from assets
 	addPublishSubcommands(publisherTypeNames, publishers)
-
 	return nil
-}
-
-func init() {
-	pluginapi.AddDebugPFlagPtr(rootCmd.PersistentFlags(), &debugFlagVal)
-	pluginapi.AddProjectDirPFlagPtr(rootCmd.PersistentFlags(), &projectDirFlagVal)
-	pluginapi.AddConfigPFlagPtr(rootCmd.PersistentFlags(), &distgoConfigFileFlagVal)
-	pluginapi.AddGodelConfigPFlagPtr(rootCmd.PersistentFlags(), &godelConfigFileFlagVal)
-	pluginapi.AddAssetsPFlagPtr(rootCmd.PersistentFlags(), &assetsFlagVal)
-
-	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		allAssets, err := assetapi.LoadAssets(assetsFlagVal)
-		if err != nil {
-			return err
-		}
-
-		// parameters will become non-nil if/when support for projectversioner assets are added
-		cliProjectVersionerFactory, err = projectversionerfactory.New(nil, nil)
-		if err != nil {
-			return err
-		}
-
-		assetDisters, upgraderDisters, err := dister.AssetDisterCreators(allAssets[assetapi.Dister]...)
-		if err != nil {
-			return err
-		}
-		cliDisterFactory, err = disterfactory.New(assetDisters, upgraderDisters)
-		if err != nil {
-			return err
-		}
-
-		cliDefaultDisterCfg, err = disterfactory.DefaultConfig()
-		if err != nil {
-			return err
-		}
-
-		assetDockerBuilders, upgraderDockerBuilders, err := dockerbuilder.AssetDockerBuilderCreators(allAssets[assetapi.DockerBuilder]...)
-		if err != nil {
-			return err
-		}
-		cliDockerBuilderFactory, err = dockerbuilderfactory.New(assetDockerBuilders, upgraderDockerBuilders)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
 }
 
 func distgoProjectParamFromFlags() (distgo.ProjectInfo, distgo.ProjectParam, error) {

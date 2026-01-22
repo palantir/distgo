@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/palantir/distgo/cmd"
@@ -26,9 +27,23 @@ func main() {
 		return
 	}
 
-	// initialize commands that require assets
-	if err := cmd.InitAssetCmds(os.Args[1:]); err != nil {
-		panic(err)
-	}
+	// load assets
+	printErrorAndExitIfNonNil(cmd.LoadAssets(os.Args[1:]))
+
+	// add commands provided by assets
+	printErrorAndExitIfNonNil(cmd.AddAssetCommands())
+
 	os.Exit(cmd.Execute())
+}
+
+// If the provided error is non-nil, prints it to stderr and exits with exit code 1.
+// Is a noop if err is nil.
+func printErrorAndExitIfNonNil(err error) {
+	// no error: do nothing
+	if err == nil {
+		return
+	}
+	// print error to os.Stderr and exit
+	_, _ = fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+	os.Exit(1)
 }
