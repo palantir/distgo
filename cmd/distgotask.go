@@ -5,8 +5,6 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/palantir/distgo/distgo"
-	"github.com/palantir/distgo/distgo/clean"
 	"github.com/palantir/distgo/internal/assetapi"
 	"github.com/spf13/cobra"
 )
@@ -20,13 +18,6 @@ that runs the verification operation for all asset-provided tasks that register 
 Tasks may also be invoked using their fully qualified name, which is [asset-type] [asset-name] [task-name].
 If there are any conflicts between task names, they are not registered at the top level of distgo-task and must be
 invoked using their fully qualified name.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			projectInfo, projectParam, err := distgoProjectParamFromFlags()
-			if err != nil {
-				return err
-			}
-			return clean.Products(projectInfo, projectParam, distgo.ToProductIDs(args), cleanDryRunFlagVal, cmd.OutOrStdout())
-		},
 	}
 )
 
