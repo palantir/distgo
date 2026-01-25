@@ -42,9 +42,10 @@ var (
 		newTaskInfoFromCmd(projectVersionCmd),
 		newTaskInfoFromCmd(publishCmd),
 		newTaskInfoFromCmd(runCmd),
+		newTaskInfoFromCmd(distgoTaskCmd),
 		pluginapi.PluginInfoTaskInfo(
-			"verify",
-			"Performs verification using asset-provided tasks",
+			"distgo-verify",
+			"Performs verification using distgo asset-provided tasks",
 			pluginapi.TaskInfoCommand("verify"),
 			pluginapi.TaskInfoVerifyOptions(
 				pluginapi.VerifyOptionsApplyTrueArgs("--apply"),
