@@ -13,7 +13,7 @@ var (
 	distgoTaskCmd = &cobra.Command{
 		Use:   "distgo-task [task-name]",
 		Short: "Runs the distgo asset-provided task with the specified task name",
-		Long:  `Runs a distgo asset-provided task with the specified name. The \"verify\" task is a special task
+		Long:  `Runs a distgo asset-provided task with the specified name. The "verify" task is a special task
 that runs the verification operation for all asset-provided tasks that register as verify tasks.
 Tasks may also be invoked using their fully qualified name, which is [asset-type] [asset-name] [task-name].
 If there are any conflicts between task names, they are not registered at the top level of distgo-task and must be
