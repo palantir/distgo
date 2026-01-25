@@ -43,8 +43,32 @@ type Dister interface {
 	GenerateDistArtifacts(distID DistID, productTaskOutputInfo ProductTaskOutputInfo, runDistResult []byte) error
 }
 
+// DisterWithConfig is a Dister that supports returning its configuration YAML.
+type DisterWithConfig interface {
+	Dister
+	ConfigYML() ([]byte, error)
+}
+
+func NewDisterWithConfig(dister Dister, configYAML []byte) DisterWithConfig {
+	return &disterWithConfigImpl{
+		Dister:         dister,
+		configYML:      configYAML,
+	}
+}
+
+var _ DisterWithConfig = (*disterWithConfigImpl)(nil)
+
+type disterWithConfigImpl struct {
+	Dister
+	configYML []byte
+}
+
+func (d disterWithConfigImpl) ConfigYML() ([]byte, error) {
+	return d.configYML, nil
+}
+
 type DisterFactory interface {
 	Types() []string
-	NewDister(typeName string, cfgYMLBytes []byte) (Dister, error)
+	NewDister(typeName string, cfgYMLBytes []byte) (DisterWithConfig, error)
 	ConfigUpgrader(typeName string) (ConfigUpgrader, error)
 }

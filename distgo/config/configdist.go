@@ -91,7 +91,7 @@ func (cfg *InputDirConfig) ToParam() distgo.InputDirParam {
 	}
 }
 
-func newDister(disterType string, cfgYML yaml.MapSlice, disterFactory distgo.DisterFactory) (distgo.Dister, error) {
+func newDister(disterType string, cfgYML yaml.MapSlice, disterFactory distgo.DisterFactory) (distgo.DisterWithConfig, error) {
 	if disterType == "" {
 		return nil, errors.Errorf("dister type must be non-empty")
 	}
