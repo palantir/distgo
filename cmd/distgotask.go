@@ -28,8 +28,10 @@ without making any modifications.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// if not in verify mode, print help and exit
 			if !distgoTaskVerifyFlagVal {
+				cmd.Printf("Running help command for cmd %s", cmd.Name())
 				return cmd.Help()
 			}
+			cmd.Printf("Running verify with --apply arg value %v", distgoTaskVerifyFlagVal)
 			return runVerifyTask(cmd.OutOrStdout(), cmd.OutOrStderr(), distgoTaskVerifyApplyFlagVal)
 		},
 	}
