@@ -73,7 +73,7 @@ func NewTaskProviderCommand(disterName, name, short string, runner distertaskpro
 func RunDisterTaskProviderAssetCommand(
 	assetPath string,
 	cmdArgs []string,
-	allConfigYAML map[distgo.ProductID]map[distgo.DistID][]byte,
+	allConfigYAML map[distgo.ProductID]map[distgo.DistID]distertaskproviderapi.DisterConfigYAML,
 	allProductTaskOutputInfos map[distgo.ProductID]distgo.ProductTaskOutputInfo,
 	providedArgs []string,
 	stdout,

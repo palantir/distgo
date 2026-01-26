@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/palantir/distgo/dister/distertaskprovider/distertaskproviderapi"
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgotaskprovider"
 	"github.com/palantir/distgo/internal/assetapi/distertaskproviderinternal"
@@ -34,7 +35,7 @@ func NewDistgoTaskDisterCommand(assetPath string, taskInfo distgotaskprovider.Ta
 	}
 }
 
-func getDisterTaskCommandArgs() (map[distgo.ProductID]map[distgo.DistID][]byte, map[distgo.ProductID]distgo.ProductTaskOutputInfo, error) {
+func getDisterTaskCommandArgs() (map[distgo.ProductID]map[distgo.DistID]distertaskproviderapi.DisterConfigYAML, map[distgo.ProductID]distgo.ProductTaskOutputInfo, error) {
 	projectInfo, projectParam, err := distgoProjectParamFromFlags()
 	if err != nil {
 		return nil, nil, err
@@ -73,8 +74,8 @@ func getAllProductTaskOutputInfos(projectInfo distgo.ProjectInfo, params []distg
 	return out, nil
 }
 
-func getAllConfigYAML(params []distgo.ProductParam) (map[distgo.ProductID]map[distgo.DistID][]byte, error) {
-	out := make(map[distgo.ProductID]map[distgo.DistID][]byte)
+func getAllConfigYAML(params []distgo.ProductParam) (map[distgo.ProductID]map[distgo.DistID]distertaskproviderapi.DisterConfigYAML, error) {
+	out := make(map[distgo.ProductID]map[distgo.DistID]distertaskproviderapi.DisterConfigYAML)
 	for _, param := range params {
 		productDistConfigs, err := getDisterConfigs(param)
 		if err != nil {
@@ -85,21 +86,29 @@ func getAllConfigYAML(params []distgo.ProductParam) (map[distgo.ProductID]map[di
 	return out, nil
 }
 
-func getDisterConfigs(p distgo.ProductParam) (map[distgo.DistID][]byte, error) {
+func getDisterConfigs(p distgo.ProductParam) (map[distgo.DistID]distertaskproviderapi.DisterConfigYAML, error) {
 	if p.Dist == nil {
 		return nil, nil
 	}
-	out := make(map[distgo.DistID][]byte)
+	out := make(map[distgo.DistID]distertaskproviderapi.DisterConfigYAML)
 	for distID, disterParam := range p.Dist.DistParams {
 		disterWithConfig, ok := disterParam.Dister.(distgo.DisterWithConfig)
 		if !ok {
 			continue
 		}
-		configYML, err := disterWithConfig.ConfigYML()
+		disterTypeName, err := disterParam.Dister.TypeName()
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get config for dist %s", distID)
+			return nil, errors.Wrapf(err, "failed to get dister type name for dist %s for product %s", distID, p.ID)
 		}
-		out[distID] = configYML
+
+		configYAML, err := disterWithConfig.ConfigYML()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get config for dist %s of dister type %s for product %s", distID, disterTypeName, p.ID)
+		}
+		out[distID] = distertaskproviderapi.DisterConfigYAML{
+			DisterName: disterTypeName,
+			ConfigYAML: configYAML,
+		}
 	}
 	return out, nil
 }
