@@ -109,6 +109,13 @@ func addAssetProvidedTaskCommands(assetsWithTaskInfos []assetapi.Asset) error {
 				continue
 			}
 
+			// create a new instance of the command to add as the subcommand: required because each instance of
+			// *cobra.Command can only have a single parent Command.
+			cmd, err = distgotaskproviderinternal.NewAssetProvidedTaskCommand(assetTaskInfo)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create asset-provided task for asset %s of type %s at %s", taskInfos.AssetName, asset.AssetType, asset.AssetPath)
+			}
+
 			// add command as a subcommand of the distgo-task command and mark name as used
 			distgoTaskCmd.AddCommand(cmd)
 			distgoTaskSubcommands[cmdName] = struct{}{}
