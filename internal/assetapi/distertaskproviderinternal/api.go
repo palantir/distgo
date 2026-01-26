@@ -20,6 +20,8 @@ const (
 // This is a copy of the dister/distertaskprovider.TaskRunner interface that is defined in this package to avoid
 // package import cycles.
 type TaskRunner interface {
+	ConfigureCommand(cmd *cobra.Command)
+
 	RunTask(
 		allConfigYML map[distgo.ProductID]map[distgo.DistID][]byte,
 		allProductTaskOutputInfos map[distgo.ProductID]distgo.ProductTaskOutputInfo,
@@ -55,6 +57,9 @@ func NewTaskProviderCommand(name, short string, runner TaskRunner) *cobra.Comman
 
 	cmd.Flags().StringVar(&allConfigYMLFlagVal, AllConfigYMLFlagName, "", "file containing YAML representation of all config YAML for dister")
 	cmd.Flags().StringVar(&allProductTaskOutputInfoFlagVal, AllProductTaskOutputInfoFlagName, "", "file containing YAML representation of all ProductTaskOutputInfo for dister")
+
+	// run command configuration logic provided by the runner
+	runner.ConfigureCommand(cmd)
 
 	return cmd
 }

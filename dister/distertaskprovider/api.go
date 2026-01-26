@@ -18,6 +18,11 @@ type DisterTask struct {
 
 // TaskRunner is an interface that runs the task provided by a dister task provider.
 type TaskRunner interface {
+	// ConfigureCommand configures the provided *cobra.Command for the task runner. If a *cobra.Command is constructed
+	// for the runner, this function is called on the command after it is constructed. The typical use case for this
+	// is to register flags on the command that can be used/referenced in RunTask.
+	ConfigureCommand(cmd *cobra.Command)
+
 	// RunTask runs the task associated with the runner. It is provided with the configuration YML for all the disters
 	// of the dister type and the ProductTaskOutputInfos associated with the disters of the dister type. The args
 	// parameter contains all the arguments provided to the command that invoked the task. Task output can be written
@@ -61,6 +66,8 @@ func AddDisterTaskCommands(rootCmd *cobra.Command, disterName string, tasks []Di
 	return nil
 }
 
-// type assertion exists to enforce that the exported interface is compatible with the internal package interface
+// type assertions exists to enforce that the exported interface is compatible with the internal package interface
 // (which only exists to prevent package import cycles).
 var _ TaskRunner = (distertaskproviderinternal.TaskRunner)(nil)
+
+var _ distertaskproviderinternal.TaskRunner = (TaskRunner)(nil)
