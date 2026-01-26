@@ -102,6 +102,10 @@ func AddAssetCommands() error {
 	if err := addPublishSubcommandsFromAssets(loadedAssets.GetAssetPathsForType(assetapi.Publisher)); err != nil {
 		return errors.Wrapf(err, "failed to add publish subcommands from distgo assets")
 	}
+	// add asset-provided task commands
+	if err := addAssetProvidedTaskCommands(loadedAssets.AssetsWithTaskInfos()); err != nil {
+		return errors.Wrapf(err, "failed to add commands from asset-provided tasks")
+	}
 	return nil
 }
 

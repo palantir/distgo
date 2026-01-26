@@ -30,9 +30,15 @@ func LoadAssets(assets []string) (Assets, error) {
 		if err != nil {
 			return Assets{}, errors.Wrapf(err, "failed to get asset type for asset %s", currAsset)
 		}
+		taskInfos, err := GetTaskInfos(currAsset)
+		// error only occurs if information is returned but not parsable, so propagate that
+		if err != nil {
+			return Assets{}, errors.Wrapf(err, "failed to get task infos for asset %s", currAsset)
+		}
 		loadedAssets.assets[assetType] = append(loadedAssets.assets[assetType], Asset{
 			AssetPath: currAsset,
 			AssetType: assetType,
+			TaskInfos: taskInfos,
 		})
 	}
 	return loadedAssets, nil
