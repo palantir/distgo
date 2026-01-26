@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	AllConfigYMLFlagName = "all-config-yml"
+	AllConfigYMLFlagName             = "all-config-yml"
 	AllProductTaskOutputInfoFlagName = "all-product-task-output-info"
 )
 
@@ -45,7 +45,7 @@ func RunDisterTaskProviderAssetCommand(
 	if err != nil {
 		return errors.Wrapf(err, "failed to write allProductTaskOutputInfos %v to file", allProductTaskOutputInfos)
 	}
-	allArgs = append(allArgs, "--" + AllProductTaskOutputInfoFlagName, allProductTaskOutputInfosFile)
+	allArgs = append(allArgs, "--"+AllProductTaskOutputInfoFlagName, allProductTaskOutputInfosFile)
 
 	// append providedArgs
 	allArgs = append(allArgs, providedArgs...)

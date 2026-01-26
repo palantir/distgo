@@ -104,7 +104,6 @@ func getDisterConfigs(p distgo.ProductParam) (map[distgo.DistID][]byte, error) {
 	return out, nil
 }
 
-
 //var (
 //	distgoTaskVerifyCmd = &cobra.Command{
 //		Use:   "verify [flags]",

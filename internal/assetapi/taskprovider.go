@@ -42,7 +42,7 @@ type TaskInfos struct {
 // VerifyOptionsVar field.
 type VerifyTaskInfo struct {
 	AssetPath string
-	TaskInfo distgotaskprovider.TaskInfo
+	TaskInfo  distgotaskprovider.TaskInfo
 }
 
 func NewTaskInfosCommand(taskInfos TaskInfos) *cobra.Command {

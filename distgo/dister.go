@@ -51,8 +51,8 @@ type DisterWithConfig interface {
 
 func NewDisterWithConfig(dister Dister, configYAML []byte) DisterWithConfig {
 	return &disterWithConfigImpl{
-		Dister:         dister,
-		configYML:      configYAML,
+		Dister:    dister,
+		configYML: configYAML,
 	}
 }
 

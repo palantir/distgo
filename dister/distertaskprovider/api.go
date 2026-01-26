@@ -24,12 +24,12 @@ type TaskRunner interface {
 
 func NewTaskProviderCommand(name, short string, runner TaskRunner) *cobra.Command {
 	var (
-		allConfigYMLFlagVal string
+		allConfigYMLFlagVal             string
 		allProductTaskOutputInfoFlagVal string
 	)
 
 	cmd := &cobra.Command{
-		Use: name,
+		Use:   name,
 		Short: short,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			allConfigYML, err := distertaskproviderinternal.ReadValueFromYAMLFile[map[distgo.ProductID]map[distgo.DistID][]byte](allConfigYMLFlagVal)

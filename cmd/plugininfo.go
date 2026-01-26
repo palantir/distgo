@@ -45,7 +45,7 @@ var (
 		pluginapi.PluginInfoTaskInfo(
 			distgoTaskCmd.Name(),
 			distgoTaskCmd.Short,
-			pluginapi.TaskInfoCommand("verify"),
+			//pluginapi.TaskInfoCommand("verify"),
 			pluginapi.TaskInfoVerifyOptions(
 				pluginapi.VerifyOptionsApplyTrueArgs("--apply"),
 				// run before "Test", but after most other verifications
