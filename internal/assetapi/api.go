@@ -16,8 +16,11 @@ package assetapi
 
 import (
 	"encoding/json"
+	"maps"
 	"os/exec"
+	"slices"
 
+	"github.com/palantir/distgo/distgotaskprovider"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -39,6 +42,18 @@ type Asset struct {
 
 	// AssetType is the type of asset.
 	AssetType AssetType
+
+	// TaskInfos is the information for asset-provided tasks. nil if the asset does not have any asset-provided tasks.
+	TaskInfos *TaskInfos
+}
+
+// AssetTaskInfo represents a single TaskInfo provided by an asset. Packages together information from the Asset and
+// AssetInfos structs for a particular TaskInfo.
+type AssetTaskInfo struct {
+	AssetPath string
+	AssetType AssetType
+	AssetName string
+	TaskInfo  distgotaskprovider.TaskInfo
 }
 
 // Assets represents a collection of distgo assets.
@@ -51,6 +66,22 @@ func (a *Assets) GetAssetPathsForType(assetType AssetType) []string {
 	var out []string
 	for _, asset := range a.assets[assetType] {
 		out = append(out, asset.AssetPath)
+	}
+	return out
+}
+
+// AssetsWithTaskInfos returns all the Assets that have a non-nil TaskInfos field. The assets in the returned slice are
+// ordered by the natural ordering of AssetType and, within a type, occur in the same order as they occur in the value
+// slice of the assets map.
+func (a *Assets) AssetsWithTaskInfos() []Asset {
+	var out []Asset
+	for _, assetType := range slices.Sorted(maps.Keys(a.assets)) {
+		for _, asset := range a.assets[assetType] {
+			if asset.TaskInfos == nil {
+				continue
+			}
+			out = append(out, asset)
+		}
 	}
 	return out
 }
