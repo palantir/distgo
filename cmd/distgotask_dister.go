@@ -103,32 +103,3 @@ func getDisterConfigs(p distgo.ProductParam) (map[distgo.DistID][]byte, error) {
 	}
 	return out, nil
 }
-
-//var (
-//	distgoTaskVerifyCmd = &cobra.Command{
-//		Use:   "verify [flags]",
-//		Short: "Runs the distgo asset-provided tasks that registered as verify tasks",
-//		RunE: func(cmd *cobra.Command, args []string) error {
-//			projectInfo, projectParam, err := distgoProjectParamFromFlags()
-//			if err != nil {
-//				return err
-//			}
-//			return clean.Products(projectInfo, projectParam, distgo.ToProductIDs(args), cleanDryRunFlagVal, cmd.OutOrStdout())
-//		},
-//	}
-//)
-//
-//type verifyTaskInfo struct {
-//	// path to asset that supports verify task
-//	assetPath string
-//
-//	// command for invoking the verify task.
-//	// Stored as a slice to support subcommands.
-//	verifyTaskCommand []string
-//}
-//
-//// For all verifyTaskInfo provided by disters, invoke assetPath executable with verifyTaskCommand for each dister ID
-//// that defines the dister with the following flags (which are the same as for the Dister command):
-////    runDistCmd.Flags().StringVar(&configYMLFlagVal, commonCmdConfigYMLFlagName, "", "YML of dister configuration")
-////    runDistCmd.Flags().StringVar(&distIDFlagVal, runDistCmdDistIDFlagName, "", "DistID for the current dist task")
-////    runDistCmd.Flags().StringVar(&productTaskOutputInfoFlagVal, runDistCmdProductTaskOutputInfoFlagName, "", "JSON representation of distgo.ProductBuildInfo")
