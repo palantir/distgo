@@ -21,14 +21,19 @@ import (
 // LoadAssets loads the assets at the specified path and returns a map from AssetType to the paths for the assets of
 // that type. Returns an error if any of the provided assets do not respond to the command that queries for their type
 // or if the returned type is not a recognized asset type.
-func LoadAssets(assets []string) (map[AssetType][]string, error) {
-	loadedAssets := make(map[AssetType][]string)
+func LoadAssets(assets []string) (Assets, error) {
+	loadedAssets := Assets{
+		assets: make(map[AssetType][]Asset),
+	}
 	for _, currAsset := range assets {
 		assetType, err := getAssetType(currAsset)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get asset type for asset %s", currAsset)
+			return Assets{}, errors.Wrapf(err, "failed to get asset type for asset %s", currAsset)
 		}
-		loadedAssets[assetType] = append(loadedAssets[assetType], currAsset)
+		loadedAssets.assets[assetType] = append(loadedAssets.assets[assetType], Asset{
+			AssetPath: currAsset,
+			AssetType: assetType,
+		})
 	}
 	return loadedAssets, nil
 }
