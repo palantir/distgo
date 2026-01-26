@@ -106,7 +106,7 @@ func GetTaskInfos(assetPath string) (*TaskInfos, error) {
 
 	var taskInfos *TaskInfos
 	if err := json.Unmarshal(outputBytes, &taskInfos); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal output as JSON into type %T", taskInfos)
+		return nil, errors.Wrapf(err, "failed to unmarshal output %q as JSON into type %T", string(outputBytes), taskInfos)
 	}
 	return taskInfos, nil
 }
