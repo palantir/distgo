@@ -44,7 +44,8 @@ var (
 		newTaskInfoFromCmd(runCmd),
 		newTaskInfoFromCmd(distgoTaskCmd,
 			pluginapi.TaskInfoVerifyOptions(
-				pluginapi.VerifyOptionsApplyTrueArgs("--apply"),
+				pluginapi.VerifyOptionsApplyFalseArgs("--verify"),
+				pluginapi.VerifyOptionsApplyTrueArgs("--verify", "--apply"),
 				// run before "Test", but after most other verifications
 				pluginapi.VerifyOptionsOrdering(intPtr(verifyorder.Test-100)),
 			),
