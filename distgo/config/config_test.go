@@ -936,7 +936,7 @@ func TestProjectConfig_DefaultProducts(t *testing.T) {
 				DistParams: map[distgo.DistID]distgo.DisterParam{
 					osarchbin.TypeName: {
 						NameTemplate: "{{Product}}-{{Version}}",
-						Dister:       osarchbin.New(osarch.Current()),
+						Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 					},
 				},
 			},

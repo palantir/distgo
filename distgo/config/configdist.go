@@ -98,9 +98,13 @@ func newDister(disterType string, cfgYAML yaml.MapSlice, disterFactory distgo.Di
 	if disterFactory == nil {
 		return nil, errors.Errorf("disterFactory must be provided")
 	}
-	cfgYAMLBytes, err := yaml.Marshal(cfgYAML)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal configuration")
+	var cfgYAMLBytes []byte
+	if cfgYAML != nil {
+		var err error
+		cfgYAMLBytes, err = yaml.Marshal(cfgYAML)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal configuration")
+		}
 	}
 	return disterFactory.NewDister(disterType, cfgYAMLBytes)
 }
