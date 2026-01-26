@@ -31,7 +31,7 @@ without making any modifications.`,
 				cmd.Printf("Running help command for cmd %s\n", cmd.Name())
 				return cmd.Help()
 			}
-			cmd.Printf("Running verify with --apply arg value %v\n", distgoTaskVerifyFlagVal)
+			cmd.Printf("Running verify with --apply arg value %v (args: %v)\n", distgoTaskVerifyApplyFlagVal, args)
 			return runVerifyTask(cmd.OutOrStdout(), cmd.OutOrStderr(), distgoTaskVerifyApplyFlagVal)
 		},
 	}
