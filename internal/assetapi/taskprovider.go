@@ -16,6 +16,7 @@ package assetapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"maps"
 	"os/exec"
 	"slices"
@@ -54,7 +55,7 @@ func NewTaskInfosCommand(taskInfos TaskInfos) *cobra.Command {
 			if err != nil {
 				return errors.Wrapf(err, "failed to marshal JSON")
 			}
-			cmd.Print(string(jsonOutput))
+			_, _ = fmt.Fprint(cmd.OutOrStdout(), string(jsonOutput))
 			return nil
 		},
 	}
