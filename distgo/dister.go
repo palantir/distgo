@@ -53,10 +53,10 @@ type DisterWithConfig interface {
 
 // NewDisterWithConfig returns a new DisterWithConfig that associates the provided Dister with the provided
 // configuration.
-func NewDisterWithConfig(dister Dister, configYAML []byte) DisterWithConfig {
+func NewDisterWithConfig(dister Dister, configYML []byte) DisterWithConfig {
 	return &disterWithConfigImpl{
 		Dister:     dister,
-		configYAML: configYAML,
+		configYAML: configYML,
 	}
 }
 
