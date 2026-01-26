@@ -39,7 +39,7 @@ type TaskInfos struct {
 
 // VerifyTaskInfo contains the information necessary to construct a call to the "verify" task provided by an asset.
 // Consists of the path to the asset and a TaskInfo. The TaskInfo must be a valid TaskInfo with a non-nil
-// VerifyOptionsVar field.
+// VerifyOptions field.
 type VerifyTaskInfo struct {
 	AssetPath string
 	TaskInfo  distgotaskprovider.TaskInfo
@@ -76,7 +76,7 @@ func GetTaskProviderVerifyTasksFromAssets(assets Assets) []VerifyTaskInfo {
 				continue
 			}
 			for _, currTaskInfo := range currAsset.TaskInfos.TaskInfos {
-				if currTaskInfo.VerifyOptionsVar == nil {
+				if currTaskInfo.VerifyOptions == nil {
 					continue
 				}
 				// task with non-nil verify option

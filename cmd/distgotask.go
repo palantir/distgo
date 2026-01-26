@@ -103,7 +103,7 @@ func addAssetProvidedTaskCommands(assetsWithTaskInfos []assetapi.Asset) error {
 			// add fully qualified command to asset
 			assetSubCmd.AddCommand(cmd)
 
-			if taskInfo.VerifyOptionsVar != nil {
+			if taskInfo.VerifyOptions != nil {
 				// register command as a "verify" task
 			}
 
@@ -113,7 +113,7 @@ func addAssetProvidedTaskCommands(assetsWithTaskInfos []assetapi.Asset) error {
 			}
 
 			// if command name conflicts with an existing top-level command, continue
-			cmdName := taskInfo.NameVar
+			cmdName := taskInfo.Name
 			if _, ok := topLevelCommands[cmdName]; ok {
 				continue
 			}
@@ -141,14 +141,14 @@ func runVerifyTask(stdout, stderr io.Writer, applyMode bool) error {
 	for _, verifyTaskInfo := range verifyTaskInfos {
 		var applyArgs []string
 		if applyMode {
-			applyArgs = verifyTaskInfo.TaskInfo.VerifyOptionsVar.ApplyTrueArgsVar
+			applyArgs = verifyTaskInfo.TaskInfo.VerifyOptions.ApplyTrueArgs
 		} else {
-			applyArgs = verifyTaskInfo.TaskInfo.VerifyOptionsVar.ApplyFalseArgsVar
+			applyArgs = verifyTaskInfo.TaskInfo.VerifyOptions.ApplyFalseArgs
 		}
 
 		if err := distertaskproviderinternal.RunDisterTaskProviderAssetCommand(
 			verifyTaskInfo.AssetPath,
-			verifyTaskInfo.TaskInfo.CommandVar,
+			verifyTaskInfo.TaskInfo.Command,
 			allConfigYAML,
 			allProductTaskOutputInfos,
 			applyArgs,

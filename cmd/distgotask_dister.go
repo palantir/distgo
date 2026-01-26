@@ -13,8 +13,8 @@ import (
 // asset-provided task.
 func NewDistgoTaskDisterCommand(assetPath string, taskInfo distgotaskprovider.TaskInfo) *cobra.Command {
 	return &cobra.Command{
-		Use:   taskInfo.NameVar,
-		Short: taskInfo.DescriptionVar,
+		Use:   taskInfo.Name,
+		Short: taskInfo.Description,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			allConfigYAML, allProductTaskOutputInfos, err := getDisterTaskCommandArgs()
 			if err != nil {
@@ -23,7 +23,7 @@ func NewDistgoTaskDisterCommand(assetPath string, taskInfo distgotaskprovider.Ta
 
 			return distertaskproviderinternal.RunDisterTaskProviderAssetCommand(
 				assetPath,
-				taskInfo.CommandVar,
+				taskInfo.Command,
 				allConfigYAML,
 				allProductTaskOutputInfos,
 				args,
