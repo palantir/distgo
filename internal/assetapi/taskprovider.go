@@ -39,10 +39,11 @@ type TaskInfos struct {
 }
 
 // VerifyTaskInfo contains the information necessary to construct a call to the "verify" task provided by an asset.
-// Consists of the path to the asset and a TaskInfo. The TaskInfo must be a valid TaskInfo with a non-nil
-// VerifyOptions field.
+// Consists of the path to the asset, the AssetType, and a TaskInfo. The TaskInfo must be a valid TaskInfo with a
+// non-nil VerifyOptions field.
 type VerifyTaskInfo struct {
 	AssetPath string
+	AssetType AssetType
 	TaskInfo  distgotaskprovider.TaskInfo
 }
 
@@ -83,6 +84,7 @@ func GetTaskProviderVerifyTasksFromAssets(assets Assets) []VerifyTaskInfo {
 				// task with non-nil verify option
 				verifyTaskInfos = append(verifyTaskInfos, VerifyTaskInfo{
 					AssetPath: currAsset.AssetPath,
+					AssetType: currAsset.AssetType,
 					TaskInfo:  currTaskInfo,
 				})
 			}

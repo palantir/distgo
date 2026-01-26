@@ -2,9 +2,11 @@ package distertaskproviderinternal
 
 import (
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 
+	"github.com/palantir/distgo/dister/distertaskprovider/distertaskproviderapi"
 	"github.com/palantir/distgo/distgo"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -16,24 +18,11 @@ const (
 	AllProductTaskOutputInfoFlagName = "all-product-task-output-info"
 )
 
-// TaskRunner is an interface that runs the task provided by a dister task provider.
-// This is a copy of the dister/distertaskprovider.TaskRunner interface that is defined in this package to avoid
-// package import cycles.
-type TaskRunner interface {
-	ConfigureCommand(cmd *cobra.Command)
-
-	RunTask(
-		allConfigYML map[distgo.ProductID]map[distgo.DistID][]byte,
-		allProductTaskOutputInfos map[distgo.ProductID]distgo.ProductTaskOutputInfo,
-		args []string,
-		stdout, stderr io.Writer,
-	) error
-}
-
 // NewTaskProviderCommand returns a new *cobra.Command with the provided name and description that runs the provided
-// TaskRunner. The command is configured with the AllConfigYMLFlagName and AllProductTaskOutputInfoFlagName flags and
-// handles the translation from the flag values to the typed values passed to the RunTask function.
-func NewTaskProviderCommand(name, short string, runner TaskRunner) *cobra.Command {
+// TaskRunner for the dister with the provided name. The command is configured with the AllConfigYMLFlagName and
+// AllProductTaskOutputInfoFlagName flags and handles the translation from the flag values to the typed values passed to
+// the RunTask function.
+func NewTaskProviderCommand(disterName, name, short string, runner distertaskproviderapi.TaskRunner) *cobra.Command {
 	var (
 		allConfigYMLFlagVal             string
 		allProductTaskOutputInfoFlagVal string
@@ -43,15 +32,27 @@ func NewTaskProviderCommand(name, short string, runner TaskRunner) *cobra.Comman
 		Use:   name,
 		Short: short,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			allConfigYML, err := readValueFromYAMLFile[map[distgo.ProductID]map[distgo.DistID][]byte](allConfigYMLFlagVal)
+			allConfigYAML, err := readValueFromYAMLFile[map[distgo.ProductID]map[distgo.DistID]distertaskproviderapi.DisterConfigYAML](allConfigYMLFlagVal)
 			if err != nil {
 				return err
 			}
+
+			// filter config YAML to just the config for the dister
+			disterConfigYAML := maps.Clone(allConfigYAML)
+			for _, distIDToConfig := range disterConfigYAML {
+				for distID, config := range distIDToConfig {
+					// remove entries for disters that are not this one
+					if config.DisterName != disterName {
+						delete(distIDToConfig, distID)
+					}
+				}
+			}
+
 			allProductTaskOutputInfos, err := readValueFromYAMLFile[map[distgo.ProductID]distgo.ProductTaskOutputInfo](allProductTaskOutputInfoFlagVal)
 			if err != nil {
 				return err
 			}
-			return runner.RunTask(allConfigYML, allProductTaskOutputInfos, args, cmd.OutOrStdout(), cmd.OutOrStderr())
+			return runner.RunTask(disterConfigYAML, allProductTaskOutputInfos, args, cmd.OutOrStdout(), cmd.OutOrStderr())
 		},
 	}
 
@@ -72,7 +73,7 @@ func NewTaskProviderCommand(name, short string, runner TaskRunner) *cobra.Comman
 func RunDisterTaskProviderAssetCommand(
 	assetPath string,
 	cmdArgs []string,
-	allConfigYML map[distgo.ProductID]map[distgo.DistID][]byte,
+	allConfigYAML map[distgo.ProductID]map[distgo.DistID][]byte,
 	allProductTaskOutputInfos map[distgo.ProductID]distgo.ProductTaskOutputInfo,
 	providedArgs []string,
 	stdout,
@@ -84,9 +85,9 @@ func RunDisterTaskProviderAssetCommand(
 	allArgs = append(allArgs, cmdArgs...)
 
 	// append flags and flag values
-	allConfigYMLFile, err := writeValueToYAMLFile(allConfigYML)
+	allConfigYMLFile, err := writeValueToYAMLFile(allConfigYAML)
 	if err != nil {
-		return errors.Wrapf(err, "failed to write allConfigYML %v to file", allConfigYML)
+		return errors.Wrapf(err, "failed to write allConfigYAML %v to file", allConfigYAML)
 	}
 	allArgs = append(allArgs, "--"+AllConfigYMLFlagName, allConfigYMLFile)
 

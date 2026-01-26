@@ -8,6 +8,7 @@ import (
 
 	"github.com/palantir/distgo/internal/assetapi"
 	"github.com/palantir/distgo/internal/assetapi/distertaskproviderinternal"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -103,10 +104,6 @@ func addAssetProvidedTaskCommands(assetsWithTaskInfos []assetapi.Asset) error {
 			// add fully qualified command to asset
 			assetSubCmd.AddCommand(cmd)
 
-			if taskInfo.VerifyOptions != nil {
-				// register command as a "verify" task
-			}
-
 			// if task is not marked to be registered as top-level command, continue
 			if !taskInfo.RegisterAsTopLevelDistgoTaskCommand {
 				continue
@@ -132,6 +129,9 @@ func runVerifyTask(stdout, stderr io.Writer, applyMode bool) error {
 		return nil
 	}
 
+	// information used by dister verifiers. If verifier support for other asset types is added later, logic should
+	// be added here to compute values used by those types. At that point, it may also make sense to add logic to make
+	// it such that only values that will used will be computed (or come up with some other design for invocation).
 	allConfigYAML, allProductTaskOutputInfos, err := getDisterTaskCommandArgs()
 	if err != nil {
 		return err
@@ -146,15 +146,24 @@ func runVerifyTask(stdout, stderr io.Writer, applyMode bool) error {
 			applyArgs = verifyTaskInfo.TaskInfo.VerifyOptions.ApplyFalseArgs
 		}
 
-		if err := distertaskproviderinternal.RunDisterTaskProviderAssetCommand(
-			verifyTaskInfo.AssetPath,
-			verifyTaskInfo.TaskInfo.Command,
-			allConfigYAML,
-			allProductTaskOutputInfos,
-			applyArgs,
-			stdout,
-			stderr,
-		); err != nil {
+		var err error
+
+		switch verifyTaskInfo.AssetType {
+		case assetapi.Dister:
+			err = distertaskproviderinternal.RunDisterTaskProviderAssetCommand(
+				verifyTaskInfo.AssetPath,
+				verifyTaskInfo.TaskInfo.Command,
+				allConfigYAML,
+				allProductTaskOutputInfos,
+				applyArgs,
+				stdout,
+				stderr,
+			)
+		default:
+			return errors.Errorf("asset type %q is not supported for verify tasks", verifyTaskInfo.AssetType)
+		}
+
+		if err != nil {
 			// if error occurred, record and print.
 			// Continue because all verification tasks should run.
 			errorOccurred = true
