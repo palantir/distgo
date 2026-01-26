@@ -42,10 +42,7 @@ var (
 		newTaskInfoFromCmd(projectVersionCmd),
 		newTaskInfoFromCmd(publishCmd),
 		newTaskInfoFromCmd(runCmd),
-		pluginapi.PluginInfoTaskInfo(
-			distgoTaskCmd.Name(),
-			distgoTaskCmd.Short,
-			//pluginapi.TaskInfoCommand("verify"),
+		newTaskInfoFromCmd(distgoTaskCmd,
 			pluginapi.TaskInfoVerifyOptions(
 				pluginapi.VerifyOptionsApplyTrueArgs("--apply"),
 				// run before "Test", but after most other verifications
@@ -59,11 +56,15 @@ var (
 	)
 )
 
-func newTaskInfoFromCmd(cmd *cobra.Command) pluginapi.PluginInfoParam {
+func newTaskInfoFromCmd(cmd *cobra.Command, params ...pluginapi.TaskInfoParam) pluginapi.PluginInfoParam {
+	var allParams []pluginapi.TaskInfoParam
+	allParams = append(allParams, pluginapi.TaskInfoCommand(cmd.Name()))
+	allParams = append(allParams, params...)
+
 	return pluginapi.PluginInfoTaskInfo(
 		cmd.Name(),
 		cmd.Short,
-		pluginapi.TaskInfoCommand(cmd.Name()),
+		allParams...,
 	)
 }
 
