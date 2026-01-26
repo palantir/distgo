@@ -17,7 +17,9 @@ package assetapi
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os/exec"
+	"slices"
 
 	"github.com/palantir/distgo/distgotaskprovider"
 	"github.com/pkg/errors"
@@ -71,4 +73,29 @@ func GetTaskInfos(assetPath string) (*TaskInfos, error) {
 		return nil, errors.Wrapf(err, "failed to unmarshal output %q as JSON into type %T", string(outputBytes), taskInfos)
 	}
 	return taskInfos, nil
+}
+
+// GetTaskProviderVerifyTasksFromAssets returns a slice that contains the VerifyTaskInfo for all the provided assets.
+func GetTaskProviderVerifyTasksFromAssets(assets Assets) []AssetTaskInfo {
+	var verifyTaskInfos []AssetTaskInfo
+	for _, assetType := range slices.Sorted(maps.Keys(assets.assets)) {
+		for _, currAsset := range assets.assets[assetType] {
+			if currAsset.TaskInfos == nil {
+				continue
+			}
+			for _, currTaskInfo := range currAsset.TaskInfos.TaskInfos {
+				if currTaskInfo.VerifyOptions == nil {
+					continue
+				}
+				// task with non-nil verify option
+				verifyTaskInfos = append(verifyTaskInfos, AssetTaskInfo{
+					AssetPath: currAsset.AssetPath,
+					AssetType: currAsset.AssetType,
+					AssetName: currAsset.TaskInfos.AssetName,
+					TaskInfo:  currTaskInfo,
+				})
+			}
+		}
+	}
+	return verifyTaskInfos
 }

@@ -155,6 +155,9 @@ func init() {
 			return err
 		}
 
+		// sets value of package-level variable
+		verifyTaskInfos = assetapi.GetTaskProviderVerifyTasksFromAssets(allAssets)
+
 		return nil
 	}
 }
