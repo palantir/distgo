@@ -91,18 +91,22 @@ func (cfg *InputDirConfig) ToParam() distgo.InputDirParam {
 	}
 }
 
-func newDister(disterType string, cfgYML yaml.MapSlice, disterFactory distgo.DisterFactory) (distgo.Dister, error) {
+func newDister(disterType string, cfgYAML yaml.MapSlice, disterFactory distgo.DisterFactory) (distgo.DisterWithConfig, error) {
 	if disterType == "" {
 		return nil, errors.Errorf("dister type must be non-empty")
 	}
 	if disterFactory == nil {
 		return nil, errors.Errorf("disterFactory must be provided")
 	}
-	cfgYMLBytes, err := yaml.Marshal(cfgYML)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal configuration")
+	var cfgYAMLBytes []byte
+	if cfgYAML != nil {
+		var err error
+		cfgYAMLBytes, err = yaml.Marshal(cfgYAML)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal configuration")
+		}
 	}
-	return disterFactory.NewDister(disterType, cfgYMLBytes)
+	return disterFactory.NewDister(disterType, cfgYAMLBytes)
 }
 
 type DistersConfig v0.DistersConfig

@@ -60,12 +60,16 @@ func (f *disterFactoryImpl) Types() []string {
 	return f.types
 }
 
-func (f *disterFactoryImpl) NewDister(typeName string, cfgYMLBytes []byte) (distgo.Dister, error) {
+func (f *disterFactoryImpl) NewDister(typeName string, cfgYAMLBytes []byte) (distgo.DisterWithConfig, error) {
 	creatorFn, ok := f.disterCreators[typeName]
 	if !ok {
 		return nil, errors.Errorf("no dister registered for dister type %q (registered disters: %v)", typeName, f.types)
 	}
-	return creatorFn(cfgYMLBytes)
+	createdDister, err := creatorFn(cfgYAMLBytes)
+	if err != nil {
+		return nil, err
+	}
+	return distgo.NewDisterWithConfig(createdDister, cfgYAMLBytes), nil
 }
 
 func (f *disterFactoryImpl) ConfigUpgrader(typeName string) (distgo.ConfigUpgrader, error) {

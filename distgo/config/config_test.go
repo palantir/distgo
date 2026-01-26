@@ -667,11 +667,11 @@ products:
 									DistParams: map[distgo.DistID]distgo.DisterParam{
 										"bar": {
 											NameTemplate: "{{Product}}-{{Version}}",
-											Dister:       osarchbin.New(osarch.Current()),
+											Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 										},
 										"foo": {
 											NameTemplate: "{{Product}}-{{Version}}",
-											Dister:       osarchbin.New(osarch.Current()),
+											Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 										},
 									},
 								},
@@ -687,7 +687,7 @@ products:
 									DistParams: map[distgo.DistID]distgo.DisterParam{
 										"os-arch-bin": {
 											NameTemplate: "{{Product}}-{{Version}}",
-											Dister:       osarchbin.New(osarch.Current()),
+											Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 										},
 									},
 								},
@@ -702,11 +702,11 @@ products:
 							DistParams: map[distgo.DistID]distgo.DisterParam{
 								"bar": {
 									NameTemplate: "{{Product}}-{{Version}}",
-									Dister:       osarchbin.New(osarch.Current()),
+									Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 								},
 								"foo": {
 									NameTemplate: "{{Product}}-{{Version}}",
-									Dister:       osarchbin.New(osarch.Current()),
+									Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 								},
 							},
 						},
@@ -722,7 +722,7 @@ products:
 									DistParams: map[distgo.DistID]distgo.DisterParam{
 										"os-arch-bin": {
 											NameTemplate: "{{Product}}-{{Version}}",
-											Dister:       osarchbin.New(osarch.Current()),
+											Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 										},
 									},
 								},
@@ -737,7 +737,7 @@ products:
 							DistParams: map[distgo.DistID]distgo.DisterParam{
 								"os-arch-bin": {
 									NameTemplate: "{{Product}}-{{Version}}",
-									Dister:       osarchbin.New(osarch.Current()),
+									Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 								},
 							},
 						},
@@ -821,11 +821,11 @@ products:
 									DistParams: map[distgo.DistID]distgo.DisterParam{
 										"bar": {
 											NameTemplate: "{{Product}}-{{Version}}",
-											Dister:       osarchbin.New(osarch.Current()),
+											Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 										},
 										"foo": {
 											NameTemplate: "{{Product}}-{{Version}}",
-											Dister:       osarchbin.New(osarch.Current()),
+											Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 										},
 									},
 								},
@@ -841,7 +841,7 @@ products:
 									DistParams: map[distgo.DistID]distgo.DisterParam{
 										"os-arch-bin": {
 											NameTemplate: "{{Product}}-{{Version}}",
-											Dister:       osarchbin.New(osarch.Current()),
+											Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 										},
 									},
 								},
@@ -856,11 +856,11 @@ products:
 							DistParams: map[distgo.DistID]distgo.DisterParam{
 								"bar": {
 									NameTemplate: "{{Product}}-{{Version}}",
-									Dister:       osarchbin.New(osarch.Current()),
+									Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 								},
 								"foo": {
 									NameTemplate: "{{Product}}-{{Version}}",
-									Dister:       osarchbin.New(osarch.Current()),
+									Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 								},
 							},
 						},
@@ -876,7 +876,7 @@ products:
 									DistParams: map[distgo.DistID]distgo.DisterParam{
 										"os-arch-bin": {
 											NameTemplate: "{{Product}}-{{Version}}",
-											Dister:       osarchbin.New(osarch.Current()),
+											Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 										},
 									},
 								},
@@ -891,7 +891,7 @@ products:
 							DistParams: map[distgo.DistID]distgo.DisterParam{
 								"os-arch-bin": {
 									NameTemplate: "{{Product}}-{{Version}}",
-									Dister:       osarchbin.New(osarch.Current()),
+									Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 								},
 							},
 						},
@@ -936,7 +936,7 @@ func TestProjectConfig_DefaultProducts(t *testing.T) {
 				DistParams: map[distgo.DistID]distgo.DisterParam{
 					osarchbin.TypeName: {
 						NameTemplate: "{{Product}}-{{Version}}",
-						Dister:       osarchbin.New(osarch.Current()),
+						Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
 					},
 				},
 			},
