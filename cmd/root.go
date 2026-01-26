@@ -44,7 +44,7 @@ var (
 	assetsFlagVal           []string
 
 	// stores the loaded assets. Assigned once at program startup.
-	loadedAssets map[assetapi.AssetType][]string
+	loadedAssets assetapi.Assets
 
 	cliProjectVersionerFactory distgo.ProjectVersionerFactory
 	cliDisterFactory           distgo.DisterFactory
@@ -99,7 +99,7 @@ func LoadAssets(args []string) error {
 // function, and thus loadedAssets is set/initialized.
 func AddAssetCommands() error {
 	// add publish subcommands from Publisher assets
-	if err := addPublishSubcommandsFromAssets(loadedAssets[assetapi.Publisher]); err != nil {
+	if err := addPublishSubcommandsFromAssets(loadedAssets.GetAssetPathsForType(assetapi.Publisher)); err != nil {
 		return errors.Wrapf(err, "failed to add publish subcommands from distgo assets")
 	}
 	return nil
@@ -128,7 +128,7 @@ func init() {
 		allAssets := loadedAssets
 
 		// initialize disters from Dister assets
-		assetDisters, upgraderDisters, err := dister.AssetDisterCreators(allAssets[assetapi.Dister]...)
+		assetDisters, upgraderDisters, err := dister.AssetDisterCreators(allAssets.GetAssetPathsForType(assetapi.Dister)...)
 		if err != nil {
 			return err
 		}
@@ -142,7 +142,7 @@ func init() {
 		}
 
 		// initialize docker builders from DockerBuilder assets
-		assetDockerBuilders, upgraderDockerBuilders, err := dockerbuilder.AssetDockerBuilderCreators(allAssets[assetapi.DockerBuilder]...)
+		assetDockerBuilders, upgraderDockerBuilders, err := dockerbuilder.AssetDockerBuilderCreators(allAssets.GetAssetPathsForType(assetapi.DockerBuilder)...)
 		if err != nil {
 			return err
 		}

@@ -32,6 +32,29 @@ const (
 	DockerBuilder AssetType = "docker-builder"
 )
 
+// Asset represents a distgo asset.
+type Asset struct {
+	// AssetPath is the path to the asset.
+	AssetPath string
+
+	// AssetType is the type of asset.
+	AssetType AssetType
+}
+
+// Assets represents a collection of distgo assets.
+type Assets struct {
+	assets map[AssetType][]Asset
+}
+
+// GetAssetPathsForType returns the paths to the asset of the provided type.
+func (a *Assets) GetAssetPathsForType(assetType AssetType) []string {
+	var out []string
+	for _, asset := range a.assets[assetType] {
+		out = append(out, asset.AssetPath)
+	}
+	return out
+}
+
 const AssetTypeCommand = "asset-type"
 
 func NewAssetTypeCmd(assetType AssetType) *cobra.Command {
