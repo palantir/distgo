@@ -21,36 +21,25 @@ import (
 	"github.com/palantir/distgo/dister"
 	"github.com/palantir/distgo/dister/disterfactory"
 	"github.com/palantir/distgo/distgo"
-	"github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/dockerbuilder"
 	"github.com/palantir/distgo/dockerbuilder/dockerbuilderfactory"
 	"github.com/palantir/distgo/internal/assetapi"
+	"github.com/palantir/distgo/internal/cmdinternal"
 	"github.com/palantir/distgo/projectversioner/projectversionerfactory"
 	"github.com/palantir/distgo/publisher"
 	"github.com/palantir/distgo/publisher/publisherfactory"
-	godelconfig "github.com/palantir/godel/v2/framework/godel/config"
 	"github.com/palantir/godel/v2/framework/pluginapi"
 	"github.com/palantir/pkg/cobracli"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
 )
 
 var (
-	debugFlagVal            bool
-	projectDirFlagVal       string
-	distgoConfigFileFlagVal string
-	godelConfigFileFlagVal  string
-	assetsFlagVal           []string
+	// stores global flag values and factories
+	globalFlagValsAndFactories cmdinternal.GlobalFlagValsAndFactories
 
 	// stores the loaded assets. Assigned once at program startup.
 	loadedAssets assetapi.Assets
-
-	cliProjectVersionerFactory distgo.ProjectVersionerFactory
-	cliDisterFactory           distgo.DisterFactory
-	cliDefaultDisterCfg        config.DisterConfig
-	cliDockerBuilderFactory    distgo.DockerBuilderFactory
-	cliPublisherFactory        distgo.PublisherFactory
 )
 
 var rootCmd = &cobra.Command{
@@ -58,19 +47,19 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() int {
-	return cobracli.ExecuteWithDebugVarAndDefaultParams(rootCmd, &debugFlagVal)
+	return cobracli.ExecuteWithDebugVarAndDefaultParams(rootCmd, &globalFlagValsAndFactories.DebugFlagVal)
 }
 
 func restoreRootFlagsFn() func() {
-	origProjectDirFlagVal := projectDirFlagVal
-	origDistgoConfigFileFlagVal := distgoConfigFileFlagVal
-	origGodelConfigFileFlagVal := godelConfigFileFlagVal
-	origAssetsFlagVal := assetsFlagVal
+	origProjectDirFlagVal := globalFlagValsAndFactories.ProjectDirFlagVal
+	origDistgoConfigFileFlagVal := globalFlagValsAndFactories.DistgoConfigFileFlagVal
+	origGodelConfigFileFlagVal := globalFlagValsAndFactories.GodelConfigFileFlagVal
+	origAssetsFlagVal := globalFlagValsAndFactories.AssetsFlagVal
 	return func() {
-		projectDirFlagVal = origProjectDirFlagVal
-		distgoConfigFileFlagVal = origDistgoConfigFileFlagVal
-		godelConfigFileFlagVal = origGodelConfigFileFlagVal
-		assetsFlagVal = origAssetsFlagVal
+		globalFlagValsAndFactories.ProjectDirFlagVal = origProjectDirFlagVal
+		globalFlagValsAndFactories.DistgoConfigFileFlagVal = origDistgoConfigFileFlagVal
+		globalFlagValsAndFactories.GodelConfigFileFlagVal = origGodelConfigFileFlagVal
+		globalFlagValsAndFactories.AssetsFlagVal = origAssetsFlagVal
 	}
 }
 
@@ -87,7 +76,7 @@ func LoadAssets(args []string) error {
 	// parse the flags to retrieve the value of the "--assets" flag. Ignore any errors that occur in flag parsing so
 	// that, if provided flags are invalid, the regular logic handles the error printing.
 	_ = rootCmd.ParseFlags(args)
-	allAssets, err := assetapi.LoadAssets(assetsFlagVal)
+	allAssets, err := assetapi.LoadAssets(globalFlagValsAndFactories.AssetsFlagVal)
 	if err != nil {
 		return errors.Wrapf(err, "failed to load distgo assets")
 	}
@@ -110,11 +99,11 @@ func AddAssetCommands() error {
 }
 
 func init() {
-	pluginapi.AddDebugPFlagPtr(rootCmd.PersistentFlags(), &debugFlagVal)
-	pluginapi.AddProjectDirPFlagPtr(rootCmd.PersistentFlags(), &projectDirFlagVal)
-	pluginapi.AddConfigPFlagPtr(rootCmd.PersistentFlags(), &distgoConfigFileFlagVal)
-	pluginapi.AddGodelConfigPFlagPtr(rootCmd.PersistentFlags(), &godelConfigFileFlagVal)
-	pluginapi.AddAssetsPFlagPtr(rootCmd.PersistentFlags(), &assetsFlagVal)
+	pluginapi.AddDebugPFlagPtr(rootCmd.PersistentFlags(), &globalFlagValsAndFactories.DebugFlagVal)
+	pluginapi.AddProjectDirPFlagPtr(rootCmd.PersistentFlags(), &globalFlagValsAndFactories.ProjectDirFlagVal)
+	pluginapi.AddConfigPFlagPtr(rootCmd.PersistentFlags(), &globalFlagValsAndFactories.DistgoConfigFileFlagVal)
+	pluginapi.AddGodelConfigPFlagPtr(rootCmd.PersistentFlags(), &globalFlagValsAndFactories.GodelConfigFileFlagVal)
+	pluginapi.AddAssetsPFlagPtr(rootCmd.PersistentFlags(), &globalFlagValsAndFactories.AssetsFlagVal)
 
 	// Performs global initialization that can return errors.
 	// The logic in the function is run after the CLI command tree has been set up, so it cannot add or modify state
@@ -125,7 +114,7 @@ func init() {
 		var err error
 		// sets value of package-level variable
 		// arguments to New will become non-nil if/when support for projectversioner assets are added
-		if cliProjectVersionerFactory, err = projectversionerfactory.New(nil, nil); err != nil {
+		if globalFlagValsAndFactories.CLIProjectVersionerFactory, err = projectversionerfactory.New(nil, nil); err != nil {
 			return err
 		}
 
@@ -137,11 +126,11 @@ func init() {
 			return err
 		}
 		// sets value of package-level variable
-		if cliDisterFactory, err = disterfactory.New(assetDisters, upgraderDisters); err != nil {
+		if globalFlagValsAndFactories.CLIDisterFactory, err = disterfactory.New(assetDisters, upgraderDisters); err != nil {
 			return err
 		}
 		// sets value of package-level variable
-		if cliDefaultDisterCfg, err = disterfactory.DefaultConfig(); err != nil {
+		if globalFlagValsAndFactories.CLIDefaultDisterCfg, err = disterfactory.DefaultConfig(); err != nil {
 			return err
 		}
 
@@ -151,7 +140,7 @@ func init() {
 			return err
 		}
 		// sets value of package-level variable
-		if cliDockerBuilderFactory, err = dockerbuilderfactory.New(assetDockerBuilders, upgraderDockerBuilders); err != nil {
+		if globalFlagValsAndFactories.CLIDockerBuilderFactory, err = dockerbuilderfactory.New(assetDockerBuilders, upgraderDockerBuilders); err != nil {
 			return err
 		}
 
@@ -169,15 +158,15 @@ func addPublishSubcommandsFromAssets(publisherAssets []string) error {
 		return err
 	}
 
-	cliPublisherFactory, err = publisherfactory.New(assetPublishers, upgraderPublishers)
+	globalFlagValsAndFactories.CLIPublisherFactory, err = publisherfactory.New(assetPublishers, upgraderPublishers)
 	if err != nil {
 		return err
 	}
 
-	publisherTypeNames := cliPublisherFactory.Types()
+	publisherTypeNames := globalFlagValsAndFactories.CLIPublisherFactory.Types()
 	var publishers []distgo.Publisher
 	for _, typeName := range publisherTypeNames {
-		currPublisher, err := cliPublisherFactory.NewPublisher(typeName)
+		currPublisher, err := globalFlagValsAndFactories.CLIPublisherFactory.NewPublisher(typeName)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create publisher %q", typeName)
 		}
@@ -190,64 +179,17 @@ func addPublishSubcommandsFromAssets(publisherAssets []string) error {
 }
 
 func distgoProjectParamFromFlags() (distgo.ProjectInfo, distgo.ProjectParam, error) {
-	return distgoProjectParamFromVals(projectDirFlagVal, distgoConfigFileFlagVal, godelConfigFileFlagVal, cliProjectVersionerFactory, cliDisterFactory, cliDefaultDisterCfg, cliDockerBuilderFactory, cliPublisherFactory)
+	return cmdinternal.DistgoProjectParamFromFlagVals(globalFlagValsAndFactories)
 }
 
 func distgoConfigModTime() *time.Time {
-	if distgoConfigFileFlagVal == "" {
+	if globalFlagValsAndFactories.DistgoConfigFileFlagVal == "" {
 		return nil
 	}
-	fi, err := os.Stat(distgoConfigFileFlagVal)
+	fi, err := os.Stat(globalFlagValsAndFactories.DistgoConfigFileFlagVal)
 	if err != nil {
 		return nil
 	}
 	modTime := fi.ModTime()
 	return &modTime
-}
-
-func distgoProjectParamFromVals(projectDir, distgoConfigFile, godelConfigFile string, projectVersionerFactory distgo.ProjectVersionerFactory, disterFactory distgo.DisterFactory, defaultDisterCfg config.DisterConfig, dockerBuilderFactory distgo.DockerBuilderFactory, publisherFactory distgo.PublisherFactory) (distgo.ProjectInfo, distgo.ProjectParam, error) {
-	var distgoCfg config.ProjectConfig
-	if distgoConfigFile != "" {
-		cfg, err := loadConfigFromFile(distgoConfigFile)
-		if err != nil {
-			return distgo.ProjectInfo{}, distgo.ProjectParam{}, err
-		}
-		distgoCfg = cfg
-	}
-	if godelConfigFile != "" {
-		excludes, err := godelconfig.ReadGodelConfigExcludesFromFile(godelConfigFile)
-		if err != nil {
-			return distgo.ProjectInfo{}, distgo.ProjectParam{}, err
-		}
-		distgoCfg.Exclude.Add(excludes)
-	}
-	projectParam, err := distgoCfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
-	if err != nil {
-		return distgo.ProjectInfo{}, distgo.ProjectParam{}, err
-	}
-	projectInfo, err := projectParam.ProjectInfo(projectDirFlagVal)
-	if err != nil {
-		return distgo.ProjectInfo{}, distgo.ProjectParam{}, err
-	}
-	return projectInfo, projectParam, nil
-}
-
-func loadConfigFromFile(cfgFile string) (config.ProjectConfig, error) {
-	cfgBytes, err := os.ReadFile(cfgFile)
-	if os.IsNotExist(err) {
-		return config.ProjectConfig{}, nil
-	}
-	if err != nil {
-		return config.ProjectConfig{}, errors.Wrapf(err, "failed to read configuration file")
-	}
-	upgradedCfgBytes, err := config.UpgradeConfig(cfgBytes, cliProjectVersionerFactory, cliDisterFactory, cliDockerBuilderFactory, cliPublisherFactory)
-	if err != nil {
-		return config.ProjectConfig{}, errors.Wrapf(err, "failed to upgrade configuration")
-	}
-
-	var cfg config.ProjectConfig
-	if err := yaml.Unmarshal(upgradedCfgBytes, &cfg); err != nil {
-		return config.ProjectConfig{}, errors.Wrapf(err, "failed to unmarshal configuration")
-	}
-	return cfg, nil
 }
