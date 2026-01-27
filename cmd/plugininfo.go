@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"github.com/palantir/godel/v2/framework/pluginapi/v2/pluginapi"
+	"github.com/palantir/godel/v2/framework/verifyorder"
 	"github.com/spf13/cobra"
 )
 
@@ -41,6 +42,14 @@ var (
 		newTaskInfoFromCmd(projectVersionCmd),
 		newTaskInfoFromCmd(publishCmd),
 		newTaskInfoFromCmd(runCmd),
+		newTaskInfoFromCmd(distgoTaskCmd,
+			pluginapi.TaskInfoVerifyOptions(
+				pluginapi.VerifyOptionsApplyFalseArgs("--verify"),
+				pluginapi.VerifyOptionsApplyTrueArgs("--verify", "--apply"),
+				// run before "Test", but after most other verifications
+				pluginapi.VerifyOptionsOrdering(intPtr(verifyorder.Test-100)),
+			),
+		),
 		pluginapi.PluginInfoUpgradeConfigTaskInfo(
 			pluginapi.UpgradeConfigTaskInfoCommand("upgrade-config"),
 			pluginapi.LegacyConfigFile("dist.yml"),
@@ -48,10 +57,18 @@ var (
 	)
 )
 
-func newTaskInfoFromCmd(cmd *cobra.Command) pluginapi.PluginInfoParam {
+func newTaskInfoFromCmd(cmd *cobra.Command, params ...pluginapi.TaskInfoParam) pluginapi.PluginInfoParam {
+	var allParams []pluginapi.TaskInfoParam
+	allParams = append(allParams, pluginapi.TaskInfoCommand(cmd.Name()))
+	allParams = append(allParams, params...)
+
 	return pluginapi.PluginInfoTaskInfo(
 		cmd.Name(),
 		cmd.Short,
-		pluginapi.TaskInfoCommand(cmd.Name()),
+		allParams...,
 	)
+}
+
+func intPtr(i int) *int {
+	return &i
 }

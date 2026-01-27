@@ -74,6 +74,8 @@ var (
 func init() {
 	distgoTaskCmd.Flags().BoolVar(&distgoTaskVerifyFlagVal, "verify", false, "run the verify operation for tasks")
 	distgoTaskCmd.Flags().BoolVar(&distgoTaskVerifyApplyFlagVal, "apply", false, "apply verify changes when possible (only used if verify flag is set)")
+
+	rootCmd.AddCommand(distgoTaskCmd)
 }
 
 // addAssetProvidedTaskCommands adds all asset-provided tasks from the provided assetsWithTaskInfos to the command tree
