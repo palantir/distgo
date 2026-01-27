@@ -16,9 +16,12 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"maps"
 	"slices"
+	"strings"
 
+	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/internal/assetapi"
 	"github.com/palantir/distgo/internal/assetapi/distgotaskproviderinternal"
 	"github.com/pkg/errors"
@@ -34,9 +37,44 @@ var (
 Tasks may also be invoked using their fully qualified name, which is [asset-type] [asset-name] [task-name]. If there are
 any conflicts between task names, they are not registered at the top level of distgo-task and must be invoked using
 their fully qualified name.
-`,
+
+As a special case, running this command with no arguments but with the --verify flag runs the verification operation for
+all asset-provided tasks that register as verify tasks. When running with the --verify flag, if the --apply flag is also
+specified, the verification will attempt to apply any changes, while otherwise it will attempt to only verify state
+without making any modifications.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// if not in verify mode, print help and exit
+			if !distgoTaskVerifyFlagVal {
+				return cmd.Help()
+			}
+			projectInfo, projectParam, err := distgoProjectParamFromFlags()
+			if err != nil {
+				return err
+			}
+			return runVerifyTask(projectInfo, projectParam, distgoTaskVerifyApplyFlagVal, cmd.OutOrStdout(), cmd.OutOrStderr())
+		},
 	}
 )
+
+var (
+	distgoTaskVerifyFlagVal      bool
+	distgoTaskVerifyApplyFlagVal bool
+
+	// stores an instance of AssetProvidedTask[any] that dispatches to a typed AssetProvidedTask based on the asset
+	// type.
+	assetProvidedTaskDispatcher = distgotaskproviderinternal.AssetProvidedTaskDispatcher()
+
+	// stores all information registered by assets for verify tasks.
+	// Global because the distgoTaskVerifyCmd must be able to reference the variable and that command must be
+	// initialized before assets are loaded, but value of the variable is populated by asset loading.
+	// The TaskInfo.VerifyOptions field for these values must be non-nil.
+	verifyTaskInfos []assetapi.AssetTaskInfo
+)
+
+func init() {
+	distgoTaskCmd.Flags().BoolVar(&distgoTaskVerifyFlagVal, "verify", false, "run the verify operation for tasks")
+	distgoTaskCmd.Flags().BoolVar(&distgoTaskVerifyApplyFlagVal, "apply", false, "apply verify changes when possible (only used if verify flag is set)")
+}
 
 // addAssetProvidedTaskCommands adds all asset-provided tasks from the provided assetsWithTaskInfos to the command tree
 // by registering commands on distgoTaskCmd. This is a separate function because asset-provided commands can only be
@@ -120,6 +158,47 @@ func addAssetProvidedTaskCommands(assetsWithTaskInfos []assetapi.Asset) error {
 			distgoTaskCmd.AddCommand(cmd)
 			distgoTaskSubcommands[cmdName] = struct{}{}
 		}
+	}
+	return nil
+}
+
+func runVerifyTask(
+	projectInfo distgo.ProjectInfo,
+	projectParam distgo.ProjectParam,
+	applyMode bool,
+	stdout,
+	stderr io.Writer,
+) error {
+	// if there are no verify tasks, return immediately
+	if len(verifyTaskInfos) == 0 {
+		return nil
+	}
+
+	taskInputs := make(map[assetapi.AssetType]any)
+
+	var errTaskStrings []string
+	for _, verifyTaskInfo := range verifyTaskInfos {
+		taskInput, ok := taskInputs[verifyTaskInfo.AssetType]
+		if !ok {
+			var err error
+			// taskInput not yet created for this asset type: create it
+			taskInput, err = assetProvidedTaskDispatcher.CreateVerifyTaskInput(verifyTaskInfo.AssetType, projectInfo, projectParam)
+			// treat error at this level as blocking
+			if err != nil {
+				return errors.Wrapf(err, "failed to create verify task for asset %s of type %s", verifyTaskInfo.AssetName, verifyTaskInfo.AssetType)
+			}
+			taskInputs[verifyTaskInfo.AssetType] = taskInput
+		}
+
+		if err := assetProvidedTaskDispatcher.RunVerifyTask(verifyTaskInfo, taskInput, applyMode, stdout, stderr); err != nil {
+			// if error occurred, record and print.
+			// Continue because all verification tasks should run.
+			errTaskStrings = append(errTaskStrings, fmt.Sprintf("* %s.%s.%s", verifyTaskInfo.AssetType, verifyTaskInfo.AssetName, verifyTaskInfo.TaskInfo.Name))
+			_, _ = fmt.Fprintln(stderr, err.Error())
+		}
+	}
+	if len(errTaskStrings) > 0 {
+		return fmt.Errorf("%d verify task(s) failed:\n%s", len(errTaskStrings), strings.Join(errTaskStrings, "\n"))
 	}
 	return nil
 }

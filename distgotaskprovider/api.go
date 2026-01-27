@@ -14,6 +14,10 @@
 
 package distgotaskprovider
 
+import (
+	"github.com/palantir/godel/v2/framework/godellauncher"
+)
+
 // TaskInfo is the information needed to create a distgo task.
 // Based on the godel TaskInfo definition at https://github.com/palantir/godel/blob/8537d0ea9067d3bdd36d5db06069b71fde92188b/framework/pluginapi/v2/pluginapi/taskinfo.go#L44.
 type TaskInfo struct {
@@ -28,9 +32,29 @@ type TaskInfo struct {
 	// different from the command used to invoke the task on the asset.
 	Command []string `json:"command"`
 
+	// VerifyOptions specifies the configuration for the "verify" operation for the task. If nil, indicates that the
+	// task is not a "verify" task.
+	VerifyOptions *VerifyOptions `json:"verifyOptions"`
+
 	// RegisterAsTopLevelDistgoTaskCommand indicates whether this task should be registered as a top-level command under
 	// the "distgo-task" task. The command is always registered as a fully qualified command regardless of this value.
 	// Even if this value is true, the command may not be registered as a top-level command if its name conflicts with
 	// any default values or other with top-level commands registered by other assets.
 	RegisterAsTopLevelDistgoTaskCommand bool `json:"registerAsTopLevelDistgoTaskCommand"`
+}
+
+// VerifyOptions specifies how the task should be run in "verify" mode.
+// Based on the godel VerifyOptions definition at https://github.com/palantir/godel/blob/8537d0ea9067d3bdd36d5db06069b71fde92188b/framework/pluginapi/v2/pluginapi/verifyopts.go#L35
+type VerifyOptions struct {
+	VerifyTaskFlags []VerifyFlag `json:"verifyTaskFlags"`
+	ApplyTrueArgs   []string     `json:"applyTrueArgs"`
+	ApplyFalseArgs  []string     `json:"applyFalseArgs"`
+}
+
+// VerifyFlag specifies the settings for the verify flag for distgo TaskProvider tasks.
+// Based on the godel VerifyFlag definition at https://github.com/palantir/godel/blob/429e630ed3d426c324ab6929ceb11f9aca553669/framework/pluginapi/verifyopts.go#L143
+type VerifyFlag struct {
+	NameVar        string                 `json:"name"`
+	DescriptionVar string                 `json:"description"`
+	TypeVar        godellauncher.FlagType `json:"type"`
 }
