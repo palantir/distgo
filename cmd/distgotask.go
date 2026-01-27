@@ -128,7 +128,7 @@ func addAssetProvidedTaskCommands(assetsWithTaskInfos []assetapi.Asset) error {
 			}
 
 			// create the command for the asset-provided task
-			cmd, err := distgotaskproviderinternal.NewAssetProvidedTaskCommand(assetTaskInfo)
+			cmd, err := assetProvidedTaskDispatcher.NewAssetProvidedTaskCommand(assetTaskInfo, &globalFlagValsAndFactories)
 			if err != nil {
 				return errors.Wrapf(err, "failed to create asset-provided task for asset %s of type %s at %s", taskInfos.AssetName, asset.AssetType, asset.AssetPath)
 			}
@@ -149,7 +149,7 @@ func addAssetProvidedTaskCommands(assetsWithTaskInfos []assetapi.Asset) error {
 
 			// create a new instance of the command to add as the subcommand: required because each instance of
 			// *cobra.Command can only have a single parent Command.
-			cmd, err = distgotaskproviderinternal.NewAssetProvidedTaskCommand(assetTaskInfo)
+			cmd, err = assetProvidedTaskDispatcher.NewAssetProvidedTaskCommand(assetTaskInfo, &globalFlagValsAndFactories)
 			if err != nil {
 				return errors.Wrapf(err, "failed to create asset-provided task for asset %s of type %s at %s", taskInfos.AssetName, asset.AssetType, asset.AssetPath)
 			}
