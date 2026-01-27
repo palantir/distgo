@@ -51,20 +51,24 @@ type AssetProvidedTask[T any] interface {
 // AssetProvidedTaskDispatcher returns an "untyped" AssetProvidedTask that delegates to supported typed implementations
 // of AssetProvidedTask based on the AssetType of the asset-provided task.
 func AssetProvidedTaskDispatcher() AssetProvidedTask[any] {
-	return &assetProvidedTaskDispatcher{}
+	return &assetProvidedTaskDispatcher{
+		disterAssetProvidedTask: &disterAssetProvidedTask{},
+	}
 }
 
+// assetProvidedTaskDispatcher is an implementation of AssetProvidedTask[any] that dispatches to a stored
+// AssetProvidedTask based on asset type.
 type assetProvidedTaskDispatcher struct {
-	// this struct will store an interface implementation for each supported AssetType
-	// and its function implementations will delegate based on the type, as well as performing
-	// type conversions. This is effectively a union type. Necessary because Go generics don't
-	// support erasure/storing instantiated types within a single untyped type.
+	// AssetProvidedTask for disters
+	disterAssetProvidedTask AssetProvidedTask[DisterVerifyTaskInput]
 }
 
 var _ AssetProvidedTask[any] = (*assetProvidedTaskDispatcher)(nil)
 
 func (a *assetProvidedTaskDispatcher) NewAssetProvidedTaskCommand(assetTaskInfo assetapi.AssetTaskInfo, globalFlagValsAndFactories *cmdinternal.GlobalFlagValsAndFactories) (*cobra.Command, error) {
 	switch assetTaskInfo.AssetType {
+	case assetapi.Dister:
+		return a.disterAssetProvidedTask.NewAssetProvidedTaskCommand(assetTaskInfo, globalFlagValsAndFactories)
 	default:
 		return nil, errors.Errorf("asset type %q is not supported for asset-provided tasks", assetTaskInfo.AssetType)
 	}
@@ -72,6 +76,8 @@ func (a *assetProvidedTaskDispatcher) NewAssetProvidedTaskCommand(assetTaskInfo 
 
 func (a *assetProvidedTaskDispatcher) CreateVerifyTaskInput(assetType assetapi.AssetType, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) (any, error) {
 	switch assetType {
+	case assetapi.Dister:
+		return a.disterAssetProvidedTask.CreateVerifyTaskInput(assetType, projectInfo, projectParam)
 	default:
 		return nil, errors.Errorf("asset type %q is not supported for asset-provided tasks", assetType)
 	}
@@ -79,6 +85,12 @@ func (a *assetProvidedTaskDispatcher) CreateVerifyTaskInput(assetType assetapi.A
 
 func (a *assetProvidedTaskDispatcher) RunVerifyTask(verifyTaskInfo assetapi.AssetTaskInfo, input any, applyMode bool, stdout, stderr io.Writer) error {
 	switch verifyTaskInfo.AssetType {
+	case assetapi.Dister:
+		typedInput, ok := input.(DisterVerifyTaskInput)
+		if !ok {
+			return errors.Errorf("invalid input type %T, expected DisterVerifyTaskInput", input)
+		}
+		return a.disterAssetProvidedTask.RunVerifyTask(verifyTaskInfo, typedInput, applyMode, stdout, stderr)
 	default:
 		return errors.Errorf("asset type %q is not supported for verify tasks", verifyTaskInfo.AssetType)
 	}
