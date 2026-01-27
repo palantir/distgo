@@ -19,6 +19,7 @@ import (
 	"io"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/internal/assetapi"
@@ -72,7 +73,7 @@ var (
 
 func init() {
 	distgoTaskCmd.Flags().BoolVar(&distgoTaskVerifyFlagVal, "verify", false, "run the verify operation for tasks")
-	distgoTaskCmd.Flags().BoolVar(&distgoTaskVerifyApplyFlagVal, "apply", false, "apply verify changes when possible")
+	distgoTaskCmd.Flags().BoolVar(&distgoTaskVerifyApplyFlagVal, "apply", false, "apply verify changes when possible (only used if verify flag is set)")
 }
 
 // addAssetProvidedTaskCommands adds all asset-provided tasks from the provided assetsWithTaskInfos to the command tree
@@ -175,29 +176,29 @@ func runVerifyTask(
 
 	taskInputs := make(map[assetapi.AssetType]any)
 
-	errorOccurred := false
+	var errTaskStrings []string
 	for _, verifyTaskInfo := range verifyTaskInfos {
 		taskInput, ok := taskInputs[verifyTaskInfo.AssetType]
 		if !ok {
 			var err error
 			// taskInput not yet created for this asset type: create it
 			taskInput, err = assetProvidedTaskDispatcher.CreateVerifyTaskInput(verifyTaskInfo.AssetType, projectInfo, projectParam)
-			taskInputs[verifyTaskInfo.AssetType] = taskInput
 			// treat error at this level as blocking
 			if err != nil {
 				return errors.Wrapf(err, "failed to create verify task for asset %s of type %s", verifyTaskInfo.AssetName, verifyTaskInfo.AssetType)
 			}
+			taskInputs[verifyTaskInfo.AssetType] = taskInput
 		}
 
 		if err := assetProvidedTaskDispatcher.RunVerifyTask(verifyTaskInfo, taskInput, applyMode, stdout, stderr); err != nil {
 			// if error occurred, record and print.
 			// Continue because all verification tasks should run.
-			errorOccurred = true
+			errTaskStrings = append(errTaskStrings, fmt.Sprintf("* %s.%s.%s", verifyTaskInfo.AssetType, verifyTaskInfo.AssetName, verifyTaskInfo.TaskInfo.Name))
 			_, _ = fmt.Fprintln(stderr, err.Error())
 		}
 	}
-	if errorOccurred {
-		return fmt.Errorf("")
+	if len(errTaskStrings) > 0 {
+		return fmt.Errorf("%d verify task(s) failed:\n%s", len(errTaskStrings), strings.Join(errTaskStrings, "\n"))
 	}
 	return nil
 }

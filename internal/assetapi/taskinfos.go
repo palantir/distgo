@@ -83,7 +83,8 @@ func GetTaskProviderVerifyTasksFromAssets(assets Assets) []AssetTaskInfo {
 			if currAsset.TaskInfos == nil {
 				continue
 			}
-			for _, currTaskInfo := range currAsset.TaskInfos.TaskInfos {
+			for _, taskInfoKey := range slices.Sorted(maps.Keys(currAsset.TaskInfos.TaskInfos)) {
+				currTaskInfo := currAsset.TaskInfos.TaskInfos[taskInfoKey]
 				if currTaskInfo.VerifyOptions == nil {
 					continue
 				}
