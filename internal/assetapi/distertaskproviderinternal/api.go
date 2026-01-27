@@ -31,7 +31,7 @@ const (
 	AllProductTaskOutputInfoFlagName = "all-product-task-output-info"
 )
 
-// ProductsDisterConfig stores the YAML configuration for disters. It is represented as a map from ProductID to DistID'
+// ProductsDisterConfig stores the YAML configuration for disters. It is represented as a map from ProductID to DistID
 // to DisterConfigYAML.
 type ProductsDisterConfig map[distgo.ProductID]map[distgo.DistID]distertaskproviderapi.DisterConfigYAML
 

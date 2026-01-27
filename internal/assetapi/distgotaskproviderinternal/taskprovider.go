@@ -90,7 +90,7 @@ func (a *assetProvidedTaskDispatcher) RunVerifyTask(verifyTaskInfo assetapi.Asse
 		if !ok {
 			return errors.Errorf("invalid input type %T, expected DisterVerifyTaskInput", input)
 		}
-		return a.RunVerifyTask(verifyTaskInfo, typedInput, applyMode, stdout, stderr)
+		return a.disterAssetProvidedTask.RunVerifyTask(verifyTaskInfo, typedInput, applyMode, stdout, stderr)
 	default:
 		return errors.Errorf("asset type %q is not supported for verify tasks", verifyTaskInfo.AssetType)
 	}
