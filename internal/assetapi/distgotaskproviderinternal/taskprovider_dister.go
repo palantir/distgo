@@ -15,10 +15,12 @@
 package distgotaskproviderinternal
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/palantir/distgo/dister/distertaskprovider/distertaskproviderapi"
 	"github.com/palantir/distgo/distgo"
+	"github.com/palantir/distgo/distgotaskprovider"
 	"github.com/palantir/distgo/internal/assetapi"
 	"github.com/palantir/distgo/internal/assetapi/distertaskproviderinternal"
 	"github.com/palantir/distgo/internal/cmdinternal"
@@ -54,6 +56,9 @@ func (d *disterAssetProvidedTask) NewAssetProvidedTaskCommand(assetTaskInfo asse
 			}
 			disterConfigYAML := distertaskproviderinternal.FilterDisterConfigYAML(allConfigYAML, assetTaskInfo.AssetName)
 
+			// prepend any global flag values
+			args = append(getGlobalFlagArgs(assetTaskInfo.TaskInfo, *globalFlagValsAndFactories), args...)
+
 			return distertaskproviderinternal.RunDisterTaskProviderAssetCommand(
 				assetTaskInfo.AssetPath,
 				assetTaskInfo.TaskInfo.Command,
@@ -65,6 +70,19 @@ func (d *disterAssetProvidedTask) NewAssetProvidedTaskCommand(assetTaskInfo asse
 			)
 		},
 	}, nil
+}
+
+// getGlobalFlagArgs returns a slice that contains the arguments that represent the flags for global flag values
+// requested by the specified taskInfo.
+func getGlobalFlagArgs(taskInfo distgotaskprovider.TaskInfo, globalFlagValsAndFactories cmdinternal.GlobalFlagValsAndFactories) []string {
+	var flagArgs []string
+	if debugFlagName := taskInfo.GlobalFlagOptions.DebugFlagName; debugFlagName != "" {
+		flagArgs = append(flagArgs, fmt.Sprintf("--%s=%t", debugFlagName, globalFlagValsAndFactories.DebugFlagVal))
+	}
+	if projectDirFlagName := taskInfo.GlobalFlagOptions.ProjectDirFlagName; projectDirFlagName != "" && globalFlagValsAndFactories.ProjectDirFlagVal != "" {
+		flagArgs = append(flagArgs, fmt.Sprintf("--%s=%s", projectDirFlagName, globalFlagValsAndFactories.ProjectDirFlagVal))
+	}
+	return flagArgs
 }
 
 func getDisterTaskCommandArgsFromFlagVals(globalFlagValsAndFactories cmdinternal.GlobalFlagValsAndFactories) (distertaskproviderinternal.ProductsDisterConfig, map[distgo.ProductID]distgo.ProductTaskOutputInfo, error) {
