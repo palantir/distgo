@@ -25,7 +25,7 @@ import (
 
 // AddDisterTaskCommands adds all commands related to dister-provided tasks for the specified dister type specified by
 // tasks to the provided rootCmd. Also registers the task-info command that returns the task infos for the tasks.
-func AddDisterTaskCommands(rootCmd *cobra.Command, disterName string, tasks []distertaskproviderapi.DisterTask) error {
+func AddDisterTaskCommands(rootCmd *cobra.Command, disterName string, tasks ...distertaskproviderapi.DisterTask) error {
 	taskInfosMap := make(map[string]distgotaskprovider.TaskInfo)
 	for _, task := range tasks {
 		taskInfosMap[task.TaskInfo.Name] = task.TaskInfo
