@@ -41,7 +41,7 @@ type TaskRunner interface {
 	// is to register flags on the command that can be used/referenced in RunTask.
 	ConfigureCommand(cmd *cobra.Command)
 
-	// RunTask runs the task associated with the runner. It is provided with the configuration YML for all the disters
+	// RunTask runs the task associated with the runner. It is provided with the configuration YAML for all the disters
 	// of the dister type and the ProductTaskOutputInfos associated with the disters of the dister type. The args
 	// parameter contains all the arguments provided to the command that invoked the task. Task output can be written
 	// to the provided stdout and stderr writers.
