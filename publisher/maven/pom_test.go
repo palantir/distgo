@@ -110,9 +110,11 @@ func TestRenderPOM(t *testing.T) {
 `,
 		},
 	} {
-		got, err := renderPOM(tc.productID, tc.version, tc.groupID, tc.packagingType, tc.git)
-		require.NoError(t, err, "Case %d", i)
-		assert.Equal(t, tc.want, got, "Case %d: %s\nOutput:\n%s", i, tc.name, got)
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := renderPOM(tc.productID, tc.version, tc.groupID, tc.packagingType, tc.git)
+			require.NoError(t, err, "Case %d", i)
+			assert.Equal(t, tc.want, got, "Case %d: %s\nOutput:\n%s", i, tc.name, got)
+		})
 	}
 }
 
@@ -210,11 +212,13 @@ func TestGetSinglePackagingExtensionForProduct(t *testing.T) {
 			"",
 		},
 	} {
-		_, err := getSinglePackagingExtensionForProduct(tc.outputInfo)
-		if tc.wantErrorStr == "" {
-			require.NoError(t, err)
-		} else {
-			assert.EqualError(t, err, tc.wantErrorStr)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := getSinglePackagingExtensionForProduct(tc.outputInfo)
+			if tc.wantErrorStr == "" {
+				require.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, tc.wantErrorStr)
+			}
+		})
 	}
 }
