@@ -92,89 +92,91 @@ func RunAssetDistTest(t *testing.T,
 	require.NoError(t, err)
 
 	for i, tc := range testCases {
-		projectDir, err := os.MkdirTemp(tmpDir, "")
-		require.NoError(t, err)
-
-		gittest.InitGitDir(t, projectDir)
-		require.NoError(t, err)
-
-		var sortedKeys []string
-		for k := range tc.ConfigFiles {
-			sortedKeys = append(sortedKeys, k)
-		}
-		sort.Strings(sortedKeys)
-
-		for _, k := range sortedKeys {
-			err = os.MkdirAll(filepath.Dir(filepath.Join(projectDir, k)), 0755)
+		t.Run(tc.Name, func(t *testing.T) {
+			projectDir, err := os.MkdirTemp(tmpDir, "")
 			require.NoError(t, err)
-			err = os.WriteFile(filepath.Join(projectDir, k), []byte(tc.ConfigFiles[k]), 0644)
+
+			gittest.InitGitDir(t, projectDir)
 			require.NoError(t, err)
-		}
 
-		// write files required for test framework
-		err = files.WriteGoFiles(projectDir, builtinSpecs)
-		require.NoError(t, err)
-		// write provided specs
-		err = files.WriteGoFiles(projectDir, tc.Specs)
-		require.NoError(t, err)
+			var sortedKeys []string
+			for k := range tc.ConfigFiles {
+				sortedKeys = append(sortedKeys, k)
+			}
+			sort.Strings(sortedKeys)
 
-		// commit all files and tag project as v1.0.0
-		gittest.CommitAllFiles(t, projectDir, "Commit all files")
-		gittest.CreateGitTag(t, projectDir, "v1.0.0")
-
-		// if postTagAction is provided, run it
-		if tc.PostTagAction != nil {
-			tc.PostTagAction(projectDir)
-		}
-
-		outputBuf := &bytes.Buffer{}
-		func() {
-			wantWd := projectDir
-			err = os.Chdir(wantWd)
-			require.NoError(t, err)
-			defer func() {
-				err = os.Chdir(wd)
+			for _, k := range sortedKeys {
+				err = os.MkdirAll(filepath.Dir(filepath.Join(projectDir, k)), 0755)
 				require.NoError(t, err)
-			}()
-
-			var assetProviders []pluginapitester.AssetProvider
-			if assetProvider != nil {
-				assetProviders = append(assetProviders, assetProvider)
+				err = os.WriteFile(filepath.Join(projectDir, k), []byte(tc.ConfigFiles[k]), 0644)
+				require.NoError(t, err)
 			}
 
-			// run build task first
+			// write files required for test framework
+			err = files.WriteGoFiles(projectDir, builtinSpecs)
+			require.NoError(t, err)
+			// write provided specs
+			err = files.WriteGoFiles(projectDir, tc.Specs)
+			require.NoError(t, err)
+
+			// commit all files and tag project as v1.0.0
+			gittest.CommitAllFiles(t, projectDir, "Commit all files")
+			gittest.CreateGitTag(t, projectDir, "v1.0.0")
+
+			// if postTagAction is provided, run it
+			if tc.PostTagAction != nil {
+				tc.PostTagAction(projectDir)
+			}
+
+			outputBuf := &bytes.Buffer{}
 			func() {
+				wantWd := projectDir
+				err = os.Chdir(wantWd)
+				require.NoError(t, err)
+				defer func() {
+					err = os.Chdir(wd)
+					require.NoError(t, err)
+				}()
+
+				var assetProviders []pluginapitester.AssetProvider
+				if assetProvider != nil {
+					assetProviders = append(assetProviders, assetProvider)
+				}
+
+				// run build task first
+				func() {
+					runPluginCleanup, err := pluginapitester.RunPlugin(
+						pluginProvider,
+						assetProviders,
+						"build", nil,
+						projectDir, false, outputBuf)
+					defer runPluginCleanup()
+					require.NoError(t, err, "Case %d: %s\nBuild operation failed with output:\n%s", i, tc.Name, outputBuf.String())
+					outputBuf = &bytes.Buffer{}
+				}()
+
 				runPluginCleanup, err := pluginapitester.RunPlugin(
 					pluginProvider,
 					assetProviders,
-					"build", nil,
+					"dist", nil,
 					projectDir, false, outputBuf)
 				defer runPluginCleanup()
-				require.NoError(t, err, "Case %d: %s\nBuild operation failed with output:\n%s", i, tc.Name, outputBuf.String())
-				outputBuf = &bytes.Buffer{}
+				if tc.WantError {
+					require.EqualError(t, err, "", "Case %d: %s", i, tc.Name)
+				} else {
+					require.NoError(t, err, "Case %d: %s\nOutput:\n%s", i, tc.Name, outputBuf.String())
+				}
+				if tc.WantOutput != nil {
+					assert.Equal(t, tc.WantOutput(projectDir), outputBuf.String(), "Case %d: %s", i, tc.Name)
+				}
+				if tc.ValidateOutput != nil {
+					tc.ValidateOutput(projectDir, outputBuf.String())
+				}
+				if tc.Validate != nil {
+					tc.Validate(projectDir)
+				}
 			}()
-
-			runPluginCleanup, err := pluginapitester.RunPlugin(
-				pluginProvider,
-				assetProviders,
-				"dist", nil,
-				projectDir, false, outputBuf)
-			defer runPluginCleanup()
-			if tc.WantError {
-				require.EqualError(t, err, "", "Case %d: %s", i, tc.Name)
-			} else {
-				require.NoError(t, err, "Case %d: %s\nOutput:\n%s", i, tc.Name, outputBuf.String())
-			}
-			if tc.WantOutput != nil {
-				assert.Equal(t, tc.WantOutput(projectDir), outputBuf.String(), "Case %d: %s", i, tc.Name)
-			}
-			if tc.ValidateOutput != nil {
-				tc.ValidateOutput(projectDir, outputBuf.String())
-			}
-			if tc.Validate != nil {
-				tc.Validate(projectDir)
-			}
-		}()
+		})
 	}
 }
 
