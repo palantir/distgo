@@ -82,10 +82,10 @@ func TestDockerBuild(t *testing.T) {
 		name            string
 		projectCfg      distgoconfig.ProjectConfig
 		tagKeys         []string
-		preDockerAction func(projectDir string, projectCfg distgoconfig.ProjectConfig)
+		preDockerAction func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig)
 		wantErrorRegexp string
 		wantStdout      string
-		validate        func(caseNum int, name, projectDir string)
+		validate        func(t *testing.T, caseNum int, name, projectDir string)
 	}{
 		{
 			"build and dist output artifacts are hard-linked into context directory",
@@ -123,7 +123,7 @@ func TestDockerBuild(t *testing.T) {
 				}),
 			},
 			nil,
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
@@ -135,7 +135,7 @@ func TestDockerBuild(t *testing.T) {
 			},
 			"",
 			"",
-			func(caseNum int, name, projectDir string) {
+			func(t *testing.T, caseNum int, name, projectDir string) {
 				_, err := os.Stat(path.Join(projectDir, "docker-context-dir", "foo", "build", osarch.Current().String(), "foo"))
 				require.NoError(t, err)
 				_, err = os.Stat(path.Join(projectDir, "docker-context-dir", "foo", "dist", "os-arch-bin", fmt.Sprintf("foo-0.1.0-%v.tgz", osarch.Current())))
@@ -180,7 +180,7 @@ func TestDockerBuild(t *testing.T) {
 				}),
 			},
 			nil,
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
@@ -192,7 +192,7 @@ func TestDockerBuild(t *testing.T) {
 			},
 			"",
 			"",
-			func(caseNum int, name, projectDir string) {
+			func(t *testing.T, caseNum int, name, projectDir string) {
 				_, err := os.Stat(path.Join(projectDir, "docker-context-dir", "foo", "build", osarch.Current().String(), "foo"))
 				require.NoError(t, err)
 				_, err = os.Stat(path.Join(projectDir, "docker-context-dir", "docker", "dist-latest.tgz"))
@@ -237,7 +237,7 @@ func TestDockerBuild(t *testing.T) {
 				}),
 			},
 			nil,
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
@@ -270,7 +270,7 @@ RUN echo 'InputDistArtifacts for foo: [input-products/foo/dist/os-arch-bin/foo-0
 RUN echo 'Tag for foo: registry-host:5000/foo:latest'
 RUN echo 'Tags for foo: [registry-host:5000/foo:latest]'
 `, osarch.Current().String(), osarch.Current().String()),
-			func(caseNum int, name, projectDir string) {
+			func(t *testing.T, caseNum int, name, projectDir string) {
 				bytes, err := os.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
 				require.NoError(t, err)
 				originalDockerfileContent := fmt.Sprintf(`FROM alpine:3.5
@@ -311,7 +311,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 				}),
 			},
 			nil,
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
@@ -330,7 +330,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 FROM alpine:3.5
 RUN echo 'Tags for foo: [foo:5 foo:3 foo:2 foo:0 foo:1 foo:4]'
 `,
-			func(caseNum int, name, projectDir string) {
+			func(t *testing.T, caseNum int, name, projectDir string) {
 				bytes, err := os.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
 				require.NoError(t, err)
 				originalDockerfileContent := `FROM alpine:3.5
@@ -372,7 +372,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 				}),
 			},
 			nil,
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
@@ -400,7 +400,7 @@ RUN echo 'Repository: registry-host:5000/'
 RUN echo 'RepositoryLiteral: registry-host:5000'
 RUN echo 'InputBuildArtifact for bar: input-products/foo/build/%s/foo'
 `, osarch.Current().String()),
-			func(caseNum int, name, projectDir string) {
+			func(t *testing.T, caseNum int, name, projectDir string) {
 				bytes, err := os.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
 				require.NoError(t, err)
 				originalDockerfileContent := fmt.Sprintf(`FROM alpine:3.5
@@ -459,7 +459,7 @@ tar -cf "$DIST_DIR/$DIST_NAME".tar -C "$DIST_WORK_DIR" out.txt`),
 				}),
 			},
 			nil,
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
@@ -487,7 +487,7 @@ RUN echo 'Repository: registry-host:5000/'
 RUN echo 'RepositoryLiteral: registry-host:5000'
 RUN echo 'InputDistArtifacts for bar: [input-products/foo/dist/manual/foo-0.1.0.tar]'
 `,
-			func(caseNum int, name, projectDir string) {
+			func(t *testing.T, caseNum int, name, projectDir string) {
 				bytes, err := os.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
 				require.NoError(t, err)
 				originalDockerfileContent := `FROM alpine:3.5
@@ -537,7 +537,7 @@ RUN echo 'InputDistArtifacts for bar: {{InputDistArtifacts "foo" "manual"}}'
 				}),
 			},
 			nil,
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
@@ -568,7 +568,7 @@ RUN echo 'InputBuildArtifact for foo: input-products/foo/build/%s/foo'
 RUN echo 'InputDistArtifacts for foo: [input-products/foo/dist/os-arch-bin/foo-0.1.0-%s.tgz]'
 RUN echo 'Tags for foo: [foo:latest]'
 `, osarch.Current().String(), osarch.Current().String()),
-			func(caseNum int, name, projectDir string) {
+			func(t *testing.T, caseNum int, name, projectDir string) {
 				bytes, err := os.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
 				require.NoError(t, err)
 				originalDockerfileContent := fmt.Sprintf(`FROM alpine:3.5
@@ -622,7 +622,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 				}),
 			},
 			nil,
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
@@ -651,7 +651,7 @@ RUN echo 'InputBuildArtifact for foo: {{InputBuildArtifact "foo" %q}}'
 RUN echo 'InputDistArtifacts for foo: {{InputDistArtifacts "foo" "os-arch-bin"}}'
 RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 `, osarch.Current().String()),
-			func(caseNum int, name, projectDir string) {
+			func(t *testing.T, caseNum int, name, projectDir string) {
 				bytes, err := os.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
 				require.NoError(t, err)
 				originalDockerfileContent := fmt.Sprintf(`FROM alpine:3.5
@@ -706,7 +706,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 			[]string{
 				"snapshot",
 			},
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
@@ -737,7 +737,7 @@ RUN echo 'InputBuildArtifact for foo: input-products/foo/build/%s/foo'
 RUN echo 'InputDistArtifacts for foo: [input-products/foo/dist/os-arch-bin/foo-0.1.0-%s.tgz]'
 RUN echo 'Tags for foo: [registry-host:5000/foo:latest]'
 `, osarch.Current().String(), osarch.Current().String()),
-			func(caseNum int, name, projectDir string) {
+			func(t *testing.T, caseNum int, name, projectDir string) {
 				bytes, err := os.ReadFile(path.Join(projectDir, "docker-context-dir", "Dockerfile"))
 				require.NoError(t, err)
 				originalDockerfileContent := fmt.Sprintf(`FROM alpine:3.5
@@ -753,59 +753,62 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 			},
 		},
 	} {
-		projectDir, err := os.MkdirTemp(tmp, "")
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-
-		gittest.InitGitDir(t, projectDir)
-		err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		err = os.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		err = os.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		gittest.CommitAllFiles(t, projectDir, "Commit")
-
-		if tc.preDockerAction != nil {
-			tc.preDockerAction(projectDir, tc.projectCfg)
-		}
-
-		projectVersionerFactory, err := projectversionerfactory.New(nil, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		disterFactory, err := disterfactory.New(nil, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		defaultDisterCfg, err := disterfactory.DefaultConfig()
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		dockerBuilderFactory, err := dockerbuilderfactory.New([]dockerbuilder.Creator{dockerbuilder.NewCreator(printDockerfileDockerBuilderTypeName, newPrintDockerfileBuilder)}, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		publisherFactory, err := publisherfactory.New(nil, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-
-		projectParam, err := tc.projectCfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-
-		projectInfo, err := projectParam.ProjectInfo(projectDir)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-
-		preDistTime := time.Now().Truncate(time.Second).Add(-1 * time.Second)
-		err = dist.Products(projectInfo, projectParam, nil, nil, false, true, io.Discard)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-
-		buffer := &bytes.Buffer{}
-		err = docker.BuildProducts(projectInfo, projectParam, &preDistTime, nil, tc.tagKeys, false, false, buffer)
-		if tc.wantErrorRegexp == "" {
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, err := os.MkdirTemp(tmp, "")
 			require.NoError(t, err, "Case %d: %s", i, tc.name)
-		} else {
-			require.Error(t, err, fmt.Sprintf("Case %d: %s", i, tc.name))
-			assert.Regexp(t, regexp.MustCompile(tc.wantErrorRegexp), err.Error(), "Case %d: %s", i, tc.name)
-		}
 
-		if tc.wantStdout != "" {
-			assert.Equal(t, tc.wantStdout, buffer.String(), "Case %d: %s\nOutput:\n%s", i, tc.name, buffer.String())
-		}
+			gittest.InitGitDir(t, projectDir)
+			err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			err = os.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			err = os.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			gittest.CommitAllFiles(t, projectDir, "Commit")
 
-		if tc.validate != nil {
-			tc.validate(i, tc.name, projectDir)
-		}
+			if tc.preDockerAction != nil {
+				tc.preDockerAction(t, projectDir, tc.projectCfg)
+			}
+
+			projectVersionerFactory, err := projectversionerfactory.New(nil, nil)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			disterFactory, err := disterfactory.New(nil, nil)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			defaultDisterCfg, err := disterfactory.DefaultConfig()
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			dockerBuilderFactory, err := dockerbuilderfactory.New([]dockerbuilder.Creator{dockerbuilder.NewCreator(printDockerfileDockerBuilderTypeName, newPrintDockerfileBuilder)}, nil)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			publisherFactory, err := publisherfactory.New(nil, nil)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+
+			projectParam, err := tc.projectCfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+
+			projectInfo, err := projectParam.ProjectInfo(projectDir)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+
+			preDistTime := time.Now().Truncate(time.Second).Add(-1 * time.Second)
+			err = dist.Products(projectInfo, projectParam, nil, nil, false, true, io.Discard)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+
+			buffer := &bytes.Buffer{}
+			err = docker.BuildProducts(projectInfo, projectParam, &preDistTime, nil, tc.tagKeys, false, false, buffer)
+			if tc.wantErrorRegexp == "" {
+				require.NoError(t, err, "Case %d: %s", i, tc.name)
+			} else {
+				require.Error(t, err, fmt.Sprintf("Case %d: %s", i, tc.name))
+				assert.Regexp(t, regexp.MustCompile(tc.wantErrorRegexp), err.Error(), "Case %d: %s", i, tc.name)
+			}
+
+			if tc.wantStdout != "" {
+				assert.Equal(t, tc.wantStdout, buffer.String(), "Case %d: %s\nOutput:\n%s", i, tc.name, buffer.String())
+			}
+
+			if tc.validate != nil {
+				tc.validate(t, i, tc.name, projectDir)
+			}
+		})
+
 	}
 }
 

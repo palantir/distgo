@@ -145,34 +145,36 @@ products:
 			wantStdout: "[--foo-arg flag: arg3]\n",
 		},
 	} {
-		projectDir, err := os.MkdirTemp(tmpDir, "")
-		require.NoError(t, err)
-
-		err = files.WriteGoFiles(projectDir, tc.filesToCreate)
-		require.NoError(t, err, "Case %d", i)
-
-		configFile := path.Join(projectDir, "config.yml")
-		err = os.WriteFile(configFile, []byte(tc.config), 0644)
-		require.NoError(t, err)
-
-		var output []byte
-		func() {
-			err := os.Chdir(projectDir)
-			defer func() {
-				err := os.Chdir(wd)
-				require.NoError(t, err)
-			}()
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, err := os.MkdirTemp(tmpDir, "")
 			require.NoError(t, err)
 
-			args := []string{"--config", "config.yml", "run"}
-			args = append(args, tc.args...)
-			cmd := exec.Command(cli, args...)
-			output, err = cmd.CombinedOutput()
-			require.NoError(t, err, "Case %d: %s\nOutput: %s", i, tc.name, string(output))
-		}()
+			err = files.WriteGoFiles(projectDir, tc.filesToCreate)
+			require.NoError(t, err, "Case %d", i)
 
-		content := string(output)[strings.Index(string(output), "\n")+1:]
-		assert.Equal(t, tc.wantStdout, content, "Case %d: %s", i, tc.name)
+			configFile := path.Join(projectDir, "config.yml")
+			err = os.WriteFile(configFile, []byte(tc.config), 0644)
+			require.NoError(t, err)
+
+			var output []byte
+			func() {
+				err := os.Chdir(projectDir)
+				defer func() {
+					err := os.Chdir(wd)
+					require.NoError(t, err)
+				}()
+				require.NoError(t, err)
+
+				args := []string{"--config", "config.yml", "run"}
+				args = append(args, tc.args...)
+				cmd := exec.Command(cli, args...)
+				output, err = cmd.CombinedOutput()
+				require.NoError(t, err, "Case %d: %s\nOutput: %s", i, tc.name, string(output))
+			}()
+
+			content := string(output)[strings.Index(string(output), "\n")+1:]
+			assert.Equal(t, tc.wantStdout, content, "Case %d: %s", i, tc.name)
+		})
 	}
 }
 

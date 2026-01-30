@@ -903,12 +903,14 @@ products:
 			},
 		},
 	} {
-		var gotCfg distgoconfig.ProjectConfig
-		err := yaml.Unmarshal([]byte(tc.yml), &gotCfg)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		gotParam := testfuncs.NewProjectParam(t, gotCfg, "", fmt.Sprintf("Case %d: %s", i, tc.name))
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		assert.Equal(t, tc.want, gotParam, "Case %d: %s", i, tc.name)
+		t.Run(tc.name, func(t *testing.T) {
+			var gotCfg distgoconfig.ProjectConfig
+			err := yaml.Unmarshal([]byte(tc.yml), &gotCfg)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			gotParam := testfuncs.NewProjectParam(t, gotCfg, "", fmt.Sprintf("Case %d: %s", i, tc.name))
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			assert.Equal(t, tc.want, gotParam, "Case %d: %s", i, tc.name)
+		})
 	}
 }
 
@@ -1052,19 +1054,21 @@ product-defaults:
 			},
 		},
 	} {
-		currProjectDir, err := os.MkdirTemp(tmpDir, "")
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+		t.Run(tc.name, func(t *testing.T) {
+			currProjectDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		err = files.WriteGoFiles(currProjectDir, tc.gofiles)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			err = files.WriteGoFiles(currProjectDir, tc.gofiles)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		var gotCfg distgoconfig.ProjectConfig
-		err = yaml.Unmarshal([]byte(tc.yml), &gotCfg)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			var gotCfg distgoconfig.ProjectConfig
+			err = yaml.Unmarshal([]byte(tc.yml), &gotCfg)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		gotParam := testfuncs.NewProjectParam(t, gotCfg, currProjectDir, fmt.Sprintf("Case %d: %s", i, tc.name))
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		assert.Equal(t, tc.want, gotParam, "Case %d: %s", i, tc.name)
+			gotParam := testfuncs.NewProjectParam(t, gotCfg, currProjectDir, fmt.Sprintf("Case %d: %s", i, tc.name))
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			assert.Equal(t, tc.want, gotParam, "Case %d: %s", i, tc.name)
+		})
 	}
 }
 
@@ -1117,11 +1121,13 @@ products:
 			`invalid Docker input dist(s) specified for DockerBuilderParam "default" for product "test-1"`,
 		},
 	} {
-		var gotCfg distgoconfig.ProjectConfig
-		err := yaml.Unmarshal([]byte(tc.yml), &gotCfg)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		_, err = testfuncs.NewProjectParamReturnError(t, gotCfg, "", fmt.Sprintf("Case %d: %s", i, tc.name))
-		assert.EqualError(t, err, tc.wantError, "Case %d: %s", i, tc.name)
+		t.Run(tc.name, func(t *testing.T) {
+			var gotCfg distgoconfig.ProjectConfig
+			err := yaml.Unmarshal([]byte(tc.yml), &gotCfg)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			_, err = testfuncs.NewProjectParamReturnError(t, gotCfg, "", fmt.Sprintf("Case %d: %s", i, tc.name))
+			assert.EqualError(t, err, tc.wantError, "Case %d: %s", i, tc.name)
+		})
 	}
 }
 
@@ -1173,11 +1179,13 @@ products:
   test-3: cycle exists: test-3 -> test-1 -> test-2 -> test-3`,
 		},
 	} {
-		var gotCfg distgoconfig.ProjectConfig
-		err := yaml.Unmarshal([]byte(tc.yml), &gotCfg)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		_, err = testfuncs.NewProjectParamReturnError(t, gotCfg, "", fmt.Sprintf("Case %d: %s", i, tc.name))
-		assert.EqualError(t, err, tc.wantError, "Case %d: %s", i, tc.name)
+		t.Run(tc.name, func(t *testing.T) {
+			var gotCfg distgoconfig.ProjectConfig
+			err := yaml.Unmarshal([]byte(tc.yml), &gotCfg)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			_, err = testfuncs.NewProjectParamReturnError(t, gotCfg, "", fmt.Sprintf("Case %d: %s", i, tc.name))
+			assert.EqualError(t, err, tc.wantError, "Case %d: %s", i, tc.name)
+		})
 	}
 }
 
@@ -1285,21 +1293,23 @@ products:
 			},
 		},
 	} {
-		var gotCfg distgoconfig.ProjectConfig
-		err := yaml.Unmarshal([]byte(tc.yml), &gotCfg)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		gotParam := testfuncs.NewProjectParam(t, gotCfg, "", fmt.Sprintf("Case %d: %s", i, tc.name))
-		projectInfo, err := gotParam.ProjectInfo(projectDir)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		got := make(map[distgo.ProductID]distgo.ProductTaskOutputInfo)
-		for k, v := range gotParam.Products {
-			currInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, v)
+		t.Run(tc.name, func(t *testing.T) {
+			var gotCfg distgoconfig.ProjectConfig
+			err := yaml.Unmarshal([]byte(tc.yml), &gotCfg)
 			require.NoError(t, err, "Case %d: %s", i, tc.name)
-			got[k] = currInfo
-		}
-		assert.Equal(t, tc.want, got, "Case %d: %s", i, tc.name)
+			gotParam := testfuncs.NewProjectParam(t, gotCfg, "", fmt.Sprintf("Case %d: %s", i, tc.name))
+			projectInfo, err := gotParam.ProjectInfo(projectDir)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			got := make(map[distgo.ProductID]distgo.ProductTaskOutputInfo)
+			for k, v := range gotParam.Products {
+				currInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, v)
+				require.NoError(t, err, "Case %d: %s", i, tc.name)
+				got[k] = currInfo
+			}
+			assert.Equal(t, tc.want, got, "Case %d: %s", i, tc.name)
+		})
 	}
 }
 

@@ -116,27 +116,29 @@ out/build/foo/unspecified/%v/foo
 			},
 		},
 	} {
-		projectDir, err := os.MkdirTemp(tmpDir, "")
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		gittest.InitGitDir(t, projectDir)
-		if tc.setupProjectDir != nil {
-			tc.setupProjectDir(projectDir)
-		}
+			gittest.InitGitDir(t, projectDir)
+			if tc.setupProjectDir != nil {
+				tc.setupProjectDir(projectDir)
+			}
 
-		projectParam := testfuncs.NewProjectParam(t, tc.projectConfig, projectDir, fmt.Sprintf("Case %d: %s", i, tc.name))
-		projectInfo, err := projectParam.ProjectInfo(projectDir)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			projectParam := testfuncs.NewProjectParam(t, tc.projectConfig, projectDir, fmt.Sprintf("Case %d: %s", i, tc.name))
+			projectInfo, err := projectParam.ProjectInfo(projectDir)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		buf := &bytes.Buffer{}
-		err = artifacts.PrintBuildArtifacts(projectInfo, projectParam, nil, false, false, buf)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		assert.Equal(t, tc.wantAbsFalse(projectDir), buf.String(), "Case %d: %s", i, tc.name)
+			buf := &bytes.Buffer{}
+			err = artifacts.PrintBuildArtifacts(projectInfo, projectParam, nil, false, false, buf)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			assert.Equal(t, tc.wantAbsFalse(projectDir), buf.String(), "Case %d: %s", i, tc.name)
 
-		buf = &bytes.Buffer{}
-		err = artifacts.PrintBuildArtifacts(projectInfo, projectParam, nil, true, false, buf)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		assert.Equal(t, tc.wantAbsTrue(projectDir), buf.String(), "Case %d: %s", i, tc.name)
+			buf = &bytes.Buffer{}
+			err = artifacts.PrintBuildArtifacts(projectInfo, projectParam, nil, true, false, buf)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			assert.Equal(t, tc.wantAbsTrue(projectDir), buf.String(), "Case %d: %s", i, tc.name)
+		})
 	}
 }
 
@@ -146,18 +148,19 @@ func TestBuildArtifacts(t *testing.T) {
 	require.NoError(t, err)
 
 	for i, tc := range []struct {
+		name   string
 		params []distgo.ProductParam
 		want   func(projectDir string) map[distgo.ProductID][]string
 	}{
-		// empty spec
 		{
+			name:   "empty spec",
 			params: []distgo.ProductParam{},
 			want: func(projectDir string) map[distgo.ProductID][]string {
 				return map[distgo.ProductID][]string{}
 			},
 		},
-		// returns paths for all OS/arch combinations if requested osArchs is empty
 		{
+			name: "returns paths for all OS/arch combinations if requested osArchs is empty",
 			params: []distgo.ProductParam{
 				createBuildSpec("foo", "foo", []osarch.OSArch{
 					{OS: "darwin", Arch: "amd64"},
@@ -175,8 +178,8 @@ func TestBuildArtifacts(t *testing.T) {
 				}
 			},
 		},
-		// returns paths for all OS/arch combinations if requested osArchs is empty, with name override
 		{
+			name: "returns paths for all OS/arch combinations if requested osArchs is empty, with name override",
 			params: []distgo.ProductParam{
 				createBuildSpec("foo", "bar", []osarch.OSArch{
 					{OS: "darwin", Arch: "amd64"},
@@ -194,8 +197,8 @@ func TestBuildArtifacts(t *testing.T) {
 				}
 			},
 		},
-		// path to windows executable includes ".exe"
 		{
+			name: "path to windows executable includes \".exe\"",
 			params: []distgo.ProductParam{
 				createBuildSpec("foo", "foo", []osarch.OSArch{
 					{OS: "windows", Arch: "amd64"},
@@ -209,8 +212,8 @@ func TestBuildArtifacts(t *testing.T) {
 				}
 			},
 		},
-		// path to windows executable includes ".exe", with name override
 		{
+			name: "path to windows executable includes \".exe\", with name override",
 			params: []distgo.ProductParam{
 				createBuildSpec("foo", "bar", []osarch.OSArch{
 					{OS: "windows", Arch: "amd64"},
@@ -225,16 +228,18 @@ func TestBuildArtifacts(t *testing.T) {
 			},
 		},
 	} {
-		currProjectDir, err := os.MkdirTemp(tmpDir, "")
-		require.NoError(t, err)
+		t.Run(tc.name, func(t *testing.T) {
+			currProjectDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
 
-		projectInfo := distgo.ProjectInfo{
-			ProjectDir: currProjectDir,
-			Version:    "0.1.0",
-		}
-		got, err := artifacts.Build(projectInfo, tc.params, false)
-		require.NoError(t, err, "Case %d", i)
-		assert.Equal(t, tc.want(currProjectDir), got, "Case %d", i)
+			projectInfo := distgo.ProjectInfo{
+				ProjectDir: currProjectDir,
+				Version:    "0.1.0",
+			}
+			got, err := artifacts.Build(projectInfo, tc.params, false)
+			require.NoError(t, err, "Case %d", i)
+			assert.Equal(t, tc.want(currProjectDir), got, "Case %d", i)
+		})
 	}
 }
 
@@ -251,13 +256,14 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 	require.NoError(t, err)
 
 	for i, tc := range []struct {
+		name          string
 		params        []distgo.ProductParam
 		requiresBuild bool
 		beforeAction  func(projectInfo distgo.ProjectInfo, productParams []distgo.ProductParam)
 		want          func(projectDir string) map[distgo.ProductID][]string
 	}{
-		// returns paths to all artifacts if build has not happened
 		{
+			name: "returns paths to all artifacts if build has not happened",
 			params: []distgo.ProductParam{
 				createBuildSpec("foo", "foo", []osarch.OSArch{
 					{OS: "darwin", Arch: "amd64"},
@@ -275,8 +281,8 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 				}
 			},
 		},
-		// returns paths to all artifacts if build has not happened, no name collision with name override
 		{
+			name: "returns paths to all artifacts if build has not happened, no name collision with name override",
 			params: []distgo.ProductParam{
 				createBuildSpec("foo", "foo", []osarch.OSArch{
 					{OS: "darwin", Arch: "amd64"},
@@ -304,8 +310,8 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 				}
 			},
 		},
-		// returns empty if all artifacts exist and are up-to-date
 		{
+			name: "returns empty if all artifacts exist and are up-to-date",
 			params: []distgo.ProductParam{
 				createBuildSpec("foo", "foo", []osarch.OSArch{
 					{OS: "darwin", Arch: "amd64"},
@@ -324,8 +330,8 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 				return map[distgo.ProductID][]string{}
 			},
 		},
-		// returns paths to all artifacts if input source file has been modified
 		{
+			name: "returns paths to all artifacts if input source file has been modified",
 			params: []distgo.ProductParam{
 				createBuildSpec("foo", "foo", []osarch.OSArch{
 					{OS: "darwin", Arch: "amd64"},
@@ -358,23 +364,25 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 			},
 		},
 	} {
-		currProjectDir, err := os.MkdirTemp(tmpDir, "")
-		require.NoError(t, err)
+		t.Run(tc.name, func(t *testing.T) {
+			currProjectDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
 
-		err = os.WriteFile(path.Join(currProjectDir, "main.go"), []byte("package main; func main(){}"), 0644)
-		require.NoError(t, err)
+			err = os.WriteFile(path.Join(currProjectDir, "main.go"), []byte("package main; func main(){}"), 0644)
+			require.NoError(t, err)
 
-		projectInfo := distgo.ProjectInfo{
-			ProjectDir: currProjectDir,
-			Version:    "0.1.0",
-		}
-		if tc.beforeAction != nil {
-			tc.beforeAction(projectInfo, tc.params)
-		}
+			projectInfo := distgo.ProjectInfo{
+				ProjectDir: currProjectDir,
+				Version:    "0.1.0",
+			}
+			if tc.beforeAction != nil {
+				tc.beforeAction(projectInfo, tc.params)
+			}
 
-		got, err := artifacts.Build(projectInfo, tc.params, true)
-		require.NoError(t, err, "Case %d", i)
-		assert.Equal(t, tc.want(currProjectDir), got, "Case %d", i)
+			got, err := artifacts.Build(projectInfo, tc.params, true)
+			require.NoError(t, err, "Case %d", i)
+			assert.Equal(t, tc.want(currProjectDir), got, "Case %d", i)
+		})
 	}
 }
 
@@ -384,18 +392,19 @@ func TestDistArtifacts(t *testing.T) {
 	require.NoError(t, err)
 
 	for i, tc := range []struct {
+		name   string
 		params []distgo.ProductParam
 		want   func(projectDir string) map[distgo.ProductID][]string
 	}{
-		// empty spec
 		{
+			name:   "empty spec",
 			params: []distgo.ProductParam{},
 			want: func(projectDir string) map[distgo.ProductID][]string {
 				return map[distgo.ProductID][]string{}
 			},
 		},
-		// returns dist artifact outputs
 		{
+			name: "returns dist artifact outputs",
 			params: []distgo.ProductParam{
 				createDistSpec("foo", "foo", osarchbin.New(
 					osarch.OSArch{OS: "darwin", Arch: "amd64"},
@@ -411,8 +420,8 @@ func TestDistArtifacts(t *testing.T) {
 				}
 			},
 		},
-		// returns dist artifact outputs with name override
 		{
+			name: "returns dist artifact outputs with name override",
 			params: []distgo.ProductParam{
 				createDistSpec("foo", "foo", osarchbin.New(
 					osarch.OSArch{OS: "darwin", Arch: "amd64"},
@@ -437,16 +446,18 @@ func TestDistArtifacts(t *testing.T) {
 			},
 		},
 	} {
-		currProjectDir, err := os.MkdirTemp(tmpDir, "")
-		require.NoError(t, err)
+		t.Run(tc.name, func(t *testing.T) {
+			currProjectDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
 
-		projectInfo := distgo.ProjectInfo{
-			ProjectDir: currProjectDir,
-			Version:    "0.1.0",
-		}
-		got, err := artifacts.Dist(projectInfo, tc.params)
-		require.NoError(t, err, "Case %d", i)
-		assert.Equal(t, tc.want(currProjectDir), got, "Case %d", i)
+			projectInfo := distgo.ProjectInfo{
+				ProjectDir: currProjectDir,
+				Version:    "0.1.0",
+			}
+			got, err := artifacts.Dist(projectInfo, tc.params)
+			require.NoError(t, err, "Case %d", i)
+			assert.Equal(t, tc.want(currProjectDir), got, "Case %d", i)
+		})
 	}
 }
 
@@ -563,10 +574,12 @@ repo/foo-db-1:release
 `,
 		},
 	} {
-		buf := &bytes.Buffer{}
-		err := artifacts.PrintDockerArtifacts(projectInfo, projectParam, tc.productDockerIDs, buf)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		assert.Equal(t, tc.want, buf.String(), "Case %d: %s\nGot:\n%s", i, tc.name, buf.String())
+		t.Run(tc.name, func(t *testing.T) {
+			buf := &bytes.Buffer{}
+			err := artifacts.PrintDockerArtifacts(projectInfo, projectParam, tc.productDockerIDs, buf)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			assert.Equal(t, tc.want, buf.String(), "Case %d: %s\nGot:\n%s", i, tc.name, buf.String())
+		})
 	}
 }
 
@@ -607,35 +620,37 @@ func TestDockerArtifacts(t *testing.T) {
 			},
 		},
 	} {
-		projectDir, err := os.MkdirTemp(tmpDir, "")
-		require.NoError(t, err)
-		gittest.InitGitDir(t, projectDir)
-		gittest.CreateGitTag(t, projectDir, "0.1.0")
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
+			gittest.InitGitDir(t, projectDir)
+			gittest.CreateGitTag(t, projectDir, "0.1.0")
 
-		projectVersionerFactory, err := projectversionerfactory.New(nil, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		disterFactory, err := disterfactory.New(nil, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		defaultDisterCfg, err := disterfactory.DefaultConfig()
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		dockerBuilderFactory, err := dockerbuilderfactory.New(nil, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		publisherFactory, err := publisherfactory.New(nil, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			projectVersionerFactory, err := projectversionerfactory.New(nil, nil)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			disterFactory, err := disterfactory.New(nil, nil)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			defaultDisterCfg, err := disterfactory.DefaultConfig()
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			dockerBuilderFactory, err := dockerbuilderfactory.New(nil, nil)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			publisherFactory, err := publisherfactory.New(nil, nil)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		projectParam, err := tc.cfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			projectParam, err := tc.cfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		projectInfo, err := projectParam.ProjectInfo(projectDir)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			projectInfo, err := projectParam.ProjectInfo(projectDir)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		products, err := distgo.ProductParamsForProductArgs(projectParam.Products)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			products, err := distgo.ProductParamsForProductArgs(projectParam.Products)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		dockerArtifacts, err := artifacts.Docker(projectInfo, products)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			dockerArtifacts, err := artifacts.Docker(projectInfo, products)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		assert.Equal(t, tc.want, dockerArtifacts, "Case %d: %s", i, tc.name)
+			assert.Equal(t, tc.want, dockerArtifacts, "Case %d: %s", i, tc.name)
+		})
 	}
 }
 

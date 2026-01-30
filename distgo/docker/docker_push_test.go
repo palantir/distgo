@@ -47,7 +47,7 @@ func TestDockerPublish(t *testing.T) {
 		projectCfg      distgoconfig.ProjectConfig
 		dockerIDs       []distgo.ProductDockerID
 		tagKeys         []string
-		preDockerAction func(projectDir string, projectCfg distgoconfig.ProjectConfig)
+		preDockerAction func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig)
 		wantErrorRegexp string
 		wantStdout      string
 	}{
@@ -88,7 +88,7 @@ func TestDockerPublish(t *testing.T) {
 			},
 			nil,
 			nil,
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
@@ -141,7 +141,7 @@ func TestDockerPublish(t *testing.T) {
 			},
 			nil,
 			nil,
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
@@ -197,7 +197,7 @@ func TestDockerPublish(t *testing.T) {
 			[]string{
 				"latest",
 			},
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
@@ -268,7 +268,7 @@ func TestDockerPublish(t *testing.T) {
 				"foo",
 			},
 			nil,
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				contextDir := path.Join(projectDir, "docker-context-dir")
 				err := os.Mkdir(contextDir, 0755)
 				require.NoError(t, err)
@@ -285,48 +285,51 @@ func TestDockerPublish(t *testing.T) {
 `,
 		},
 	} {
-		projectDir, err := os.MkdirTemp(tmp, "")
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-
-		gittest.InitGitDir(t, projectDir)
-		err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		err = os.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		gittest.CommitAllFiles(t, projectDir, "Commit")
-
-		if tc.preDockerAction != nil {
-			tc.preDockerAction(projectDir, tc.projectCfg)
-		}
-
-		projectVersionerFactory, err := projectversionerfactory.New(nil, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		disterFactory, err := disterfactory.New(nil, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		defaultDisterCfg, err := disterfactory.DefaultConfig()
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		dockerBuilderFactory, err := dockerbuilderfactory.New([]dockerbuilder.Creator{dockerbuilder.NewCreator(printDockerfileDockerBuilderTypeName, newPrintDockerfileBuilder)}, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		publisherFactory, err := publisherfactory.New(nil, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-
-		projectParam, err := tc.projectCfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-
-		projectInfo, err := projectParam.ProjectInfo(projectDir)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-
-		buffer := &bytes.Buffer{}
-		err = docker.PushProducts(projectInfo, projectParam, tc.dockerIDs, tc.tagKeys, true, false, buffer)
-		if tc.wantErrorRegexp == "" {
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, err := os.MkdirTemp(tmp, "")
 			require.NoError(t, err, "Case %d: %s", i, tc.name)
-		} else {
-			require.Error(t, err, fmt.Sprintf("Case %d: %s", i, tc.name))
-			assert.Regexp(t, regexp.MustCompile(tc.wantErrorRegexp), err.Error(), "Case %d: %s", i, tc.name)
-		}
 
-		if tc.wantStdout != "" {
-			assert.Equal(t, tc.wantStdout, buffer.String(), "Case %d: %s\nOutput:\n%s", i, tc.name, buffer.String())
-		}
+			gittest.InitGitDir(t, projectDir)
+			err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			err = os.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			gittest.CommitAllFiles(t, projectDir, "Commit")
+
+			if tc.preDockerAction != nil {
+				tc.preDockerAction(t, projectDir, tc.projectCfg)
+			}
+
+			projectVersionerFactory, err := projectversionerfactory.New(nil, nil)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			disterFactory, err := disterfactory.New(nil, nil)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			defaultDisterCfg, err := disterfactory.DefaultConfig()
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			dockerBuilderFactory, err := dockerbuilderfactory.New([]dockerbuilder.Creator{dockerbuilder.NewCreator(printDockerfileDockerBuilderTypeName, newPrintDockerfileBuilder)}, nil)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			publisherFactory, err := publisherfactory.New(nil, nil)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+
+			projectParam, err := tc.projectCfg.ToParam(projectDir, projectVersionerFactory, disterFactory, defaultDisterCfg, dockerBuilderFactory, publisherFactory)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+
+			projectInfo, err := projectParam.ProjectInfo(projectDir)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+
+			buffer := &bytes.Buffer{}
+			err = docker.PushProducts(projectInfo, projectParam, tc.dockerIDs, tc.tagKeys, true, false, buffer)
+			if tc.wantErrorRegexp == "" {
+				require.NoError(t, err, "Case %d: %s", i, tc.name)
+			} else {
+				require.Error(t, err, fmt.Sprintf("Case %d: %s", i, tc.name))
+				assert.Regexp(t, regexp.MustCompile(tc.wantErrorRegexp), err.Error(), "Case %d: %s", i, tc.name)
+			}
+
+			if tc.wantStdout != "" {
+				assert.Equal(t, tc.wantStdout, buffer.String(), "Case %d: %s\nOutput:\n%s", i, tc.name, buffer.String())
+			}
+		})
+
 	}
 }
