@@ -39,11 +39,11 @@ type TestCase struct {
 	Name           string
 	Specs          []gofiles.GoFileSpec
 	ConfigFiles    map[string]string
-	PostTagAction  func(projectDir string)
+	PostTagAction  func(t *testing.T, projectDir string)
 	WantError      bool
-	WantOutput     func(projectDir string) string
-	ValidateOutput func(projectDir, output string)
-	Validate       func(projectDir string)
+	WantOutput     func(t *testing.T, projectDir string) string
+	ValidateOutput func(t *testing.T, projectDir, output string)
+	Validate       func(t *testing.T, projectDir string)
 }
 
 var builtinSpecs = []gofiles.GoFileSpec{
@@ -125,7 +125,7 @@ func RunAssetDistTest(t *testing.T,
 
 			// if postTagAction is provided, run it
 			if tc.PostTagAction != nil {
-				tc.PostTagAction(projectDir)
+				tc.PostTagAction(t, projectDir)
 			}
 
 			outputBuf := &bytes.Buffer{}
@@ -167,13 +167,13 @@ func RunAssetDistTest(t *testing.T,
 					require.NoError(t, err, "Case %d: %s\nOutput:\n%s", i, tc.Name, outputBuf.String())
 				}
 				if tc.WantOutput != nil {
-					assert.Equal(t, tc.WantOutput(projectDir), outputBuf.String(), "Case %d: %s", i, tc.Name)
+					assert.Equal(t, tc.WantOutput(t, projectDir), outputBuf.String(), "Case %d: %s", i, tc.Name)
 				}
 				if tc.ValidateOutput != nil {
-					tc.ValidateOutput(projectDir, outputBuf.String())
+					tc.ValidateOutput(t, projectDir, outputBuf.String())
 				}
 				if tc.Validate != nil {
-					tc.Validate(projectDir)
+					tc.Validate(t, projectDir)
 				}
 			}()
 		})

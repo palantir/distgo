@@ -81,12 +81,12 @@ products:
               arch: amd64
 `,
 				},
-				WantOutput: func(projectDir string) string {
+				WantOutput: func(t *testing.T, projectDir string) string {
 					return `Creating distribution for foo at out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-darwin-amd64.tgz, out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-linux-amd64.tgz
 Finished creating os-arch-bin distribution for foo
 `
 				},
-				Validate: func(projectDir string) {
+				Validate: func(t *testing.T, projectDir string) {
 					wantLayout := specdir.NewLayoutSpec(
 						specdir.Dir(specdir.LiteralName("1.0.0"), "",
 							specdir.Dir(specdir.LiteralName("os-arch-bin"), "",
@@ -147,12 +147,12 @@ products:
           done
 `,
 				},
-				WantOutput: func(projectDir string) string {
+				WantOutput: func(t *testing.T, projectDir string) string {
 					return `Creating distribution for foo at out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-darwin-amd64.tgz, out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-linux-amd64.tgz
 Finished creating os-arch-bin distribution for foo
 `
 				},
-				Validate: func(projectDir string) {
+				Validate: func(t *testing.T, projectDir string) {
 					wantLayout := specdir.NewLayoutSpec(
 						specdir.Dir(specdir.LiteralName("1.0.0"), "",
 							specdir.Dir(specdir.LiteralName("os-arch-bin"), "",
