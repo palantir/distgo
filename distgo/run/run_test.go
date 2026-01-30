@@ -23,7 +23,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nmiyake/pkg/dirs"
 	"github.com/palantir/distgo/dister/disterfactory"
 	"github.com/palantir/distgo/distgo"
 	distgoconfig "github.com/palantir/distgo/distgo/config"
@@ -63,9 +62,7 @@ func main() {
 )
 
 func TestRun(t *testing.T) {
-	tmp, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	for i, tc := range []struct {
 		name          string
@@ -314,7 +311,7 @@ func main() {
 			},
 		},
 	} {
-		projectDir, err := os.MkdirTemp(tmp, "")
+		projectDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		if tc.preRunAction != nil {

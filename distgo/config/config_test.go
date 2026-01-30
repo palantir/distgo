@@ -22,7 +22,6 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/distgo/dister/disterfactory"
 	"github.com/palantir/distgo/dister/manual"
@@ -913,9 +912,7 @@ products:
 }
 
 func TestProjectConfig_DefaultProducts(t *testing.T) {
-	tmpDir, cleanup, err := dirs.TempDir("", "")
-	require.NoError(t, err)
-	defer cleanup()
+	tmpDir := t.TempDir()
 
 	defaultProductParam := func(id, mainPkgDir string, modifyFns ...func(*distgo.ProductParam)) distgo.ProductParam {
 		param := distgo.ProductParam{
@@ -1182,12 +1179,10 @@ products:
 }
 
 func TestProductTaskParam_ToProductTaskOutputInfo(t *testing.T) {
-	tmpDir, cleanup, err := dirs.TempDir("", "")
-	require.NoError(t, err)
-	defer cleanup()
+	tmpDir := t.TempDir()
 
 	projectDir := path.Join(tmpDir, "project")
-	err = os.Mkdir(projectDir, 0755)
+	err := os.Mkdir(projectDir, 0755)
 	require.NoError(t, err)
 
 	gittest.InitGitDir(t, projectDir)

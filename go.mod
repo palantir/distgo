@@ -7,7 +7,6 @@ require (
 	github.com/google/go-github/v28 v28.1.1
 	github.com/jtacoma/uritemplates v1.0.0
 	github.com/mholt/archiver/v3 v3.5.1
-	github.com/nmiyake/pkg/dirs v1.1.0
 	github.com/nmiyake/pkg/gofiles v1.2.0
 	github.com/palantir/distgo/pkg/git v1.0.0
 	github.com/palantir/godel/pkg/products/v2 v2.0.0
@@ -53,6 +52,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
+	github.com/nmiyake/pkg/dirs v1.1.0 // indirect
 	github.com/nmiyake/pkg/errorstringer v1.1.0 // indirect
 	github.com/nwaples/rardecode v1.1.3 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect

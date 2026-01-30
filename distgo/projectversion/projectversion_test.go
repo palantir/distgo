@@ -21,7 +21,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/nmiyake/pkg/dirs"
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/projectversion"
 	"github.com/palantir/distgo/projectversioner/git"
@@ -32,9 +31,7 @@ import (
 )
 
 func TestProjectVersionDefaultParam(t *testing.T) {
-	rootDir, cleanup, err := dirs.TempDir("", "")
-	require.NoError(t, err)
-	defer cleanup()
+	rootDir := t.TempDir()
 
 	for i, tc := range []struct {
 		name  string
@@ -72,7 +69,6 @@ func TestProjectVersionDefaultParam(t *testing.T) {
 				gittest.CommitRandomFile(t, testDir, "Initial commit")
 				gittest.CreateGitTag(t, testDir, "1.0.0")
 				gittest.CommitRandomFile(t, testDir, "Test commit message")
-				require.NoError(t, err)
 			},
 			`^` + regexp.QuoteMeta("1.0.0-1-g") + `[a-f0-9]{7}\n$`,
 		},
@@ -110,9 +106,7 @@ func TestProjectVersionDefaultParam(t *testing.T) {
 }
 
 func TestProjectVersionScriptParam(t *testing.T) {
-	rootDir, cleanup, err := dirs.TempDir("", "")
-	require.NoError(t, err)
-	defer cleanup()
+	rootDir := t.TempDir()
 
 	for i, tc := range []struct {
 		name         string

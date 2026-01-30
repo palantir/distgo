@@ -22,7 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/distgo/distgo/build/imports"
 	"github.com/palantir/distgo/internal/files"
@@ -31,10 +30,8 @@ import (
 )
 
 func TestAllFilesGoModOff(t *testing.T) {
-	tmpDir, cleanup, err := dirs.TempDir(".", "")
-	require.NoError(t, err)
-	defer cleanup()
-	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+	tmpDir := t.TempDir()
+	err := os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
 	require.NoError(t, err)
@@ -188,10 +185,8 @@ func TestAllFilesGoModOff(t *testing.T) {
 }
 
 func TestAllFilesGoModOn(t *testing.T) {
-	tmpDir, cleanup, err := dirs.TempDir(".", "")
-	require.NoError(t, err)
-	defer cleanup()
-	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+	tmpDir := t.TempDir()
+	err := os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
 	require.NoError(t, err)
@@ -358,10 +353,8 @@ func TestAllFilesGoModOn(t *testing.T) {
 }
 
 func TestNewerThanFileIsNewer(t *testing.T) {
-	tmpDir, cleanup, err := dirs.TempDir(".", "")
-	require.NoError(t, err)
-	defer cleanup()
-	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+	tmpDir := t.TempDir()
+	err := os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
 	require.NoError(t, err)
@@ -388,10 +381,8 @@ func TestNewerThanFileIsNewer(t *testing.T) {
 }
 
 func TestNewerThanFileIsNotNewer(t *testing.T) {
-	tmpDir, cleanup, err := dirs.TempDir(".", "")
-	require.NoError(t, err)
-	defer cleanup()
-	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+	tmpDir := t.TempDir()
+	err := os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
 	require.NoError(t, err)

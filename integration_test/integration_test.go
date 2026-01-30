@@ -22,7 +22,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/distgo/internal/files"
 	"github.com/palantir/godel/pkg/products/v2"
@@ -35,9 +34,7 @@ func TestRun(t *testing.T) {
 	cli, err := products.Bin("dist-plugin")
 	require.NoError(t, err)
 
-	tmpDir, cleanup, err := dirs.TempDir(".", "")
-	require.NoError(t, err)
-	defer cleanup()
+	tmpDir := t.TempDir()
 	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
@@ -183,9 +180,7 @@ func TestRunWithStdin(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
-	tmpDir, cleanup, err := dirs.TempDir(".", "")
-	require.NoError(t, err)
-	defer cleanup()
+	tmpDir := t.TempDir()
 	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)

@@ -21,7 +21,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/distgo/distgo"
 	distgoconfig "github.com/palantir/distgo/distgo/config"
@@ -35,9 +34,7 @@ import (
 )
 
 func TestProducts(t *testing.T) {
-	rootDir, cleanup, err := dirs.TempDir("", "")
-	require.NoError(t, err)
-	defer cleanup()
+	rootDir := t.TempDir()
 
 	for i, tc := range []struct {
 		name            string

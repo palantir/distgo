@@ -26,7 +26,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nmiyake/pkg/dirs"
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/build"
 	"github.com/palantir/distgo/pkg/git"
@@ -71,9 +70,7 @@ func main() {
 )
 
 func TestBuildAll(t *testing.T) {
-	tmp, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	for i, tc := range []struct {
 		productName     string
@@ -170,7 +167,7 @@ echo "-X \"main.testVersionVar=$VALUE\""`
 			wantOutput: "defaultVersion",
 		},
 	} {
-		currTmpDir, err := os.MkdirTemp(tmp, "")
+		currTmpDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err, "Case %d", i)
 
 		gittest.InitGitDir(t, currTmpDir)
@@ -336,12 +333,10 @@ func TestBuildEnvVars(t *testing.T) {
 }
 
 func TestBuildOnlySpecifiedOSArchs(t *testing.T) {
-	tmp, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
-	mainFilePath := path.Join(tmp, "foo/main.go")
-	err = os.MkdirAll(path.Dir(mainFilePath), 0755)
+	mainFilePath := path.Join(tmpDir, "foo/main.go")
+	err := os.MkdirAll(path.Dir(mainFilePath), 0755)
 	require.NoError(t, err)
 	err = os.WriteFile(mainFilePath, []byte(testMain), 0644)
 	require.NoError(t, err)
@@ -378,10 +373,10 @@ func TestBuildOnlySpecifiedOSArchs(t *testing.T) {
 		},
 	} {
 		projectInfo := distgo.ProjectInfo{
-			ProjectDir: tmp,
+			ProjectDir: tmpDir,
 		}
 
-		err = os.WriteFile(path.Join(tmp, "go.mod"), []byte("module foo"), 0644)
+		err = os.WriteFile(path.Join(tmpDir, "go.mod"), []byte("module foo"), 0644)
 		require.NoError(t, err, "Case %d", i)
 
 		productParam := createBuildProductParam(func(param *distgo.ProductParam) {
@@ -406,10 +401,8 @@ func TestBuildOnlySpecifiedOSArchs(t *testing.T) {
 }
 
 func TestBuildErrorMessage(t *testing.T) {
-	tmpDir, cleanup, err := dirs.TempDir(".", "")
-	require.NoError(t, err)
-	defer cleanup()
-	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+	tmpDir := t.TempDir()
+	err := os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
 	require.NoError(t, err)
@@ -514,9 +507,7 @@ func TestBuildErrorMessage(t *testing.T) {
 //}
 
 func TestBuildAllParallel(t *testing.T) {
-	tmp, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	for i, tc := range []struct {
 		mainFiles     map[string]string
@@ -557,7 +548,7 @@ func TestBuildAllParallel(t *testing.T) {
 			},
 		},
 	} {
-		currTmpDir, err := os.MkdirTemp(tmp, "")
+		currTmpDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 
 		err = os.WriteFile(path.Join(currTmpDir, "go.mod"), []byte("module foo"), 0644)

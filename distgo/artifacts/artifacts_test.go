@@ -24,7 +24,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/distgo/dister/disterfactory"
 	"github.com/palantir/distgo/dister/osarchbin"
@@ -45,9 +44,7 @@ import (
 )
 
 func TestBuildArtifactsDefaultOutput(t *testing.T) {
-	tmpDir, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	for i, tc := range []struct {
 		name            string
@@ -141,9 +138,7 @@ out/build/foo/unspecified/%v/foo
 }
 
 func TestBuildArtifacts(t *testing.T) {
-	tmpDir, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	for i, tc := range []struct {
 		params []distgo.ProductParam
@@ -239,10 +234,8 @@ func TestBuildArtifacts(t *testing.T) {
 }
 
 func TestBuildArtifactsRequiresBuild(t *testing.T) {
-	tmpDir, cleanup, err := dirs.TempDir(".", "")
-	require.NoError(t, err)
-	defer cleanup()
-	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+	tmpDir := t.TempDir()
+	err := os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
 */
 `), 0644)
 	require.NoError(t, err)
@@ -379,9 +372,7 @@ func TestBuildArtifactsRequiresBuild(t *testing.T) {
 }
 
 func TestDistArtifacts(t *testing.T) {
-	tmpDir, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	for i, tc := range []struct {
 		params []distgo.ProductParam
@@ -451,9 +442,7 @@ func TestDistArtifacts(t *testing.T) {
 }
 
 func TestPrintDockerArtifacts(t *testing.T) {
-	tmpDir, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	cfg := distgoconfig.ProjectConfig{
 		Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
@@ -571,9 +560,7 @@ repo/foo-db-1:release
 }
 
 func TestDockerArtifacts(t *testing.T) {
-	tmpDir, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	for i, tc := range []struct {
 		name string

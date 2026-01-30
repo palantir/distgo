@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nmiyake/pkg/dirs"
 	"github.com/palantir/distgo/dister/osarchbin"
 	osarchbinconfig "github.com/palantir/distgo/dister/osarchbin/config"
 	"github.com/palantir/distgo/distgo"
@@ -74,9 +73,7 @@ func (p *testPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutpu
 }
 
 func TestPublish(t *testing.T) {
-	tmp, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	for i, tc := range []struct {
 		name             string
@@ -179,7 +176,7 @@ os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-%s.tgz]
 			},
 		},
 	} {
-		projectDir, err := os.MkdirTemp(tmp, "")
+		projectDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		gittest.InitGitDir(t, projectDir)

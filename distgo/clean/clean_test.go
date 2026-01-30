@@ -21,7 +21,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/distgo/dister/disterfactory"
 	"github.com/palantir/distgo/dister/osarchbin"
@@ -55,9 +54,7 @@ func TestClean(t *testing.T) {
 	defaultDisterConfig, err := disterfactory.DefaultConfig()
 	require.NoError(t, err)
 
-	tmp, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	for i, tc := range []struct {
 		name          string
@@ -368,7 +365,7 @@ func TestClean(t *testing.T) {
 			},
 		},
 	} {
-		projectDir, err := os.MkdirTemp(tmp, "")
+		projectDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err, "Case %d: %s", i, tc.name)
 
 		gittest.InitGitDir(t, projectDir)

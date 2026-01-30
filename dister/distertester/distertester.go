@@ -22,7 +22,6 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/distgo/distgo"
 	distgoconfig "github.com/palantir/distgo/distgo/config"
@@ -81,12 +80,10 @@ func RunAssetDistTest(t *testing.T,
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
-	tmpDir, cleanup, err := dirs.TempDir("", "")
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 	if !filepath.IsAbs(tmpDir) {
 		tmpDir = filepath.Join(wd, tmpDir)
 	}
-	defer cleanup()
 
 	tmpDir, err = filepath.EvalSymlinks(tmpDir)
 	require.NoError(t, err)
@@ -215,12 +212,10 @@ func RunRepeatedDistTest(t *testing.T,
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
-	tmpDir, cleanup, err := dirs.TempDir("", "")
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 	if !filepath.IsAbs(tmpDir) {
 		tmpDir = filepath.Join(wd, tmpDir)
 	}
-	defer cleanup()
 
 	tmpDir, err = filepath.EvalSymlinks(tmpDir)
 	require.NoError(t, err)

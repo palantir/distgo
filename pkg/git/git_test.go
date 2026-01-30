@@ -20,7 +20,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/nmiyake/pkg/dirs"
 	"github.com/palantir/distgo/pkg/git"
 	"github.com/palantir/pkg/gittest"
 	"github.com/stretchr/testify/assert"
@@ -28,9 +27,7 @@ import (
 )
 
 func TestProjectVersion(t *testing.T) {
-	tmp, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	for i, currCase := range []struct {
 		gitOperations func(gitDir string)
@@ -52,7 +49,7 @@ func TestProjectVersion(t *testing.T) {
 		{
 			gitOperations: func(gitDir string) {
 				gittest.CommitRandomFile(t, gitDir, "Second commit")
-				err = os.WriteFile(path.Join(gitDir, "foo"), []byte("foo"), 0644)
+				err := os.WriteFile(path.Join(gitDir, "foo"), []byte("foo"), 0644)
 				require.NoError(t, err)
 			},
 			want: "^unspecified$",
@@ -86,7 +83,7 @@ func TestProjectVersion(t *testing.T) {
 		{
 			gitOperations: func(gitDir string) {
 				gittest.CreateGitTag(t, gitDir, "0.0.1")
-				err = os.WriteFile(path.Join(gitDir, "foo"), []byte("foo"), 0644)
+				err := os.WriteFile(path.Join(gitDir, "foo"), []byte("foo"), 0644)
 				require.NoError(t, err)
 			},
 			want: "^" + regexp.QuoteMeta("0.0.1.dirty") + "$",
@@ -102,7 +99,7 @@ func TestProjectVersion(t *testing.T) {
 			gitOperations: func(gitDir string) {
 				gittest.CreateGitTag(t, gitDir, "0.0.1")
 				gittest.CommitRandomFile(t, gitDir, "Second commit")
-				err = os.WriteFile(path.Join(gitDir, "foo"), []byte("foo"), 0644)
+				err := os.WriteFile(path.Join(gitDir, "foo"), []byte("foo"), 0644)
 				require.NoError(t, err)
 			},
 			want: "^" + regexp.QuoteMeta("0.0.1-1-g") + "[a-f0-9]{7}" + regexp.QuoteMeta(".dirty") + "$",
@@ -142,7 +139,7 @@ func TestProjectVersion(t *testing.T) {
 			want: "^" + regexp.QuoteMeta("0.0.2") + "$",
 		},
 	} {
-		currTmp, err := os.MkdirTemp(tmp, "")
+		currTmp, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 
 		gittest.InitGitDir(t, currTmp)
@@ -156,9 +153,7 @@ func TestProjectVersion(t *testing.T) {
 }
 
 func TestProjectVersionWithPrefix(t *testing.T) {
-	tmp, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	for i, currCase := range []struct {
 		gitOperations func(gitDir string)
@@ -204,7 +199,7 @@ func TestProjectVersionWithPrefix(t *testing.T) {
 			want:      "^" + regexp.QuoteMeta("@org/product-2@0.0.2-1-g") + "[a-f0-9]{7}$",
 		},
 	} {
-		currTmp, err := os.MkdirTemp(tmp, "")
+		currTmp, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 
 		gittest.InitGitDir(t, currTmp)

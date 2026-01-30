@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nmiyake/pkg/dirs"
 	"github.com/nmiyake/pkg/gofiles"
 	"github.com/palantir/distgo/internal/files"
 	"github.com/palantir/godel/v2/framework/pluginapitester"
@@ -80,12 +79,10 @@ func RunAssetPublishTestWithAssets(t *testing.T,
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
-	tmpDir, cleanup, err := dirs.TempDir("", "")
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 	if !filepath.IsAbs(tmpDir) {
 		tmpDir = path.Join(wd, tmpDir)
 	}
-	defer cleanup()
 
 	tmpDir, err = filepath.EvalSymlinks(tmpDir)
 	require.NoError(t, err)
