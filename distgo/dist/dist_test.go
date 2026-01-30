@@ -68,17 +68,17 @@ func TestDist(t *testing.T) {
 	for i, tc := range []struct {
 		name            string
 		projectCfg      distgoconfig.ProjectConfig
-		preDistAction   func(projectDir string, projectCfg distgoconfig.ProjectConfig)
+		preDistAction   func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig)
 		productDistIDs  []distgo.ProductDistID
 		wantErrorRegexp string
-		validate        func(caseNum int, name, projectDir string)
+		validate        func(t *testing.T, caseNum int, name, projectDir string)
 	}{
 		{
 			name: "default dist is os-arch-bin",
-			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			validate: func(caseNum int, name, projectDir string) {
+			validate: func(t *testing.T, caseNum int, name, projectDir string) {
 				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", fmt.Sprintf("foo-0.1.0-%s.tgz", osarch.Current().String())))
 				require.NoError(t, err)
 				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
@@ -100,10 +100,10 @@ touch $DIST_DIR/test-file.txt`),
 					}),
 				}),
 			},
-			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			validate: func(caseNum int, name, projectDir string) {
+			validate: func(t *testing.T, caseNum int, name, projectDir string) {
 				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "test-file.txt"))
 				require.NoError(t, err)
 				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
@@ -125,12 +125,12 @@ touch $DIST_DIR/$DIST_TEST_KEY.txt`),
 					}),
 				}),
 			},
-			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 				err := os.Setenv("DIST_TEST_KEY", "distTestVal")
 				require.NoError(t, err)
 			},
-			validate: func(caseNum int, name, projectDir string) {
+			validate: func(t *testing.T, caseNum int, name, projectDir string) {
 				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "distTestVal.txt"))
 				require.NoError(t, err)
 				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
@@ -159,10 +159,10 @@ helper_func`),
 					}),
 				}),
 			},
-			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			validate: func(caseNum int, name, projectDir string) {
+			validate: func(t *testing.T, caseNum int, name, projectDir string) {
 				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo.txt"))
 				require.NoError(t, err)
 				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
@@ -184,10 +184,10 @@ helper_func() {
 	touch $DIST_DIR/baz.txt
 }`,
 			},
-			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			validate: func(caseNum int, name, projectDir string) {
+			validate: func(t *testing.T, caseNum int, name, projectDir string) {
 				_, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "foo.txt"))
 				assert.True(t, os.IsNotExist(err), "Case %d: %s", caseNum, name)
 			},
@@ -233,7 +233,7 @@ echo $DEP_PRODUCT_ID_0_DIST_ID_0_DIST_ARTIFACT_0 > $DIST_DIR/bar-dist-artifacts.
 					},
 				}),
 			},
-			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "bar/main.go",
@@ -247,7 +247,7 @@ func main() {}
 				gittest.CommitAllFiles(t, projectDir, "Add bar")
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			validate: func(caseNum int, name, projectDir string) {
+			validate: func(t *testing.T, caseNum int, name, projectDir string) {
 				bytes, err := os.ReadFile(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "dep-product-ids.txt"))
 				assert.NoError(t, err, "Case %d: %s", caseNum, name)
 				assert.Equal(t, "1 bar\n", string(bytes), "Case %d: %s", caseNum, name)
@@ -308,14 +308,14 @@ func main() {}
 					},
 				}),
 			},
-			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
 			productDistIDs: []distgo.ProductDistID{
 				"product-1.dister-1-1",
 				"product-2.dister-2-1",
 			},
-			validate: func(caseNum int, name, projectDir string) {
+			validate: func(t *testing.T, caseNum int, name, projectDir string) {
 				_, err := os.Stat(path.Join(projectDir, "out", "dist", "product-1", "0.1.0", "dister-1-1", fmt.Sprintf("product-1-0.1.0-%v.tgz", osarch.Current())))
 				assert.NoError(t, err, "Case %d: %s", caseNum, name)
 				_, err = os.Stat(path.Join(projectDir, "out", "dist", "product-1", "0.1.0", "dister-1-2", fmt.Sprintf("product-1-0.1.0-%v.tgz", osarch.Current())))
@@ -344,7 +344,7 @@ func main() {}
 					}),
 				}),
 			},
-			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				inputFile := path.Join(projectDir, "input-dir", "bar.txt")
 				err = os.MkdirAll(path.Dir(inputFile), 0755)
 				require.NoError(t, err)
@@ -360,7 +360,7 @@ func main() {}
 				gittest.CommitAllFiles(t, projectDir, "Commit input directory")
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			validate: func(caseNum int, name, projectDir string) {
+			validate: func(t *testing.T, caseNum int, name, projectDir string) {
 				info, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "bar.txt"))
 				require.NoError(t, err)
 				assert.False(t, info.IsDir(), "Case %d: %s", caseNum, name)
@@ -391,7 +391,7 @@ func main() {}
 					}),
 				}),
 			},
-			preDistAction: func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			preDistAction: func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				inputDir := path.Join(projectDir, "input-dir")
 				err = os.MkdirAll(path.Dir(inputDir), 0755)
 				require.NoError(t, err)
@@ -418,7 +418,7 @@ func main() {}
 				gittest.CommitAllFiles(t, projectDir, "Commit input directory")
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			validate: func(caseNum int, name, projectDir string) {
+			validate: func(t *testing.T, caseNum int, name, projectDir string) {
 				_, err := os.Stat(path.Join(projectDir, "out", "dist", "foo", "0.1.0", "os-arch-bin", "foo-0.1.0", "foo", ".gitkeep"))
 				assert.True(t, os.IsNotExist(err), "Case %d: %s", caseNum, name)
 
@@ -439,37 +439,40 @@ func main() {}
 			},
 		},
 	} {
-		projectDir, err := os.MkdirTemp(tmp, "")
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-
-		gittest.InitGitDir(t, projectDir)
-		err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		err = os.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		err = os.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		gittest.CommitAllFiles(t, projectDir, "Commit")
-
-		if tc.preDistAction != nil {
-			tc.preDistAction(projectDir, tc.projectCfg)
-		}
-
-		projectParam := testfuncs.NewProjectParam(t, tc.projectCfg, projectDir, fmt.Sprintf("Case %d: %s", i, tc.name))
-		projectInfo, err := projectParam.ProjectInfo(projectDir)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-
-		err = dist.Products(projectInfo, projectParam, nil, tc.productDistIDs, false, true, io.Discard)
-		if tc.wantErrorRegexp == "" {
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, err := os.MkdirTemp(tmp, "")
 			require.NoError(t, err, "Case %d: %s", i, tc.name)
-		} else {
-			require.Error(t, err, fmt.Sprintf("Case %d: %s", i, tc.name))
-			assert.Regexp(t, regexp.MustCompile(tc.wantErrorRegexp), err.Error(), "Case %d: %s", i, tc.name)
-		}
 
-		if tc.validate != nil {
-			tc.validate(i, tc.name, projectDir)
-		}
+			gittest.InitGitDir(t, projectDir)
+			err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			err = os.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			err = os.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			gittest.CommitAllFiles(t, projectDir, "Commit")
+
+			if tc.preDistAction != nil {
+				tc.preDistAction(t, projectDir, tc.projectCfg)
+			}
+
+			projectParam := testfuncs.NewProjectParam(t, tc.projectCfg, projectDir, fmt.Sprintf("Case %d: %s", i, tc.name))
+			projectInfo, err := projectParam.ProjectInfo(projectDir)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+
+			err = dist.Products(projectInfo, projectParam, nil, tc.productDistIDs, false, true, io.Discard)
+			if tc.wantErrorRegexp == "" {
+				require.NoError(t, err, "Case %d: %s", i, tc.name)
+			} else {
+				require.Error(t, err, fmt.Sprintf("Case %d: %s", i, tc.name))
+				assert.Regexp(t, regexp.MustCompile(tc.wantErrorRegexp), err.Error(), "Case %d: %s", i, tc.name)
+			}
+
+			if tc.validate != nil {
+				tc.validate(t, i, tc.name, projectDir)
+			}
+		})
+
 	}
 }
 

@@ -82,14 +82,14 @@ func TestPublish(t *testing.T) {
 		name             string
 		projectCfg       distgoconfig.ProjectConfig
 		distIDs          []distgo.ProductDistID
-		preDistAction    func(projectDir string, projectCfg distgoconfig.ProjectConfig)
+		preDistAction    func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig)
 		wantStdoutRegexp func(projectDir string) string
 	}{
 		{
 			"publish publishes the dist artifact of a product",
 			distgoconfig.ProjectConfig{},
 			nil,
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
 			func(projectDir string) string {
@@ -124,7 +124,7 @@ os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-%s.tgz]
 				}),
 			},
 			nil,
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
 			func(projectDir string) string {
@@ -169,7 +169,7 @@ os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-darwin-amd64.tgz %s/ou
 			[]distgo.ProductDistID{
 				"foo",
 			},
-			func(projectDir string, projectCfg distgoconfig.ProjectConfig) {
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
 			func(projectDir string) string {
@@ -179,38 +179,40 @@ os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-%s.tgz]
 			},
 		},
 	} {
-		projectDir, err := os.MkdirTemp(tmp, "")
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, err := os.MkdirTemp(tmp, "")
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		gittest.InitGitDir(t, projectDir)
-		err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		err = os.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		err = os.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		gittest.CommitAllFiles(t, projectDir, "Commit")
+			gittest.InitGitDir(t, projectDir)
+			err = os.MkdirAll(path.Join(projectDir, "foo"), 0755)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			err = os.WriteFile(path.Join(projectDir, "foo", "main.go"), []byte(testMain), 0644)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			err = os.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			gittest.CommitAllFiles(t, projectDir, "Commit")
 
-		if tc.preDistAction != nil {
-			tc.preDistAction(projectDir, tc.projectCfg)
-		}
+			if tc.preDistAction != nil {
+				tc.preDistAction(t, projectDir, tc.projectCfg)
+			}
 
-		projectParam := testfuncs.NewProjectParam(t, tc.projectCfg, projectDir, fmt.Sprintf("Case %d: %s", i, tc.name))
-		projectInfo, err := projectParam.ProjectInfo(projectDir)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			projectParam := testfuncs.NewProjectParam(t, tc.projectCfg, projectDir, fmt.Sprintf("Case %d: %s", i, tc.name))
+			projectInfo, err := projectParam.ProjectInfo(projectDir)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		preDistTime := time.Now().Truncate(time.Second).Add(-1 * time.Second)
-		buffer := &bytes.Buffer{}
-		err = dist.Products(projectInfo, projectParam, nil, nil, false, true, buffer)
-		require.NoError(t, err, "Case %d: %s\nOutput: %s", i, tc.name, buffer.String())
+			preDistTime := time.Now().Truncate(time.Second).Add(-1 * time.Second)
+			buffer := &bytes.Buffer{}
+			err = dist.Products(projectInfo, projectParam, nil, nil, false, true, buffer)
+			require.NoError(t, err, "Case %d: %s\nOutput: %s", i, tc.name, buffer.String())
 
-		buffer = &bytes.Buffer{}
-		err = publish.Products(projectInfo, projectParam, &preDistTime, tc.distIDs, &testPublisher{}, nil, true, buffer)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			buffer = &bytes.Buffer{}
+			err = publish.Products(projectInfo, projectParam, &preDistTime, tc.distIDs, &testPublisher{}, nil, true, buffer)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		if tc.wantStdoutRegexp != nil {
-			assert.Regexp(t, tc.wantStdoutRegexp(projectDir), buffer.String(), "Case %d: %s", i, tc.name)
-		}
+			if tc.wantStdoutRegexp != nil {
+				assert.Regexp(t, tc.wantStdoutRegexp(projectDir), buffer.String(), "Case %d: %s", i, tc.name)
+			}
+		})
 	}
 }
 

@@ -71,8 +71,8 @@ func TestRun(t *testing.T) {
 		name          string
 		productConfig distgoconfig.ProductConfig
 		runArgs       []string
-		preRunAction  func(projectDir string)
-		validate      func(runErr error, caseNum int, projectDir string)
+		preRunAction  func(t *testing.T, projectDir string)
+		validate      func(t *testing.T, runErr error, caseNum int, projectDir string)
 	}{
 		{
 			`"run" runs main file`,
@@ -82,11 +82,11 @@ func TestRun(t *testing.T) {
 				}),
 			},
 			nil,
-			func(projectDir string) {
+			func(t *testing.T, projectDir string) {
 				err := os.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(runTestMain, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
 				require.NoError(t, err)
 			},
-			func(runErr error, caseNum int, projectDir string) {
+			func(t *testing.T, runErr error, caseNum int, projectDir string) {
 				assert.NoError(t, runErr, "Case %d", caseNum)
 				bytes, err := os.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
 				require.NoError(t, err, "Case %d", caseNum)
@@ -108,11 +108,11 @@ func TestRun(t *testing.T) {
 				}),
 			},
 			nil,
-			func(projectDir string) {
+			func(t *testing.T, projectDir string) {
 				err := os.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(runTestMain, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
 				require.NoError(t, err)
 			},
-			func(runErr error, caseNum int, projectDir string) {
+			func(t *testing.T, runErr error, caseNum int, projectDir string) {
 				assert.NoError(t, runErr, "Case %d", caseNum)
 				bytes, err := os.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
 				require.NoError(t, err, "Case %d", caseNum)
@@ -127,11 +127,11 @@ func TestRun(t *testing.T) {
 				}),
 			},
 			[]string{"foo", "bar", "$GOPATH"},
-			func(projectDir string) {
+			func(t *testing.T, projectDir string) {
 				err := os.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(runTestMain, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
 				require.NoError(t, err)
 			},
-			func(runErr error, caseNum int, projectDir string) {
+			func(t *testing.T, runErr error, caseNum int, projectDir string) {
 				assert.NoError(t, runErr, "Case %d", caseNum)
 				bytes, err := os.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
 				require.NoError(t, err, "Case %d", caseNum)
@@ -153,11 +153,11 @@ func TestRun(t *testing.T) {
 				}),
 			},
 			[]string{"runArg_foo", "runArg_bar", "$runArg"},
-			func(projectDir string) {
+			func(t *testing.T, projectDir string) {
 				err := os.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(runTestMain, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
 				require.NoError(t, err)
 			},
-			func(runErr error, caseNum int, projectDir string) {
+			func(t *testing.T, runErr error, caseNum int, projectDir string) {
 				assert.NoError(t, runErr, "Case %d", caseNum)
 				bytes, err := os.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
 				require.NoError(t, err, "Case %d", caseNum)
@@ -173,7 +173,7 @@ func TestRun(t *testing.T) {
 				}),
 			},
 			nil,
-			func(projectDir string) {
+			func(t *testing.T, projectDir string) {
 				currMainContent := `package main
 
 import (
@@ -190,7 +190,7 @@ func main() {
 				err := os.WriteFile(path.Join(projectDir, "main.go"), []byte(strings.Replace(currMainContent, "{{OUTPUT_PATH}}", projectDir, -1)), 0644)
 				require.NoError(t, err)
 			},
-			func(runErr error, caseNum int, projectDir string) {
+			func(t *testing.T, runErr error, caseNum int, projectDir string) {
 				assert.NoError(t, runErr, "Case %d", caseNum)
 				bytes, err := os.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
 				require.NoError(t, err, "Case %d", caseNum)
@@ -205,7 +205,7 @@ func main() {
 				}),
 			},
 			nil,
-			func(projectDir string) {
+			func(t *testing.T, projectDir string) {
 				err := os.MkdirAll(path.Join(projectDir, "foo"), 0755)
 				require.NoError(t, err)
 
@@ -225,7 +225,7 @@ func Bar() string {
 `), 0644)
 				require.NoError(t, err)
 			},
-			func(runErr error, caseNum int, projectDir string) {
+			func(t *testing.T, runErr error, caseNum int, projectDir string) {
 				assert.NoError(t, runErr, "Case %d", caseNum)
 				bytes, err := os.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
 				require.NoError(t, err, "Case %d", caseNum)
@@ -240,7 +240,7 @@ func Bar() string {
 				}),
 			},
 			nil,
-			func(projectDir string) {
+			func(t *testing.T, projectDir string) {
 				err := os.MkdirAll(path.Join(projectDir, "foo"), 0755)
 				require.NoError(t, err)
 
@@ -253,7 +253,7 @@ func TestBar(t *testing.T) {
 `), 0644)
 				require.NoError(t, err)
 			},
-			func(runErr error, caseNum int, projectDir string) {
+			func(t *testing.T, runErr error, caseNum int, projectDir string) {
 				assert.NoError(t, runErr, "Case %d", caseNum)
 				bytes, err := os.ReadFile(path.Join(projectDir, "runTestMainOutput.txt"))
 				require.NoError(t, err, "Case %d", caseNum)
@@ -268,7 +268,7 @@ func TestBar(t *testing.T) {
 				}),
 			},
 			nil,
-			func(projectDir string) {
+			func(t *testing.T, projectDir string) {
 				err := os.MkdirAll(path.Join(projectDir, "foo"), 0755)
 				require.NoError(t, err)
 
@@ -278,7 +278,7 @@ func main() {
 `), 0644)
 				require.NoError(t, err)
 			},
-			func(runErr error, caseNum int, projectDir string) {
+			func(t *testing.T, runErr error, caseNum int, projectDir string) {
 				assert.Error(t, runErr, fmt.Sprintf("Case %d", caseNum))
 				assert.Regexp(t, regexp.MustCompile(`^failed to find Go files for main package: no go file with main package and main function exists in directory .+/foo$`), runErr.Error(), "Case %d", caseNum)
 			},
@@ -291,7 +291,7 @@ func main() {
 				}),
 			},
 			nil,
-			func(projectDir string) {
+			func(t *testing.T, projectDir string) {
 				err := os.MkdirAll(path.Join(projectDir, "foo"), 0755)
 				require.NoError(t, err)
 
@@ -308,36 +308,38 @@ func main() {
 `), 0644)
 				require.NoError(t, err)
 			},
-			func(runErr error, caseNum int, projectDir string) {
+			func(t *testing.T, runErr error, caseNum int, projectDir string) {
 				assert.Error(t, runErr, fmt.Sprintf("Case %d", caseNum))
 				assert.Regexp(t, regexp.MustCompile(`^failed to find Go files for main package: no go file with main package and main function exists in directory .+/foo$`), runErr.Error(), "Case %d", caseNum)
 			},
 		},
 	} {
-		projectDir, err := os.MkdirTemp(tmp, "")
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, err := os.MkdirTemp(tmp, "")
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		if tc.preRunAction != nil {
-			tc.preRunAction(projectDir)
-		}
+			if tc.preRunAction != nil {
+				tc.preRunAction(t, projectDir)
+			}
 
-		projectInfo := distgo.ProjectInfo{
-			ProjectDir: projectDir,
-			Version:    "0.1.0",
-		}
+			projectInfo := distgo.ProjectInfo{
+				ProjectDir: projectDir,
+				Version:    "0.1.0",
+			}
 
-		disterFactory, err := disterfactory.New(nil, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		dockerBuilderFactory, err := dockerbuilderfactory.New(nil, nil)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			disterFactory, err := disterfactory.New(nil, nil)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			dockerBuilderFactory, err := dockerbuilderfactory.New(nil, nil)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		productParam, err := tc.productConfig.ToParam("foo", "", distgoconfig.ProductConfig{}, disterFactory, dockerBuilderFactory)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			productParam, err := tc.productConfig.ToParam("foo", "", distgoconfig.ProductConfig{}, disterFactory, dockerBuilderFactory)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		err = run.Product(projectInfo, productParam, tc.runArgs, io.Discard, io.Discard)
-		if tc.validate != nil {
-			tc.validate(err, i, projectDir)
-		}
+			err = run.Product(projectInfo, productParam, tc.runArgs, io.Discard, io.Discard)
+			if tc.validate != nil {
+				tc.validate(t, err, i, projectDir)
+			}
+		})
 	}
 }
 

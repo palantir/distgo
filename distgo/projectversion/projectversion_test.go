@@ -38,19 +38,19 @@ func TestProjectVersionDefaultParam(t *testing.T) {
 
 	for i, tc := range []struct {
 		name  string
-		setup func(testDir string)
+		setup func(t *testing.T, testDir string)
 		want  string
 	}{
 		{
 			"version of project with no tags is 'unspecified'",
-			func(testDir string) {
+			func(t *testing.T, testDir string) {
 				gittest.CommitRandomFile(t, testDir, "Initial commit")
 			},
 			"^unspecified\n$",
 		},
 		{
 			"version of project tagged with 1.0.0 is 1.0.0",
-			func(testDir string) {
+			func(t *testing.T, testDir string) {
 				gittest.CommitRandomFile(t, testDir, "Initial commit")
 				gittest.CreateGitTag(t, testDir, "1.0.0")
 			},
@@ -58,7 +58,7 @@ func TestProjectVersionDefaultParam(t *testing.T) {
 		},
 		{
 			"version of project with tagged commit with uncommited files ends in .dirty",
-			func(testDir string) {
+			func(t *testing.T, testDir string) {
 				gittest.CommitRandomFile(t, testDir, "Initial commit")
 				gittest.CreateGitTag(t, testDir, "1.0.0")
 				err := os.WriteFile(path.Join(testDir, "random.txt"), []byte(""), 0644)
@@ -68,7 +68,7 @@ func TestProjectVersionDefaultParam(t *testing.T) {
 		},
 		{
 			"non-tagged commit output",
-			func(testDir string) {
+			func(t *testing.T, testDir string) {
 				gittest.CommitRandomFile(t, testDir, "Initial commit")
 				gittest.CreateGitTag(t, testDir, "1.0.0")
 				gittest.CommitRandomFile(t, testDir, "Test commit message")
@@ -78,7 +78,7 @@ func TestProjectVersionDefaultParam(t *testing.T) {
 		},
 		{
 			"non-tagged commit dirty output",
-			func(testDir string) {
+			func(t *testing.T, testDir string) {
 				gittest.CommitRandomFile(t, testDir, "Initial commit")
 				gittest.CreateGitTag(t, testDir, "1.0.0")
 				gittest.CommitRandomFile(t, testDir, "Test commit message")
@@ -88,24 +88,26 @@ func TestProjectVersionDefaultParam(t *testing.T) {
 			`^` + regexp.QuoteMeta("1.0.0-1-g") + `[a-f0-9]{7}` + regexp.QuoteMeta(`.dirty`) + `\n$`,
 		},
 	} {
-		projectDir, err := os.MkdirTemp(rootDir, "")
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, err := os.MkdirTemp(rootDir, "")
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		gittest.InitGitDir(t, projectDir)
-		tc.setup(projectDir)
+			gittest.InitGitDir(t, projectDir)
+			tc.setup(t, projectDir)
 
-		projectParam := distgo.ProjectParam{
-			ProjectVersionerParam: distgo.ProjectVersionerParam{
-				ProjectVersioner: git.New(),
-			},
-		}
-		projectInfo, err := projectParam.ProjectInfo(projectDir)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			projectParam := distgo.ProjectParam{
+				ProjectVersionerParam: distgo.ProjectVersionerParam{
+					ProjectVersioner: git.New(),
+				},
+			}
+			projectInfo, err := projectParam.ProjectInfo(projectDir)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		buf := &bytes.Buffer{}
-		err = projectversion.Run(projectInfo, buf)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		assert.Regexp(t, tc.want, buf.String(), "Case %d: %s", i, tc.name)
+			buf := &bytes.Buffer{}
+			err = projectversion.Run(projectInfo, buf)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			assert.Regexp(t, tc.want, buf.String(), "Case %d: %s", i, tc.name)
+		})
 	}
 }
 
@@ -116,13 +118,13 @@ func TestProjectVersionScriptParam(t *testing.T) {
 
 	for i, tc := range []struct {
 		name         string
-		setup        func(testDir string)
+		setup        func(t *testing.T, testDir string)
 		projectParam distgo.ProjectParam
 		want         string
 	}{
 		{
 			"project version uses script versioner param if specified",
-			func(testDir string) {
+			func(t *testing.T, testDir string) {
 				gittest.CommitRandomFile(t, testDir, "Initial commit")
 			},
 			distgo.ProjectParam{
@@ -136,18 +138,20 @@ echo "3.2.1"
 			`^` + regexp.QuoteMeta("3.2.1") + `\n$`,
 		},
 	} {
-		projectDir, err := os.MkdirTemp(rootDir, "")
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, err := os.MkdirTemp(rootDir, "")
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		gittest.InitGitDir(t, projectDir)
-		tc.setup(projectDir)
+			gittest.InitGitDir(t, projectDir)
+			tc.setup(t, projectDir)
 
-		projectInfo, err := tc.projectParam.ProjectInfo(projectDir)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			projectInfo, err := tc.projectParam.ProjectInfo(projectDir)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		buf := &bytes.Buffer{}
-		err = projectversion.Run(projectInfo, buf)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		assert.Regexp(t, tc.want, buf.String(), "Case %d: %s", i, tc.name)
+			buf := &bytes.Buffer{}
+			err = projectversion.Run(projectInfo, buf)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			assert.Regexp(t, tc.want, buf.String(), "Case %d: %s", i, tc.name)
+		})
 	}
 }

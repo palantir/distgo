@@ -118,16 +118,18 @@ foo
 			},
 		},
 	} {
-		projectDir, err := os.MkdirTemp(rootDir, "")
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, err := os.MkdirTemp(rootDir, "")
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		gittest.InitGitDir(t, projectDir)
-		tc.setupProjectDir(projectDir)
+			gittest.InitGitDir(t, projectDir)
+			tc.setupProjectDir(projectDir)
 
-		projectParam := testfuncs.NewProjectParam(t, tc.projectCfg, projectDir, fmt.Sprintf("Case %d: %s", i, tc.name))
-		buf := &bytes.Buffer{}
-		err = printproducts.Run(projectParam, buf)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		assert.Equal(t, tc.want(projectDir), buf.String(), "Case %d: %s", i, tc.name)
+			projectParam := testfuncs.NewProjectParam(t, tc.projectCfg, projectDir, fmt.Sprintf("Case %d: %s", i, tc.name))
+			buf := &bytes.Buffer{}
+			err = printproducts.Run(projectParam, buf)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			assert.Equal(t, tc.want(projectDir), buf.String(), "Case %d: %s", i, tc.name)
+		})
 	}
 }

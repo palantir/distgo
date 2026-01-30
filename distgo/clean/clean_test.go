@@ -62,9 +62,9 @@ func TestClean(t *testing.T) {
 	for i, tc := range []struct {
 		name          string
 		projectConfig distgoconfig.ProjectConfig
-		preAction     func(projectDir string)
-		action        func(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam)
-		validate      func(caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam)
+		preAction     func(t *testing.T, projectDir string)
+		action        func(t *testing.T, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam)
+		validate      func(t *testing.T, caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam)
 	}{
 		{
 			"cleans build output",
@@ -77,7 +77,7 @@ func TestClean(t *testing.T) {
 					},
 				}),
 			},
-			func(projectDir string) {
+			func(t *testing.T, projectDir string) {
 				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "go.mod",
@@ -93,7 +93,7 @@ func TestClean(t *testing.T) {
 
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			func(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+			func(t *testing.T, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
 				err := build.Products(projectInfo, projectParam, nil, build.Options{}, io.Discard)
 				require.NoError(t, err)
 
@@ -104,7 +104,7 @@ func TestClean(t *testing.T) {
 				_, err = os.Stat(buildOutput)
 				require.NoError(t, err, "expected build output to exist at %s", buildOutput)
 			},
-			func(caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+			func(t *testing.T, caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
 				productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
 				require.NoError(t, err)
 
@@ -128,7 +128,7 @@ func TestClean(t *testing.T) {
 					},
 				}),
 			},
-			func(projectDir string) {
+			func(t *testing.T, projectDir string) {
 				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "go.mod",
@@ -144,7 +144,7 @@ func TestClean(t *testing.T) {
 
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			func(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+			func(t *testing.T, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
 				err := build.Products(projectInfo, projectParam, nil, build.Options{}, io.Discard)
 				require.NoError(t, err)
 
@@ -166,7 +166,7 @@ func TestClean(t *testing.T) {
 				_, err = os.Stat(buildOutput)
 				require.NoError(t, err, "expected build output to exist at %s", buildOutput)
 			},
-			func(caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+			func(t *testing.T, caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
 				productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
 				require.NoError(t, err)
 
@@ -195,7 +195,7 @@ func TestClean(t *testing.T) {
 					},
 				}),
 			},
-			func(projectDir string) {
+			func(t *testing.T, projectDir string) {
 				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "go.mod",
@@ -211,7 +211,7 @@ func TestClean(t *testing.T) {
 
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			func(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+			func(t *testing.T, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
 				err := dist.Products(projectInfo, projectParam, nil, nil, false, true, io.Discard)
 				require.NoError(t, err)
 
@@ -225,7 +225,7 @@ func TestClean(t *testing.T) {
 				_, err = os.Stat(distArtifactPath)
 				require.NoError(t, err, "expected dist output to exist at %s", distArtifactPath)
 			},
-			func(caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+			func(t *testing.T, caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
 				productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
 				require.NoError(t, err)
 
@@ -257,7 +257,7 @@ func TestClean(t *testing.T) {
 					},
 				}),
 			},
-			func(projectDir string) {
+			func(t *testing.T, projectDir string) {
 				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "go.mod",
@@ -273,7 +273,7 @@ func TestClean(t *testing.T) {
 
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			func(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+			func(t *testing.T, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
 				err := dist.Products(projectInfo, projectParam, nil, nil, false, true, io.Discard)
 				require.NoError(t, err)
 
@@ -301,7 +301,7 @@ func TestClean(t *testing.T) {
 				_, err = os.Stat(distArtifactPath)
 				require.NoError(t, err, "expected dist output to exist at %s", distArtifactPath)
 			},
-			func(caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+			func(t *testing.T, caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
 				productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
 				require.NoError(t, err)
 
@@ -333,7 +333,7 @@ func TestClean(t *testing.T) {
 					},
 				}),
 			},
-			func(projectDir string) {
+			func(t *testing.T, projectDir string) {
 				err := files.WriteGoFiles(projectDir, []gofiles.GoFileSpec{
 					{
 						RelPath: "go.mod",
@@ -349,9 +349,9 @@ func TestClean(t *testing.T) {
 
 				gittest.CreateGitTag(t, projectDir, "0.1.0")
 			},
-			func(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+			func(t *testing.T, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
 			},
-			func(caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+			func(t *testing.T, caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
 				productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
 				require.NoError(t, err)
 
@@ -368,26 +368,28 @@ func TestClean(t *testing.T) {
 			},
 		},
 	} {
-		projectDir, err := os.MkdirTemp(tmp, "")
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir, err := os.MkdirTemp(tmp, "")
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		gittest.InitGitDir(t, projectDir)
-		err = os.WriteFile(path.Join(projectDir, "main.go"), []byte(testMain), 0644)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
-		gittest.CommitAllFiles(t, projectDir, "Commit")
+			gittest.InitGitDir(t, projectDir)
+			err = os.WriteFile(path.Join(projectDir, "main.go"), []byte(testMain), 0644)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
+			gittest.CommitAllFiles(t, projectDir, "Commit")
 
-		tc.preAction(projectDir)
+			tc.preAction(t, projectDir)
 
-		projectParam := testfuncs.NewProjectParam(t, tc.projectConfig, projectDir, fmt.Sprintf("Case %d: %s", i, tc.name))
-		projectInfo, err := projectParam.ProjectInfo(projectDir)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			projectParam := testfuncs.NewProjectParam(t, tc.projectConfig, projectDir, fmt.Sprintf("Case %d: %s", i, tc.name))
+			projectInfo, err := projectParam.ProjectInfo(projectDir)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		tc.action(projectInfo, projectParam)
+			tc.action(t, projectInfo, projectParam)
 
-		err = clean.Products(projectInfo, projectParam, nil, false, io.Discard)
-		require.NoError(t, err, "Case %d: %s", i, tc.name)
+			err = clean.Products(projectInfo, projectParam, nil, false, io.Discard)
+			require.NoError(t, err, "Case %d: %s", i, tc.name)
 
-		tc.validate(i, tc.name, projectInfo, projectParam)
+			tc.validate(t, i, tc.name, projectInfo, projectParam)
+		})
 	}
 }
 
