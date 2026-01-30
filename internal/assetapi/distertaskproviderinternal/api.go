@@ -15,6 +15,7 @@
 package distertaskproviderinternal
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -58,7 +59,12 @@ func NewTaskProviderCommand(name, short string, runner distertaskproviderapi.Tas
 			if err != nil {
 				return err
 			}
-			return runner.RunTask(disterConfigYAML, allProductTaskOutputInfos, args, cmd.OutOrStdout(), cmd.OutOrStderr())
+			if err := runner.RunTask(disterConfigYAML, allProductTaskOutputInfos, args, cmd.OutOrStdout(), cmd.OutOrStderr()); err != nil {
+				// if there was an error in RunTask, return an error so that command exits with non-zero error code, but
+				// make the error message empty so that the CLI framework doesn't add its own error output.
+				return fmt.Errorf("")
+			}
+			return nil
 		},
 	}
 
@@ -137,6 +143,14 @@ func RunDisterTaskProviderAssetCommand(
 	cmd.Stderr = stderr
 
 	if err := cmd.Run(); err != nil {
+		var exitError *exec.ExitError
+		if errors.As(err, &exitError) {
+			// command ran, but exited with non-0 exit code: propagate error, but don't wrap or include message, as it
+			// is expected that the command itself will output information related to the error
+			return fmt.Errorf("")
+		}
+		// if command failed for reason other than non-0 exit code, the behavior is unexpected, so wrap error and
+		// include message to help with debugging
 		return errors.Wrapf(err, "failed to run command %v", cmd.Args)
 	}
 	return nil

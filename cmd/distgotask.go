@@ -28,14 +28,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const distgoTaskCmdName = "distgo-task"
+
 var (
 	distgoTaskCmd = &cobra.Command{
-		Use:   "distgo-task",
+		Use:   distgoTaskCmdName,
 		Short: "Runs the distgo asset-provided task with the specified task name",
 		Long: `Runs a distgo asset-provided task with the specified name.
 
 Tasks may also be invoked using their fully qualified name, which is [asset-type] [asset-name] [task-name]. If there are
-any conflicts between task names, they are not registered at the top level of distgo-task and must be invoked using
+any conflicts between task names, they are not registered at the top level of this command and must be invoked using
 their fully qualified name.
 
 As a special case, running this command with no arguments but with the --verify flag runs the verification operation for
@@ -51,7 +53,12 @@ without making any modifications.`,
 			if err != nil {
 				return err
 			}
-			return runVerifyTask(projectInfo, projectParam, distgoTaskVerifyApplyFlagVal, cmd.OutOrStdout(), cmd.OutOrStderr())
+			if err := runVerifyTask(projectInfo, projectParam, distgoTaskVerifyApplyFlagVal, cmd.OutOrStdout(), cmd.OutOrStderr()); err != nil {
+				// runVerifyTask prints failure output to stderr, so return error to signal failure, but don't include
+				// message because no further output is needed.
+				return fmt.Errorf("")
+			}
+			return nil
 		},
 	}
 )
@@ -193,14 +200,23 @@ func runVerifyTask(
 		}
 
 		if err := assetProvidedTaskDispatcher.RunVerifyTask(verifyTaskInfo, globalFlagValsAndFactories, taskInput, applyMode, stdout, stderr); err != nil {
-			// if error occurred, record and print.
+			// if error occurred, record it.
 			// Continue because all verification tasks should run.
 			errTaskStrings = append(errTaskStrings, fmt.Sprintf("* %s.%s.%s", verifyTaskInfo.AssetType, verifyTaskInfo.AssetName, verifyTaskInfo.TaskInfo.Name))
-			_, _ = fmt.Fprintln(stderr, err.Error())
+
+			// in standard verification failure case, RunVerifyTask should print its own error output and returned error
+			// should be blank. If error is not blank, it means that verification failed for unexpected reason (for
+			// example, executable not existing), so print it in that case
+			if errOutput := err.Error(); errOutput != "" {
+				_, _ = fmt.Fprintln(stderr, errOutput)
+			}
 		}
 	}
 	if len(errTaskStrings) > 0 {
-		return fmt.Errorf("%d verify task(s) failed:\n%s", len(errTaskStrings), strings.Join(errTaskStrings, "\n"))
+		// print overall verify task failure summary and return error
+		err := fmt.Errorf("%d %s verify tasks failed:\n%s", len(errTaskStrings), distgoTaskCmdName, strings.Join(errTaskStrings, "\n"))
+		_, _ = fmt.Fprintln(stderr, err.Error())
+		return err
 	}
 	return nil
 }
