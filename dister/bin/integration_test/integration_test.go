@@ -74,12 +74,12 @@ products:
         type: bin
 `,
 				},
-				WantOutput: func(projectDir string) string {
+				WantOutput: func(t *testing.T, projectDir string) string {
 					return `Creating distribution for foo at out/dist/foo/1.0.0/bin/foo-1.0.0.tgz
 Finished creating bin distribution for foo
 `
 				},
-				Validate: func(projectDir string) {
+				Validate: func(t *testing.T, projectDir string) {
 					// layout for the contents of the directory (working directory and in TGZ)
 					wantInnerLayout := specdir.NewLayoutSpec(
 						specdir.Dir(specdir.LiteralName("foo-1.0.0"), "",
@@ -144,12 +144,12 @@ products:
                 echo "hello" > $DIST_WORK_DIR/foo.txt
 `,
 				},
-				WantOutput: func(projectDir string) string {
+				WantOutput: func(t *testing.T, projectDir string) string {
 					return `Creating distribution for foo at out/dist/foo/1.0.0/bin/foo-1.0.0.tgz
 Finished creating bin distribution for foo
 `
 				},
-				Validate: func(projectDir string) {
+				Validate: func(t *testing.T, projectDir string) {
 					// layout for the contents of the directory (working directory and in TGZ)
 					wantInnerLayout := specdir.NewLayoutSpec(
 						specdir.Dir(specdir.LiteralName("foo-1.0.0"), "",
@@ -214,12 +214,12 @@ products:
                 touch $DIST_WORK_DIR/0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/file.txt
 `,
 				},
-				WantOutput: func(projectDir string) string {
+				WantOutput: func(t *testing.T, projectDir string) string {
 					return `Creating distribution for foo at out/dist/foo/1.0.0/bin/foo-1.0.0.tgz
 Finished creating bin distribution for foo
 `
 				},
-				Validate: func(projectDir string) {
+				Validate: func(t *testing.T, projectDir string) {
 					// layout for the contents of the directory (working directory and in TGZ)
 					wantInnerLayout := specdir.NewLayoutSpec(
 						specdir.Dir(specdir.LiteralName("foo-1.0.0"), "",
@@ -330,7 +330,7 @@ products:
 `,
 				},
 				WantError: true,
-				WantOutput: func(projectDir string) string {
+				WantOutput: func(t *testing.T, projectDir string) string {
 					return `Creating distribution for foo at out/dist/foo/1.0.0/bin/foo-1.0.0.tgz
 Error: dist failed for foo: bin dist failed: no build outputs for product foo
 `

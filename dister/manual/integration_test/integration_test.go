@@ -79,12 +79,12 @@ products:
                 tar -cf "$DIST_DIR/$DIST_NAME".tar -C "$DIST_WORK_DIR" out.txt
 `,
 				},
-				WantOutput: func(projectDir string) string {
+				WantOutput: func(t *testing.T, projectDir string) string {
 					return `Creating distribution for foo at out/dist/foo/1.0.0/manual/foo-1.0.0.tar
 Finished creating manual distribution for foo
 `
 				},
-				Validate: func(projectDir string) {
+				Validate: func(t *testing.T, projectDir string) {
 					wantLayout := specdir.NewLayoutSpec(
 						specdir.Dir(specdir.LiteralName("1.0.0"), "",
 							specdir.Dir(specdir.LiteralName("manual"), "",
@@ -129,7 +129,7 @@ products:
           extension: zip
 `,
 				},
-				WantOutput: func(projectDir string) string {
+				WantOutput: func(t *testing.T, projectDir string) string {
 					return fmt.Sprintf(`Creating distribution for foo at out/dist/foo/1.0.0/manual/foo-1.0.0.zip
 Error: dist failed for foo: expected output does not exist at %s/out/dist/foo/1.0.0/manual/foo-1.0.0.zip: stat %s/out/dist/foo/1.0.0/manual/foo-1.0.0.zip: no such file or directory
 `, projectDir, projectDir)
