@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	DisterConfigYMLFlagName          = "dister-config-yml"
+	DisterConfigYAMLFlagName         = "dister-config-yml"
 	AllProductTaskOutputInfoFlagName = "all-product-task-output-info"
 )
 
@@ -36,7 +36,7 @@ const (
 type ProductsDisterConfig map[distgo.ProductID]map[distgo.DistID]distertaskproviderapi.DisterConfigYAML
 
 // NewTaskProviderCommand returns a new *cobra.Command with the provided name and description that runs the provided
-// TaskRunner for the dister with the provided name. The command is configured with the DisterConfigYMLFlagName and
+// TaskRunner for the dister with the provided name. The command is configured with the DisterConfigYAMLFlagName and
 // AllProductTaskOutputInfoFlagName flags and handles the translation from the flag values to the typed values passed to
 // the RunTask function.
 func NewTaskProviderCommand(name, short string, runner distertaskproviderapi.TaskRunner) *cobra.Command {
@@ -62,7 +62,7 @@ func NewTaskProviderCommand(name, short string, runner distertaskproviderapi.Tas
 		},
 	}
 
-	cmd.Flags().StringVar(&disterConfigYMLFlagVal, DisterConfigYMLFlagName, "", "YAML file that contains the ProductsDisterConfig that contains all the config YAML for the dister")
+	cmd.Flags().StringVar(&disterConfigYMLFlagVal, DisterConfigYAMLFlagName, "", "YAML file that contains the ProductsDisterConfig that contains all the config YAML for the dister")
 	cmd.Flags().StringVar(&allProductTaskOutputInfoFlagVal, AllProductTaskOutputInfoFlagName, "", "YAML file containing all ProductTaskOutputInfo")
 
 	// run command configuration logic provided by the runner
@@ -97,10 +97,11 @@ func FilterDisterConfigYAML(allConfigYAML ProductsDisterConfig, disterName strin
 }
 
 // RunDisterTaskProviderAssetCommand runs a dister TaskProvider task provided by an asset.
-// Invokes the asset at the provided assetPath with cmdArgs, the flags DisterConfigYMLFlagName and
+// Invokes the asset at the provided assetPath with cmdArgs, the flags DisterConfigYAMLFlagName and
 // AllProductTaskOutputInfoFlagName with their respective values (which are files that have the content of the provided
 // allConfigYML and allProductTaskOutputInfos arguments marshalled as YAML), and providedArgs, and uses the provided
-// stdout and stderr writers as stdout and stderr.
+// stdout and stderr writers as stdout and stderr. Any flags that control behavior for things like global flags or
+// verify mode should be included as values in the providedArgs parameter.
 func RunDisterTaskProviderAssetCommand(
 	assetPath string,
 	cmdArgs []string,
@@ -120,7 +121,7 @@ func RunDisterTaskProviderAssetCommand(
 	if err != nil {
 		return errors.Wrapf(err, "failed to write disterConfigYAML %v to file", disterConfigYAML)
 	}
-	allArgs = append(allArgs, "--"+DisterConfigYMLFlagName, configYAMLFile)
+	allArgs = append(allArgs, "--"+DisterConfigYAMLFlagName, configYAMLFile)
 
 	allProductTaskOutputInfosFile, err := writeValueToYAMLFile(allProductTaskOutputInfos)
 	if err != nil {

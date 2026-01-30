@@ -192,7 +192,7 @@ func runVerifyTask(
 			taskInputs[verifyTaskInfo.AssetType] = taskInput
 		}
 
-		if err := assetProvidedTaskDispatcher.RunVerifyTask(verifyTaskInfo, taskInput, applyMode, stdout, stderr); err != nil {
+		if err := assetProvidedTaskDispatcher.RunVerifyTask(verifyTaskInfo, globalFlagValsAndFactories, taskInput, applyMode, stdout, stderr); err != nil {
 			// if error occurred, record and print.
 			// Continue because all verification tasks should run.
 			errTaskStrings = append(errTaskStrings, fmt.Sprintf("* %s.%s.%s", verifyTaskInfo.AssetType, verifyTaskInfo.AssetName, verifyTaskInfo.TaskInfo.Name))

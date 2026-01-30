@@ -45,7 +45,7 @@ type AssetProvidedTask[T any] interface {
 	CreateVerifyTaskInput(assetType assetapi.AssetType, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) (T, error)
 
 	// RunVerifyTask runs the provided verify using the input returned by CreateInput for the type of the provided task.
-	RunVerifyTask(verifyTaskInfo assetapi.AssetTaskInfo, input T, applyMode bool, stdout, stderr io.Writer) error
+	RunVerifyTask(verifyTaskInfo assetapi.AssetTaskInfo, globalFlagValsAndFactories cmdinternal.GlobalFlagValsAndFactories, input T, applyMode bool, stdout, stderr io.Writer) error
 }
 
 // AssetProvidedTaskDispatcher returns an "untyped" AssetProvidedTask that delegates to supported typed implementations
@@ -83,14 +83,14 @@ func (a *assetProvidedTaskDispatcher) CreateVerifyTaskInput(assetType assetapi.A
 	}
 }
 
-func (a *assetProvidedTaskDispatcher) RunVerifyTask(verifyTaskInfo assetapi.AssetTaskInfo, input any, applyMode bool, stdout, stderr io.Writer) error {
+func (a *assetProvidedTaskDispatcher) RunVerifyTask(verifyTaskInfo assetapi.AssetTaskInfo, globalFlagValsAndFactories cmdinternal.GlobalFlagValsAndFactories, input any, applyMode bool, stdout, stderr io.Writer) error {
 	switch verifyTaskInfo.AssetType {
 	case assetapi.Dister:
 		typedInput, ok := input.(DisterVerifyTaskInput)
 		if !ok {
 			return errors.Errorf("invalid input type %T, expected DisterVerifyTaskInput", input)
 		}
-		return a.disterAssetProvidedTask.RunVerifyTask(verifyTaskInfo, typedInput, applyMode, stdout, stderr)
+		return a.disterAssetProvidedTask.RunVerifyTask(verifyTaskInfo, globalFlagValsAndFactories, typedInput, applyMode, stdout, stderr)
 	default:
 		return errors.Errorf("asset type %q is not supported for verify tasks", verifyTaskInfo.AssetType)
 	}
