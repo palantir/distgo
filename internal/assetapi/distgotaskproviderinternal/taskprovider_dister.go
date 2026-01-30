@@ -178,22 +178,29 @@ func (d *disterAssetProvidedTask) CreateVerifyTaskInput(_ assetapi.AssetType, pr
 	}, nil
 }
 
-func (d *disterAssetProvidedTask) RunVerifyTask(verifyTaskInfo assetapi.AssetTaskInfo, input DisterVerifyTaskInput, applyMode bool, stdout, stderr io.Writer) error {
+func (d *disterAssetProvidedTask) RunVerifyTask(verifyTaskInfo assetapi.AssetTaskInfo, globalFlagValsAndFactories cmdinternal.GlobalFlagValsAndFactories, input DisterVerifyTaskInput, applyMode bool, stdout, stderr io.Writer) error {
 	disterConfigYAML := distertaskproviderinternal.FilterDisterConfigYAML(input.AllConfigYAML, verifyTaskInfo.AssetName)
 
-	var applyArgs []string
+	var taskCmdArgs []string
+
+	// add flags for global values
+	taskCmdArgs = append(taskCmdArgs, getGlobalFlagArgs(verifyTaskInfo.TaskInfo, globalFlagValsAndFactories)...)
+
+	// add flags for apply mode
+	var applyModeArgs []string
 	if applyMode {
-		applyArgs = verifyTaskInfo.TaskInfo.VerifyOptions.ApplyTrueArgs
+		applyModeArgs = verifyTaskInfo.TaskInfo.VerifyOptions.ApplyTrueArgs
 	} else {
-		applyArgs = verifyTaskInfo.TaskInfo.VerifyOptions.ApplyFalseArgs
+		applyModeArgs = verifyTaskInfo.TaskInfo.VerifyOptions.ApplyFalseArgs
 	}
+	taskCmdArgs = append(taskCmdArgs, applyModeArgs...)
 
 	return distertaskproviderinternal.RunDisterTaskProviderAssetCommand(
 		verifyTaskInfo.AssetPath,
 		verifyTaskInfo.TaskInfo.Command,
 		disterConfigYAML,
 		input.ProductTaskOutputInfo,
-		applyArgs,
+		taskCmdArgs,
 		stdout,
 		stderr,
 	)
