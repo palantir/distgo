@@ -81,8 +81,8 @@ github.com/palantir/distgo/pkg/git v1.0.0 h1:bryRJ9ZdJapz5tGzd/snv6U66tLxyb1b4Pb
 github.com/palantir/distgo/pkg/git v1.0.0/go.mod h1:eXrr3SOmf/sWTYmtiubYVxSaVegTlMGgRgBUFMFFedw=
 github.com/palantir/godel/pkg/products/v2 v2.0.0 h1:E3DuAEA1yotLLDQt7vIrYRapRwXRyW6u8Yuq2p/qyLs=
 github.com/palantir/godel/pkg/products/v2 v2.0.0/go.mod h1:SaLUycZLVP5qV6mL9MWG3jkX4dS23lJnzpubTGAV4FU=
-github.com/palantir/godel/v2 v2.149.0 h1:D9S56mxr/AiqjLuODmoNO4+vRshBSe2aoliafh/ZP0s=
-github.com/palantir/godel/v2 v2.149.0/go.mod h1:HJC3OaTuUsBOVcu1Wh9PMtKKM+i+eA9TIjX5MTZ6mVI=
+github.com/palantir/godel/v2 v2.150.0 h1:Z9TQCL5ZxggyDrX0+X9Tu8tLM5qhI3jKaSw5HfySweM=
+github.com/palantir/godel/v2 v2.150.0/go.mod h1:HJC3OaTuUsBOVcu1Wh9PMtKKM+i+eA9TIjX5MTZ6mVI=
 github.com/palantir/pkg v1.1.0 h1:0EhrSUP8oeeh3MUvk7V/UU7WmsN1UiJNTvNj0sN9Cpo=
 github.com/palantir/pkg v1.1.0/go.mod h1:KC9srP/9ssWRxBxFCIqhUGC4Jt7OJkWRz0Iqehup1/c=
 github.com/palantir/pkg/cobracli v1.3.0 h1:PZhMQGNA3Ij1am+hDTzYhzLtgYgiKNUnpK7kmRADDWs=
