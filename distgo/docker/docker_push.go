@@ -17,6 +17,7 @@ package docker
 import (
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -32,6 +33,14 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/exp/maps"
 )
+
+// pushResult captures the digest, size, and media type of a pushed image or
+// index so that attestations can be associated with the correct subject.
+type pushResult struct {
+	digest    v1.Hash
+	size      int64
+	mediaType types.MediaType
+}
 
 func PushProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productDockerIDs []distgo.ProductDockerID, tagKeys []string, dryRun bool, insecure bool, stdout io.Writer) error {
 	// determine products that match specified productDockerIDs
@@ -94,7 +103,7 @@ func runSingleDockerPush(
 	if _, err := layout.FromPath(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)); err == nil {
 		return runOCIPush(productID, dockerID, productTaskOutputInfo, dryRun, insecure, stdout)
 	}
-	return runDockerDaemonPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
+	return runDockerDaemonPush(productID, dockerID, productTaskOutputInfo, dryRun, insecure, stdout)
 }
 
 func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, insecure bool, stdout io.Writer) error {
@@ -103,7 +112,11 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 		return errors.Wrapf(err, "failed to construct image index from OCI layout at path %s", productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID))
 	}
 
-	for _, tag := range productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags {
+	tags := productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags
+	var firstResult pushResult
+	var firstRef name.Reference
+
+	for i, tag := range tags {
 		var opts []name.Option
 		if insecure {
 			opts = append(opts, name.Insecure)
@@ -122,26 +135,44 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 		if err != nil {
 			return errors.Wrap(err, "failed to read index manifest")
 		}
+
+		var result pushResult
 		switch idxManifest.MediaType {
 		case types.OCIImageIndex:
-			if err := handleImageIndex(index, idxManifest, ref, productID, dockerID, dryRun, stdout); err != nil {
+			result, err = handleImageIndex(index, idxManifest, ref, productID, dockerID, dryRun, stdout)
+			if err != nil {
 				return errors.Wrapf(err, "failed to publish image index for configuration %s for product %s", dockerID, productID)
 			}
 		case types.OCIManifestSchema1:
-			if err := handleImageManifest(ref, productID, dockerID, productTaskOutputInfo, dryRun, stdout); err != nil {
+			result, err = handleImageManifest(ref, productID, dockerID, productTaskOutputInfo, dryRun, stdout)
+			if err != nil {
 				return errors.Wrapf(err, "failed to image manifest for configuration %s for product %s", dockerID, productID)
 			}
 		default:
 			return errors.Errorf("unexpected media type %s for configuration %s for product %s", idxManifest.MediaType, dockerID, productID)
 		}
+
+		if i == 0 {
+			firstResult = result
+			firstRef = ref
+		}
 	}
+
+	// Attach VEX attestation if a VEX file was produced by vulncheck.
+	vexPath := productTaskOutputInfo.ProductVulncheckVEXPath()
+	if _, err := os.Stat(vexPath); err == nil && firstRef != nil {
+		if err := attachVEXAttestation(firstRef, firstResult.digest, firstResult.size, firstResult.mediaType, vexPath, dryRun, insecure, stdout); err != nil {
+			return errors.Wrapf(err, "failed to attach VEX attestation for configuration %s of product %s", dockerID, productID)
+		}
+	}
+
 	return nil
 }
 
-func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) error {
+func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) (pushResult, error) {
 	manifestMetadata, err := manifestMetadataFromIndexManifest(idxManifest)
 	if err != nil {
-		return errors.Wrap(err, "encountered unexpected index manifest state")
+		return pushResult{}, errors.Wrap(err, "encountered unexpected index manifest state")
 	}
 
 	switch manifestMetadata.mediaType {
@@ -149,67 +180,107 @@ func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref na
 		// if we have an image index, go one level down and push that
 		innerIndex, err := index.ImageIndex(manifestMetadata.digest)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read image index digest %s from OCI layout", manifestMetadata.digest)
+			return pushResult{}, errors.Wrapf(err, "failed to read image index digest %s from OCI layout", manifestMetadata.digest)
 		}
-		if err := writeIndex(innerIndex, ref, productID, dockerID, dryRun, stdout); err != nil {
-			return errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
+		result, err := writeIndex(innerIndex, ref, productID, dockerID, dryRun, stdout)
+		if err != nil {
+			return pushResult{}, errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
 		}
-		return nil
+		return result, nil
 	case types.OCIManifestSchema1:
 		if manifestMetadata.hasPlatformInfo {
 			// if we have platform information, we should push our current image index
-			if err := writeIndex(index, ref, productID, dockerID, dryRun, stdout); err != nil {
-				return errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
+			result, err := writeIndex(index, ref, productID, dockerID, dryRun, stdout)
+			if err != nil {
+				return pushResult{}, errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
 			}
-			return nil
+			return result, nil
 		}
 
 		if len(idxManifest.Manifests) != 1 {
-			return errors.New("unexpected number of image manifests present in image index without platform information")
+			return pushResult{}, errors.New("unexpected number of image manifests present in image index without platform information")
 		}
 		image, err := index.Image(manifestMetadata.digest)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read image digest %s from OCI layout", manifestMetadata.digest)
+			return pushResult{}, errors.Wrapf(err, "failed to read image digest %s from OCI layout", manifestMetadata.digest)
 		}
-		if err := writeImage(image, ref, productID, dockerID, dryRun, stdout); err != nil {
-			return errors.Wrapf(err, "failed to write image for tag %s of configuration %s for product %s", ref, dockerID, productID)
+		result, err := writeImage(image, ref, productID, dockerID, dryRun, stdout)
+		if err != nil {
+			return pushResult{}, errors.Wrapf(err, "failed to write image for tag %s of configuration %s for product %s", ref, dockerID, productID)
 		}
-		return nil
+		return result, nil
 	default:
-		return errors.Errorf("unexpected media type %s for configuration %s for product %s", idxManifest.MediaType, dockerID, productID)
+		return pushResult{}, errors.Errorf("unexpected media type %s for configuration %s for product %s", idxManifest.MediaType, dockerID, productID)
 	}
 }
 
-func handleImageManifest(ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, stdout io.Writer) error {
+func handleImageManifest(ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, stdout io.Writer) (pushResult, error) {
 	path := filepath.Join(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID), "image.tar")
 	image, err := tarball.ImageFromPath(path, nil)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read image from path %s", path)
+		return pushResult{}, errors.Wrapf(err, "failed to read image from path %s", path)
 	}
-	if err := writeImage(image, ref, productID, dockerID, dryRun, stdout); err != nil {
-		return errors.Wrapf(err, "failed to write image for tag %s of configuration %s for product %s", ref, dockerID, productID)
+	result, err := writeImage(image, ref, productID, dockerID, dryRun, stdout)
+	if err != nil {
+		return pushResult{}, errors.Wrapf(err, "failed to write image for tag %s of configuration %s for product %s", ref, dockerID, productID)
 	}
-	return nil
+	return result, nil
 }
 
-func writeIndex(index v1.ImageIndex, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) error {
+func writeIndex(index v1.ImageIndex, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) (pushResult, error) {
 	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing image index for tag %s of docker configuration %s of product %s...", ref, dockerID, productID), dryRun)
+
+	digest, err := index.Digest()
+	if err != nil {
+		return pushResult{}, errors.Wrap(err, "failed to compute index digest")
+	}
+	manifest, err := index.RawManifest()
+	if err != nil {
+		return pushResult{}, errors.Wrap(err, "failed to get index manifest")
+	}
+	mt, err := index.MediaType()
+	if err != nil {
+		return pushResult{}, errors.Wrap(err, "failed to get index media type")
+	}
+
 	if !dryRun {
 		if err := remote.WriteIndex(ref, index, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
-			return errors.Wrap(err, "failed to write image index to remote")
+			return pushResult{}, errors.Wrap(err, "failed to write image index to remote")
 		}
 	}
-	return nil
+	return pushResult{
+		digest:    digest,
+		size:      int64(len(manifest)),
+		mediaType: mt,
+	}, nil
 }
 
-func writeImage(image v1.Image, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) error {
+func writeImage(image v1.Image, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) (pushResult, error) {
 	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Writing image for tag %s of docker configuration %s of product %s...", ref, dockerID, productID), dryRun)
+
+	digest, err := image.Digest()
+	if err != nil {
+		return pushResult{}, errors.Wrap(err, "failed to compute image digest")
+	}
+	manifest, err := image.RawManifest()
+	if err != nil {
+		return pushResult{}, errors.Wrap(err, "failed to get image manifest")
+	}
+	mt, err := image.MediaType()
+	if err != nil {
+		return pushResult{}, errors.Wrap(err, "failed to get image media type")
+	}
+
 	if !dryRun {
 		if err := remote.Write(ref, image, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
-			return errors.Wrap(err, "failed to write image to remote")
+			return pushResult{}, errors.Wrap(err, "failed to write image to remote")
 		}
 	}
-	return nil
+	return pushResult{
+		digest:    digest,
+		size:      int64(len(manifest)),
+		mediaType: mt,
+	}, nil
 }
 
 type manifestMetadata struct {
@@ -250,14 +321,50 @@ func runDockerDaemonPush(
 	dockerID distgo.DockerID,
 	productTaskOutputInfo distgo.ProductTaskOutputInfo,
 	dryRun bool,
+	insecure bool,
 	stdout io.Writer,
 ) error {
 	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running Docker push for configuration %s of product %s...", dockerID, productID), dryRun)
-	for _, tag := range productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags {
+
+	tags := productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags
+	var firstRef name.Reference
+
+	for i, tag := range tags {
 		cmd := exec.Command("docker", "push", tag)
 		if err := distgo.RunCommandWithVerboseOption(cmd, true, dryRun, stdout); err != nil {
 			return err
 		}
+
+		if i == 0 {
+			var opts []name.Option
+			if insecure {
+				opts = append(opts, name.Insecure)
+			}
+			ref, err := name.ParseReference(tag, opts...)
+			if err != nil {
+				return errors.Wrapf(err, "failed to parse reference from tag %s", tag)
+			}
+			firstRef = ref
+		}
 	}
+
+	// Attach VEX attestation if a VEX file was produced by vulncheck.
+	vexPath := productTaskOutputInfo.ProductVulncheckVEXPath()
+	if _, err := os.Stat(vexPath); err == nil && firstRef != nil {
+		// Resolve the remote descriptor to get digest/size/mediaType for the
+		// image that was pushed via the Docker daemon.
+		var remoteOpts []remote.Option
+		remoteOpts = append(remoteOpts, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+		desc, err := remote.Head(firstRef, remoteOpts...)
+		if err != nil && !dryRun {
+			return errors.Wrapf(err, "failed to resolve remote digest for %s", firstRef)
+		}
+		if desc != nil {
+			if err := attachVEXAttestation(firstRef, desc.Digest, desc.Size, desc.MediaType, vexPath, dryRun, insecure, stdout); err != nil {
+				return errors.Wrapf(err, "failed to attach VEX attestation for configuration %s of product %s", dockerID, productID)
+			}
+		}
+	}
+
 	return nil
 }
