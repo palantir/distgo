@@ -85,9 +85,9 @@ func TestProductsDryRun(t *testing.T) {
 				ID:   "myapp",
 				Name: "myapp",
 				Build: &distgo.BuildParam{
-					MainPkg:    "./cmd/myapp",
-					OutputDir:  "out/build",
-					OSArchs:    []osarch.OSArch{{OS: "linux", Arch: "amd64"}},
+					MainPkg:   "./cmd/myapp",
+					OutputDir: "out/build",
+					OSArchs:   []osarch.OSArch{{OS: "linux", Arch: "amd64"}},
 				},
 			},
 		},
