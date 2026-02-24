@@ -71,20 +71,36 @@ type inTotoSubject struct {
 }
 
 // attachVEXAttestation reads a VEX document from vexPath, wraps it in an
-// unsigned DSSE envelope containing an in-toto Statement, builds an OCI
-// attestation image, and pushes it to the same repository as ref using the
-// OCI referrers API (via the manifest Subject field).
+// unsigned DSSE envelope containing an in-toto Statement, and pushes it using
+// cosign's tag-based attestation scheme (sha256-<hex>.att). This is the
+// discovery mechanism used by Trivy's --vex oci via the openvex/discovery
+// library, which calls cosign.FetchAttestations internally.
+//
+// If an existing attestation image already exists at the tag (e.g. from a
+// previous cosign attest), the new layer is appended to preserve existing
+// attestations.
 func attachVEXAttestation(
 	ref name.Reference,
 	subjectDigest v1.Hash,
-	subjectSize int64,
-	subjectMediaType types.MediaType,
 	vexPath string,
 	dryRun bool,
 	insecure bool,
 	stdout io.Writer,
 ) error {
-	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Attaching VEX attestation from %s to %s...", vexPath, ref), dryRun)
+	// Build the cosign-compatible .att tag for this subject digest.
+	var nameOpts []name.Option
+	if insecure {
+		nameOpts = append(nameOpts, name.Insecure)
+	}
+	attTag, err := name.NewTag(
+		fmt.Sprintf("%s:%s-%s.att", ref.Context().String(), subjectDigest.Algorithm, subjectDigest.Hex),
+		nameOpts...,
+	)
+	if err != nil {
+		return errors.Wrap(err, "failed to create attestation tag")
+	}
+
+	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Attaching VEX attestation from %s to %s...", vexPath, attTag), dryRun)
 	if dryRun {
 		return nil
 	}
@@ -99,39 +115,33 @@ func attachVEXAttestation(
 		return errors.Wrap(err, "failed to build DSSE envelope")
 	}
 
-	subjectDesc := v1.Descriptor{
-		Digest:    subjectDigest,
-		Size:      subjectSize,
-		MediaType: subjectMediaType,
+	layer := newStaticLayer(dsseBytes, types.MediaType("application/vnd.dsse.envelope.v1+json"))
+
+	remoteOpts := []remote.Option{remote.WithAuthFromKeychain(authn.DefaultKeychain)}
+
+	// Try to fetch an existing attestation image at this tag so we can
+	// append rather than replace (preserves attestations from cosign, etc.).
+	var attestImg v1.Image
+	existingImg, err := remote.Image(attTag, remoteOpts...)
+	if err == nil {
+		attestImg, err = mutate.AppendLayers(existingImg, layer)
+		if err != nil {
+			return errors.Wrap(err, "failed to append attestation layer to existing image")
+		}
+	} else {
+		img := empty.Image
+		img = mutate.MediaType(img, types.OCIManifestSchema1)
+		attestImg, err = mutate.AppendLayers(img, layer)
+		if err != nil {
+			return errors.Wrap(err, "failed to create attestation image")
+		}
 	}
 
-	attestImg, err := buildAttestationImage(subjectDesc, dsseBytes)
-	if err != nil {
-		return errors.Wrap(err, "failed to build attestation image")
-	}
-
-	var nameOpts []name.Option
-	if insecure {
-		nameOpts = append(nameOpts, name.Insecure)
-	}
-
-	// Push using the subject digest as the tag to associate via referrers.
-	// The Subject field in the manifest handles the OCI 1.1 referrers API
-	// association; we push by digest so we don't clobber any existing tags.
-	attestDigest, err := attestImg.Digest()
-	if err != nil {
-		return errors.Wrap(err, "failed to compute attestation image digest")
-	}
-	digestRef, err := name.NewDigest(ref.Context().String()+"@"+attestDigest.String(), nameOpts...)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create digest reference for attestation")
-	}
-
-	if err := remote.Write(digestRef, attestImg, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
+	if err := remote.Write(attTag, attestImg, remoteOpts...); err != nil {
 		return errors.Wrap(err, "failed to push VEX attestation image")
 	}
 
-	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Attached VEX attestation %s to %s", attestDigest, ref), false)
+	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Attached VEX attestation to %s", attTag), false)
 	return nil
 }
 
@@ -168,40 +178,6 @@ func buildDSSEEnvelope(subjectRef string, subjectDigest v1.Hash, vexBytes []byte
 		return nil, errors.Wrap(err, "failed to marshal DSSE envelope")
 	}
 	return envBytes, nil
-}
-
-// buildAttestationImage constructs an OCI image that stores a DSSE envelope
-// as a single layer, suitable for discovery via the OCI referrers API. The
-// image has:
-//   - Manifest media type: application/vnd.oci.image.manifest.v1+json
-//   - Config media type: application/vnd.in-toto+json
-//   - Subject descriptor pointing to the attested image
-//   - Single layer with media type application/vnd.in-toto+json
-func buildAttestationImage(subjectDesc v1.Descriptor, dsseBytes []byte) (v1.Image, error) {
-	img := empty.Image
-
-	// Set manifest media type to OCI manifest.
-	img = mutate.MediaType(img, types.OCIManifestSchema1)
-
-	// Set config media type to in-toto payload type.
-	img = mutate.ConfigMediaType(img, types.MediaType(inTotoPayloadType))
-
-	// Add the DSSE envelope as a single layer.
-	layer := newStaticLayer(dsseBytes, types.MediaType(inTotoPayloadType))
-	var err error
-	img, err = mutate.AppendLayers(img, layer)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to append attestation layer")
-	}
-
-	// Set the subject descriptor to associate with the attested image.
-	result := mutate.Subject(img, subjectDesc)
-	attestImg, ok := result.(v1.Image)
-	if !ok {
-		return nil, errors.New("mutate.Subject did not return a v1.Image")
-	}
-
-	return attestImg, nil
 }
 
 // staticLayer is a minimal v1.Layer implementation for raw (non-tarball)

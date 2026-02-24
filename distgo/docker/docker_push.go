@@ -190,7 +190,7 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 func attachVEXAttestations(ref name.Reference, ociResult ociPushResult, vexPath string, dryRun bool, insecure bool, stdout io.Writer) error {
 	if ociResult.pushedIndex == nil {
 		// Single image — attach directly.
-		return attachVEXAttestation(ref, ociResult.result.digest, ociResult.result.size, ociResult.result.mediaType, vexPath, dryRun, insecure, stdout)
+		return attachVEXAttestation(ref, ociResult.result.digest, vexPath, dryRun, insecure, stdout)
 	}
 
 	// Image index — attach to each platform image manifest so Trivy can
@@ -214,7 +214,7 @@ func attachVEXAttestations(ref name.Reference, ociResult ociPushResult, vexPath 
 	errs := make(chan error, len(platformDescs))
 	for _, desc := range platformDescs {
 		go func(d v1.Descriptor) {
-			errs <- attachVEXAttestation(ref, d.Digest, d.Size, d.MediaType, vexPath, dryRun, insecure, stdout)
+			errs <- attachVEXAttestation(ref, d.Digest, vexPath, dryRun, insecure, stdout)
 		}(desc)
 	}
 	for range platformDescs {
@@ -407,16 +407,15 @@ func runDockerDaemonPush(
 	// Attach VEX attestation if a VEX file was produced by vulncheck.
 	vexPath := productTaskOutputInfo.ProductVulncheckVEXPath()
 	if _, err := os.Stat(vexPath); err == nil && firstRef != nil {
-		// Resolve the remote descriptor to get digest/size/mediaType for the
-		// image that was pushed via the Docker daemon.
-		var remoteOpts []remote.Option
-		remoteOpts = append(remoteOpts, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+		// Resolve the remote descriptor to get the digest for the image that
+		// was pushed via the Docker daemon.
+		remoteOpts := []remote.Option{remote.WithAuthFromKeychain(authn.DefaultKeychain)}
 		desc, err := remote.Head(firstRef, remoteOpts...)
 		if err != nil && !dryRun {
 			return errors.Wrapf(err, "failed to resolve remote digest for %s", firstRef)
 		}
 		if desc != nil {
-			if err := attachVEXAttestation(firstRef, desc.Digest, desc.Size, desc.MediaType, vexPath, dryRun, insecure, stdout); err != nil {
+			if err := attachVEXAttestation(firstRef, desc.Digest, vexPath, dryRun, insecure, stdout); err != nil {
 				return errors.Wrapf(err, "failed to attach VEX attestation for configuration %s of product %s", dockerID, productID)
 			}
 		}

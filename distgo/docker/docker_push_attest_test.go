@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/stretchr/testify/assert"
@@ -65,50 +66,6 @@ func TestBuildDSSEEnvelope(t *testing.T) {
 	assert.Equal(t, "https://openvex.dev/ns/v0.2.0", predicateMap["@context"])
 }
 
-func TestBuildAttestationImage(t *testing.T) {
-	dsseBytes := []byte(`{"payloadType":"application/vnd.in-toto+json","payload":"dGVzdA==","signatures":[]}`)
-	subjectDesc := v1.Descriptor{
-		Digest: v1.Hash{Algorithm: "sha256", Hex: "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"},
-		Size:   12345,
-		MediaType: types.OCIManifestSchema1,
-	}
-
-	img, err := buildAttestationImage(subjectDesc, dsseBytes)
-	require.NoError(t, err)
-
-	// Verify manifest media type.
-	mt, err := img.MediaType()
-	require.NoError(t, err)
-	assert.Equal(t, types.OCIManifestSchema1, mt)
-
-	// Verify the manifest has a subject field.
-	manifest, err := img.Manifest()
-	require.NoError(t, err)
-	require.NotNil(t, manifest.Subject, "manifest should have a subject descriptor")
-	assert.Equal(t, subjectDesc.Digest, manifest.Subject.Digest)
-	assert.Equal(t, subjectDesc.Size, manifest.Subject.Size)
-	assert.Equal(t, subjectDesc.MediaType, manifest.Subject.MediaType)
-
-	// Verify config media type.
-	assert.Equal(t, types.MediaType(inTotoPayloadType), manifest.Config.MediaType)
-
-	// Verify single layer with correct media type and content.
-	layers, err := img.Layers()
-	require.NoError(t, err)
-	require.Len(t, layers, 1)
-
-	layerMT, err := layers[0].MediaType()
-	require.NoError(t, err)
-	assert.Equal(t, types.MediaType(inTotoPayloadType), layerMT)
-
-	rc, err := layers[0].Compressed()
-	require.NoError(t, err)
-	defer rc.Close()
-	layerContent, err := io.ReadAll(rc)
-	require.NoError(t, err)
-	assert.Equal(t, dsseBytes, layerContent)
-}
-
 func TestAttachVEXAttestationDryRun(t *testing.T) {
 	// Create a temporary VEX file.
 	tmpDir := t.TempDir()
@@ -116,12 +73,13 @@ func TestAttachVEXAttestationDryRun(t *testing.T) {
 	err := os.WriteFile(vexPath, []byte(`{"@context":"https://openvex.dev/ns/v0.2.0"}`), 0644)
 	require.NoError(t, err)
 
+	ref, err := name.ParseReference("registry.example.com/myapp:1.0.0")
+	require.NoError(t, err)
+
 	var buf bytes.Buffer
 	err = attachVEXAttestation(
-		nil, // ref is not used in dry-run
-		v1.Hash{Algorithm: "sha256", Hex: "abcdef"},
-		100,
-		types.OCIManifestSchema1,
+		ref,
+		v1.Hash{Algorithm: "sha256", Hex: "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"},
 		vexPath,
 		true,  // dryRun
 		false, // insecure
@@ -129,17 +87,18 @@ func TestAttachVEXAttestationDryRun(t *testing.T) {
 	)
 	require.NoError(t, err)
 	assert.Contains(t, buf.String(), "Attaching VEX attestation")
-	assert.Contains(t, buf.String(), vexPath)
+	assert.Contains(t, buf.String(), "sha256-abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890.att")
 }
 
 func TestStaticLayer(t *testing.T) {
 	content := []byte("test content for static layer")
-	layer := newStaticLayer(content, types.MediaType(inTotoPayloadType))
+	mt := types.MediaType("application/vnd.dsse.envelope.v1+json")
+	layer := newStaticLayer(content, mt)
 
 	// Verify media type.
-	mt, err := layer.MediaType()
+	gotMT, err := layer.MediaType()
 	require.NoError(t, err)
-	assert.Equal(t, types.MediaType(inTotoPayloadType), mt)
+	assert.Equal(t, mt, gotMT)
 
 	// Verify size.
 	size, err := layer.Size()
