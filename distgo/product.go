@@ -92,6 +92,14 @@ func (p *ProductTaskOutputInfo) ProductDistWorkDirsAndArtifactPaths() map[DistID
 	return ProductDistWorkDirsAndArtifactPaths(p.Project, p.Product)
 }
 
+func (p *ProductTaskOutputInfo) ProductVulncheckOutputDir() string {
+	return ProductVulncheckOutputDir(p.Project, p.Product)
+}
+
+func (p *ProductTaskOutputInfo) ProductVulncheckVEXPath() string {
+	return ProductVulncheckVEXPath(p.Project, p.Product)
+}
+
 func (p *ProductTaskOutputInfo) ProductDockerBuildArtifactPaths() map[DockerID]map[ProductID]map[osarch.OSArch]string {
 	return ProductDockerBuildArtifactPaths(p.Project, p.Product, p.Deps)
 }
@@ -271,6 +279,25 @@ func ProductDockerDistArtifactPaths(projectInfo ProjectInfo, productOutputInfo P
 		}
 	}
 	return out
+}
+
+// ProductVulncheckOutputDir returns the output directory for vulncheck outputs, which is
+// "{{ProjectDir}}/out/vulncheck/{{ProductID}}/{{Version}}".
+func ProductVulncheckOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) string {
+	if productOutputInfo.BuildOutputInfo == nil {
+		return ""
+	}
+	return path.Join(projectInfo.ProjectDir, "out", "vulncheck", string(productOutputInfo.ID), projectInfo.Version)
+}
+
+// ProductVulncheckVEXPath returns the path to the VEX document produced by vulncheck, which is
+// "{{ProjectDir}}/out/vulncheck/{{ProductID}}/{{Version}}/vex.json".
+func ProductVulncheckVEXPath(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) string {
+	outputDir := ProductVulncheckOutputDir(projectInfo, productOutputInfo)
+	if outputDir == "" {
+		return ""
+	}
+	return path.Join(outputDir, "vex.json")
 }
 
 type ProjectInfo struct {
