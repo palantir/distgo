@@ -21,6 +21,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/palantir/distgo/distgo"
@@ -108,15 +109,42 @@ func executeVulncheck(outputInfo distgo.ProductTaskOutputInfo, mainPkg string, o
 
 // scanPkgForProduct returns the package pattern to scan for the given product.
 // Uses Vulncheck.Pkg if configured, otherwise falls back to Build.MainPkg.
-// Returns "" if neither is available.
+// Returns "" if neither is available. The returned value is normalized to
+// ensure relative filesystem paths have a "./" prefix, which Go tooling
+// requires to distinguish them from import paths.
 func scanPkgForProduct(p distgo.ProductParam) string {
+	var pkg string
 	if p.Vulncheck != nil && p.Vulncheck.Pkg != "" {
-		return p.Vulncheck.Pkg
+		pkg = p.Vulncheck.Pkg
+	} else if p.Build != nil {
+		pkg = p.Build.MainPkg
 	}
-	if p.Build != nil {
-		return p.Build.MainPkg
+	return ensureLocalPkgPrefix(pkg)
+}
+
+// ensureLocalPkgPrefix adds a "./" prefix to package patterns that look like
+// relative filesystem paths but are missing it. Go tooling treats bare paths
+// (e.g. "out/build/sourcecode/operator") as import paths rather than local
+// directories, which causes resolution failures.
+func ensureLocalPkgPrefix(pkg string) string {
+	if pkg == "" {
+		return ""
 	}
-	return ""
+	// Already has a local prefix or is a wildcard pattern with one.
+	if strings.HasPrefix(pkg, "./") || strings.HasPrefix(pkg, "../") {
+		return pkg
+	}
+	// Looks like a Go import path (contains a dot in the first path element,
+	// e.g. "github.com/...") — leave it alone.
+	firstSlash := strings.Index(pkg, "/")
+	firstElem := pkg
+	if firstSlash != -1 {
+		firstElem = pkg[:firstSlash]
+	}
+	if strings.Contains(firstElem, ".") {
+		return pkg
+	}
+	return "./" + pkg
 }
 
 func runGovulncheck(mainPkg string) ([]byte, error) {
