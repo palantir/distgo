@@ -177,6 +177,32 @@ func TestProductsDryRunNormalizesBarePath(t *testing.T) {
 	assert.Contains(t, buf.String(), "govulncheck -format openvex ./out/build/sourcecode/operator")
 }
 
+func TestProductsDryRunUsesDir(t *testing.T) {
+	projectDir := t.TempDir()
+	projectInfo := distgo.ProjectInfo{
+		ProjectDir: projectDir,
+		Version:    "1.0.0",
+	}
+	projectParam := distgo.ProjectParam{
+		Products: map[distgo.ProductID]distgo.ProductParam{
+			"operator": {
+				ID:   "operator",
+				Name: "operator",
+				Vulncheck: &distgo.VulncheckParam{
+					Pkg: "./operator",
+					Dir: "out/build/sourcecode",
+				},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	err := vulncheck.Products(projectInfo, projectParam, nil, vulncheck.Options{DryRun: true}, &buf)
+	assert.NoError(t, err)
+	assert.Contains(t, buf.String(), "govulncheck -format openvex ./operator")
+	assert.Contains(t, buf.String(), "out/build/sourcecode")
+}
+
 func TestProductsDryRunFiltersByProductID(t *testing.T) {
 	projectInfo := distgo.ProjectInfo{
 		ProjectDir: t.TempDir(),

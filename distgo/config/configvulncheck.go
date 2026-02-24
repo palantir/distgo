@@ -26,8 +26,13 @@ func ToVulncheckConfig(in *VulncheckConfig) *v0.VulncheckConfig {
 }
 
 func (cfg *VulncheckConfig) ToParam(defaultCfg VulncheckConfig) distgo.VulncheckParam {
+	env := defaultCfg.Env
+	if cfg != nil && len(cfg.Env) > 0 {
+		env = cfg.Env
+	}
 	return distgo.VulncheckParam{
 		Pkg: getConfigStringValue(cfg.Pkg, defaultCfg.Pkg, ""),
 		Dir: getConfigStringValue(cfg.Dir, defaultCfg.Dir, ""),
+		Env: env,
 	}
 }

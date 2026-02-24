@@ -49,14 +49,15 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 			return errors.Wrapf(err, "failed to compute output information for %s", currProductParam.ID)
 		}
 		scanDir := scanDirForProduct(projectInfo, currProductParam)
-		if err := executeVulncheck(currProductTaskOutputInfo, scanPkg, scanDir, opts, stdout); err != nil {
+		scanEnv := scanEnvForProduct(currProductParam)
+		if err := executeVulncheck(currProductTaskOutputInfo, scanPkg, scanDir, scanEnv, opts, stdout); err != nil {
 			return errors.Wrapf(err, "vulncheck failed for %s", currProductParam.ID)
 		}
 	}
 	return nil
 }
 
-func executeVulncheck(outputInfo distgo.ProductTaskOutputInfo, mainPkg string, scanDir string, opts Options, stdout io.Writer) error {
+func executeVulncheck(outputInfo distgo.ProductTaskOutputInfo, mainPkg string, scanDir string, env []string, opts Options, stdout io.Writer) error {
 	productName := outputInfo.Product.ID
 	vexPath := outputInfo.ProductVulncheckVEXPath()
 
@@ -94,7 +95,7 @@ func executeVulncheck(outputInfo distgo.ProductTaskOutputInfo, mainPkg string, s
 
 	start := time.Now()
 
-	vexOutput, err := runGovulncheck(mainPkg)
+	vexOutput, err := runGovulncheck(mainPkg, env)
 	if err != nil {
 		return err
 	}
@@ -133,6 +134,24 @@ func scanDirForProduct(projectInfo distgo.ProjectInfo, p distgo.ProductParam) st
 	return projectInfo.ProjectDir
 }
 
+// scanEnvForProduct returns environment variables to set when running
+// govulncheck. It derives GOOS and GOARCH from the first entry in the
+// product's build os-archs configuration (so that packages with
+// platform-specific build constraints load correctly), then appends any
+// explicit env overrides from the vulncheck config. Explicit values take
+// precedence because scan.Cmd uses the last value for each key.
+func scanEnvForProduct(p distgo.ProductParam) []string {
+	var env []string
+	if p.Build != nil && len(p.Build.OSArchs) > 0 {
+		first := p.Build.OSArchs[0]
+		env = append(env, "GOOS="+first.OS, "GOARCH="+first.Arch)
+	}
+	if p.Vulncheck != nil && len(p.Vulncheck.Env) > 0 {
+		env = append(env, p.Vulncheck.Env...)
+	}
+	return env
+}
+
 // ensureLocalPkgPrefix adds a "./" prefix to package patterns that look like
 // relative filesystem paths but are missing it. Go tooling treats bare paths
 // (e.g. "out/build/sourcecode/operator") as import paths rather than local
@@ -158,9 +177,13 @@ func ensureLocalPkgPrefix(pkg string) string {
 	return "./" + pkg
 }
 
-func runGovulncheck(mainPkg string) ([]byte, error) {
+func runGovulncheck(mainPkg string, env []string) ([]byte, error) {
 	ctx := context.Background()
 	cmd := scan.Command(ctx, "-format", "openvex", mainPkg)
+
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
 
 	var stdoutBuf bytes.Buffer
 	var stderrBuf bytes.Buffer

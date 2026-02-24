@@ -21,4 +21,7 @@ type VulncheckConfig struct {
 	// Use this when the Go module is in a subdirectory (e.g. "out/build/sourcecode").
 	// If not specified, the project root is used.
 	Dir *string `yaml:"dir,omitempty"`
+	// Env is a list of environment variables to set when running govulncheck, in "KEY=VALUE" format.
+	// For example, ["GOOS=linux", "GOARCH=amd64"] to scan Linux packages on a macOS host.
+	Env []string `yaml:"env,omitempty"`
 }
