@@ -28,6 +28,7 @@ import (
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/build"
 	"github.com/palantir/distgo/distgo/dist"
+	"github.com/palantir/distgo/distgo/vulncheck"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/signals"
 	"github.com/pkg/errors"
@@ -93,6 +94,11 @@ func BuildProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectPa
 	}
 	for _, currID := range topoOrderedIDs {
 		currProduct := targetProducts[currID]
+		if currProduct.Docker != nil && currProduct.Docker.Attest {
+			if err := vulncheck.Products(projectInfo, projectParam, []distgo.ProductID{currID}, vulncheck.Options{DryRun: dryRun}, stdout); err != nil {
+				return err
+			}
+		}
 		if err := RunBuild(projectInfo, currProduct, verbose, dryRun, stdout); err != nil {
 			return err
 		}

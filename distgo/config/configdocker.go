@@ -34,6 +34,7 @@ func (cfg *DockerConfig) ToParam(scriptIncludes string, defaultCfg DockerConfig,
 	}
 	return distgo.DockerParam{
 		Repository:          getConfigStringValue(cfg.Repository, defaultCfg.Repository, ""),
+		Attest:              getConfigValue(cfg.Attest, defaultCfg.Attest, false).(bool),
 		DockerBuilderParams: dockerBuilderParams,
 	}, nil
 }
