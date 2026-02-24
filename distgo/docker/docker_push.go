@@ -164,6 +164,8 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 		if err := attachVEXAttestation(firstRef, firstResult.digest, firstResult.size, firstResult.mediaType, vexPath, dryRun, insecure, stdout); err != nil {
 			return errors.Wrapf(err, "failed to attach VEX attestation for configuration %s of product %s", dockerID, productID)
 		}
+	} else if os.IsNotExist(err) {
+		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("No VEX file found at %s for configuration %s of product %s; skipping attestation", vexPath, dockerID, productID), dryRun)
 	}
 
 	return nil
@@ -364,6 +366,8 @@ func runDockerDaemonPush(
 				return errors.Wrapf(err, "failed to attach VEX attestation for configuration %s of product %s", dockerID, productID)
 			}
 		}
+	} else if os.IsNotExist(err) {
+		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("No VEX file found at %s for configuration %s of product %s; skipping attestation", vexPath, dockerID, productID), dryRun)
 	}
 
 	return nil
