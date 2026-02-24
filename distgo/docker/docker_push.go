@@ -106,16 +106,6 @@ func runSingleDockerPush(
 	return runDockerDaemonPush(productID, dockerID, productTaskOutputInfo, dryRun, insecure, stdout)
 }
 
-// ociPushResult captures the outcome of pushing an OCI artifact.
-// When an image index is pushed, pushedIndex is set so that VEX attestations
-// can be attached to each child manifest (Trivy resolves platform-specific
-// images within an index and looks for attestations on those digests).
-type ociPushResult struct {
-	result pushResult
-	// pushedIndex is non-nil when an image index was pushed.
-	pushedIndex v1.ImageIndex
-}
-
 func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, insecure bool, stdout io.Writer) error {
 	index, err := layout.ImageIndexFromPath(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID))
 	if err != nil {
@@ -123,7 +113,7 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 	}
 
 	tags := productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags
-	var firstOCIResult ociPushResult
+	var firstResult pushResult
 	var firstRef name.Reference
 
 	for i, tag := range tags {
@@ -146,33 +136,35 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 			return errors.Wrap(err, "failed to read index manifest")
 		}
 
-		var ociResult ociPushResult
+		var result pushResult
 		switch idxManifest.MediaType {
 		case types.OCIImageIndex:
-			ociResult, err = handleImageIndex(index, idxManifest, ref, productID, dockerID, dryRun, stdout)
+			result, err = handleImageIndex(index, idxManifest, ref, productID, dockerID, dryRun, stdout)
 			if err != nil {
 				return errors.Wrapf(err, "failed to publish image index for configuration %s for product %s", dockerID, productID)
 			}
 		case types.OCIManifestSchema1:
-			result, err := handleImageManifest(ref, productID, dockerID, productTaskOutputInfo, dryRun, stdout)
+			result, err = handleImageManifest(ref, productID, dockerID, productTaskOutputInfo, dryRun, stdout)
 			if err != nil {
 				return errors.Wrapf(err, "failed to image manifest for configuration %s for product %s", dockerID, productID)
 			}
-			ociResult = ociPushResult{result: result}
 		default:
 			return errors.Errorf("unexpected media type %s for configuration %s for product %s", idxManifest.MediaType, dockerID, productID)
 		}
 
 		if i == 0 {
-			firstOCIResult = ociResult
+			firstResult = result
 			firstRef = ref
 		}
 	}
 
 	// Attach VEX attestation if a VEX file was produced by vulncheck.
+	// Use the pushed digest (index or image) for the cosign .att tag —
+	// cosign resolves the tag to a single digest and looks up .att for that
+	// digest regardless of whether the tag points to an index or an image.
 	vexPath := productTaskOutputInfo.ProductVulncheckVEXPath()
 	if _, err := os.Stat(vexPath); err == nil && firstRef != nil {
-		if err := attachVEXAttestations(firstRef, firstOCIResult, vexPath, dryRun, insecure, stdout); err != nil {
+		if err := attachVEXAttestation(firstRef, firstResult.digest, vexPath, dryRun, insecure, stdout); err != nil {
 			return errors.Wrapf(err, "failed to attach VEX attestation for configuration %s of product %s", dockerID, productID)
 		}
 	} else if os.IsNotExist(err) {
@@ -182,53 +174,10 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 	return nil
 }
 
-// attachVEXAttestations attaches VEX attestations to the pushed artifact. When
-// an image index was pushed, the attestation is attached to each platform image
-// manifest individually because Trivy resolves the platform-specific image
-// within an index and looks for attestations on that image's digest. Pushes
-// are done concurrently to reduce wall-clock time.
-func attachVEXAttestations(ref name.Reference, ociResult ociPushResult, vexPath string, dryRun bool, insecure bool, stdout io.Writer) error {
-	if ociResult.pushedIndex == nil {
-		// Single image — attach directly.
-		return attachVEXAttestation(ref, ociResult.result.digest, vexPath, dryRun, insecure, stdout)
-	}
-
-	// Image index — attach to each platform image manifest so Trivy can
-	// discover the attestation after resolving to a platform-specific image.
-	// Skip non-platform entries (e.g. Docker buildx attestation manifests).
-	idxManifest, err := ociResult.pushedIndex.IndexManifest()
-	if err != nil {
-		return errors.Wrap(err, "failed to read pushed index manifest for attestation")
-	}
-
-	var platformDescs []v1.Descriptor
-	for _, desc := range idxManifest.Manifests {
-		if desc.Annotations != nil {
-			if _, ok := desc.Annotations["vnd.docker.reference.type"]; ok {
-				continue
-			}
-		}
-		platformDescs = append(platformDescs, desc)
-	}
-
-	errs := make(chan error, len(platformDescs))
-	for _, desc := range platformDescs {
-		go func(d v1.Descriptor) {
-			errs <- attachVEXAttestation(ref, d.Digest, vexPath, dryRun, insecure, stdout)
-		}(desc)
-	}
-	for range platformDescs {
-		if err := <-errs; err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) (ociPushResult, error) {
+func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, dryRun bool, stdout io.Writer) (pushResult, error) {
 	manifestMetadata, err := manifestMetadataFromIndexManifest(idxManifest)
 	if err != nil {
-		return ociPushResult{}, errors.Wrap(err, "encountered unexpected index manifest state")
+		return pushResult{}, errors.Wrap(err, "encountered unexpected index manifest state")
 	}
 
 	switch manifestMetadata.mediaType {
@@ -236,37 +185,37 @@ func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref na
 		// if we have an image index, go one level down and push that
 		innerIndex, err := index.ImageIndex(manifestMetadata.digest)
 		if err != nil {
-			return ociPushResult{}, errors.Wrapf(err, "failed to read image index digest %s from OCI layout", manifestMetadata.digest)
+			return pushResult{}, errors.Wrapf(err, "failed to read image index digest %s from OCI layout", manifestMetadata.digest)
 		}
 		result, err := writeIndex(innerIndex, ref, productID, dockerID, dryRun, stdout)
 		if err != nil {
-			return ociPushResult{}, errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
+			return pushResult{}, errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
 		}
-		return ociPushResult{result: result, pushedIndex: innerIndex}, nil
+		return result, nil
 	case types.OCIManifestSchema1:
 		if manifestMetadata.hasPlatformInfo {
 			// if we have platform information, we should push our current image index
 			result, err := writeIndex(index, ref, productID, dockerID, dryRun, stdout)
 			if err != nil {
-				return ociPushResult{}, errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
+				return pushResult{}, errors.Wrapf(err, "failed to write image index for tag %s of configuration %s for product %s", ref, dockerID, productID)
 			}
-			return ociPushResult{result: result, pushedIndex: index}, nil
+			return result, nil
 		}
 
 		if len(idxManifest.Manifests) != 1 {
-			return ociPushResult{}, errors.New("unexpected number of image manifests present in image index without platform information")
+			return pushResult{}, errors.New("unexpected number of image manifests present in image index without platform information")
 		}
 		image, err := index.Image(manifestMetadata.digest)
 		if err != nil {
-			return ociPushResult{}, errors.Wrapf(err, "failed to read image digest %s from OCI layout", manifestMetadata.digest)
+			return pushResult{}, errors.Wrapf(err, "failed to read image digest %s from OCI layout", manifestMetadata.digest)
 		}
 		result, err := writeImage(image, ref, productID, dockerID, dryRun, stdout)
 		if err != nil {
-			return ociPushResult{}, errors.Wrapf(err, "failed to write image for tag %s of configuration %s for product %s", ref, dockerID, productID)
+			return pushResult{}, errors.Wrapf(err, "failed to write image for tag %s of configuration %s for product %s", ref, dockerID, productID)
 		}
-		return ociPushResult{result: result}, nil
+		return result, nil
 	default:
-		return ociPushResult{}, errors.Errorf("unexpected media type %s for configuration %s for product %s", idxManifest.MediaType, dockerID, productID)
+		return pushResult{}, errors.Errorf("unexpected media type %s for configuration %s for product %s", idxManifest.MediaType, dockerID, productID)
 	}
 }
 
