@@ -17,4 +17,8 @@ package v0
 type VulncheckConfig struct {
 	// Pkg is the package pattern to scan with govulncheck. If not specified, the product's build main-pkg is used.
 	Pkg *string `yaml:"pkg,omitempty"`
+	// Dir is the working directory in which to run govulncheck, relative to the project root.
+	// Use this when the Go module is in a subdirectory (e.g. "out/build/sourcecode").
+	// If not specified, the project root is used.
+	Dir *string `yaml:"dir,omitempty"`
 }

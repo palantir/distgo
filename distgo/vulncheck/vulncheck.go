@@ -39,19 +39,6 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 		return err
 	}
 
-	// save and restore working directory since scan.Command resolves package
-	// patterns relative to the process working directory
-	origDir, err := os.Getwd()
-	if err != nil {
-		return errors.Wrapf(err, "failed to get working directory")
-	}
-	if err := os.Chdir(projectInfo.ProjectDir); err != nil {
-		return errors.Wrapf(err, "failed to change to project directory %s", projectInfo.ProjectDir)
-	}
-	defer func() {
-		_ = os.Chdir(origDir)
-	}()
-
 	for _, currProductParam := range productParams {
 		scanPkg := scanPkgForProduct(currProductParam)
 		if scanPkg == "" {
@@ -61,14 +48,15 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 		if err != nil {
 			return errors.Wrapf(err, "failed to compute output information for %s", currProductParam.ID)
 		}
-		if err := executeVulncheck(currProductTaskOutputInfo, scanPkg, opts, stdout); err != nil {
+		scanDir := scanDirForProduct(projectInfo, currProductParam)
+		if err := executeVulncheck(currProductTaskOutputInfo, scanPkg, scanDir, opts, stdout); err != nil {
 			return errors.Wrapf(err, "vulncheck failed for %s", currProductParam.ID)
 		}
 	}
 	return nil
 }
 
-func executeVulncheck(outputInfo distgo.ProductTaskOutputInfo, mainPkg string, opts Options, stdout io.Writer) error {
+func executeVulncheck(outputInfo distgo.ProductTaskOutputInfo, mainPkg string, scanDir string, opts Options, stdout io.Writer) error {
 	productName := outputInfo.Product.ID
 	vexPath := outputInfo.ProductVulncheckVEXPath()
 
@@ -82,7 +70,7 @@ func executeVulncheck(outputInfo distgo.ProductTaskOutputInfo, mainPkg string, o
 	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running vulncheck for %s, output: %s", productName, vexDisplayPath), opts.DryRun)
 
 	if opts.DryRun {
-		distgo.DryRunPrintln(stdout, fmt.Sprintf("Run: govulncheck -format openvex %s", mainPkg))
+		distgo.DryRunPrintln(stdout, fmt.Sprintf("Run: govulncheck -format openvex %s (in %s)", mainPkg, scanDir))
 		return nil
 	}
 
@@ -90,6 +78,19 @@ func executeVulncheck(outputInfo distgo.ProductTaskOutputInfo, mainPkg string, o
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return errors.Wrapf(err, "failed to create vulncheck output directory %s", outputDir)
 	}
+
+	// scan.Command resolves package patterns relative to the process working
+	// directory, so chdir to the scan directory (which contains the go.mod).
+	origDir, err := os.Getwd()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get working directory")
+	}
+	if err := os.Chdir(scanDir); err != nil {
+		return errors.Wrapf(err, "failed to change to scan directory %s", scanDir)
+	}
+	defer func() {
+		_ = os.Chdir(origDir)
+	}()
 
 	start := time.Now()
 
@@ -120,6 +121,16 @@ func scanPkgForProduct(p distgo.ProductParam) string {
 		pkg = p.Build.MainPkg
 	}
 	return ensureLocalPkgPrefix(pkg)
+}
+
+// scanDirForProduct returns the directory in which to run govulncheck. If
+// Vulncheck.Dir is configured, it is resolved relative to the project root.
+// Otherwise the project root itself is used.
+func scanDirForProduct(projectInfo distgo.ProjectInfo, p distgo.ProductParam) string {
+	if p.Vulncheck != nil && p.Vulncheck.Dir != "" {
+		return filepath.Join(projectInfo.ProjectDir, p.Vulncheck.Dir)
+	}
+	return projectInfo.ProjectDir
 }
 
 // ensureLocalPkgPrefix adds a "./" prefix to package patterns that look like
