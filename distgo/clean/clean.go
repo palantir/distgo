@@ -65,14 +65,10 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, dryRu
 		}
 
 		// add vulncheck directory for product for removal
-		if currProductParam.Build != nil {
-			vulncheckDir := distgo.ProductVulncheckOutputDir(projectInfo, outputInfo.Product)
-			if vulncheckDir != "" {
-				removePaths[path.Dir(vulncheckDir)] = pathInfo{
-					rootDir: projectInfo.ProjectDir,
-					isDir:   true,
-				}
-			}
+		vulncheckDir := distgo.ProductVulncheckOutputDir(projectInfo, outputInfo.Product)
+		removePaths[path.Dir(vulncheckDir)] = pathInfo{
+			rootDir: projectInfo.ProjectDir,
+			isDir:   true,
 		}
 
 		// add dist directory for product for removal

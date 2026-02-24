@@ -41,6 +41,9 @@ type ProductConfig struct {
 	// Docker specifies the Docker configuration for the product.
 	Docker *DockerConfig `yaml:"docker,omitempty"`
 
+	// Vulncheck specifies the vulnerability check configuration for the product.
+	Vulncheck *VulncheckConfig `yaml:"vulncheck,omitempty"`
+
 	// Dependencies specifies the first-level dependencies of this product. Stores the IDs of the products.
 	Dependencies *[]distgo.ProductID `yaml:"dependencies,omitempty"`
 }

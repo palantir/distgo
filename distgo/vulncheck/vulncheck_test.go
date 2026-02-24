@@ -42,13 +42,13 @@ func TestProductVulncheckOutputPaths(t *testing.T) {
 		assert.Equal(t, "/project/out/vulncheck/myapp/1.0.0", distgo.ProductVulncheckOutputDir(projectInfo, productOutputInfo))
 		assert.Equal(t, "/project/out/vulncheck/myapp/1.0.0/vex.json", distgo.ProductVulncheckVEXPath(projectInfo, productOutputInfo))
 	})
-	t.Run("returns empty when no build info", func(t *testing.T) {
+	t.Run("works without build info", func(t *testing.T) {
 		productOutputInfo := distgo.ProductOutputInfo{
 			ID:   "myapp",
 			Name: "myapp",
 		}
-		assert.Equal(t, "", distgo.ProductVulncheckOutputDir(projectInfo, productOutputInfo))
-		assert.Equal(t, "", distgo.ProductVulncheckVEXPath(projectInfo, productOutputInfo))
+		assert.Equal(t, "/project/out/vulncheck/myapp/1.0.0", distgo.ProductVulncheckOutputDir(projectInfo, productOutputInfo))
+		assert.Equal(t, "/project/out/vulncheck/myapp/1.0.0/vex.json", distgo.ProductVulncheckVEXPath(projectInfo, productOutputInfo))
 	})
 }
 
@@ -98,6 +98,60 @@ func TestProductsDryRun(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, buf.String(), "Running vulncheck for myapp")
 	assert.Contains(t, buf.String(), "govulncheck -format openvex ./cmd/myapp")
+}
+
+func TestProductsDryRunUsesVulncheckPkg(t *testing.T) {
+	projectInfo := distgo.ProjectInfo{
+		ProjectDir: t.TempDir(),
+		Version:    "1.0.0",
+	}
+	projectParam := distgo.ProjectParam{
+		Products: map[distgo.ProductID]distgo.ProductParam{
+			"myapp": {
+				ID:   "myapp",
+				Name: "myapp",
+				Build: &distgo.BuildParam{
+					MainPkg:   "./cmd/myapp",
+					OutputDir: "out/build",
+					OSArchs:   []osarch.OSArch{{OS: "linux", Arch: "amd64"}},
+				},
+				Vulncheck: &distgo.VulncheckParam{
+					Pkg: "./custom/scan/path",
+				},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	err := vulncheck.Products(projectInfo, projectParam, nil, vulncheck.Options{DryRun: true}, &buf)
+	assert.NoError(t, err)
+	assert.Contains(t, buf.String(), "govulncheck -format openvex ./custom/scan/path")
+	assert.NotContains(t, buf.String(), "./cmd/myapp")
+}
+
+func TestProductsDryRunVulncheckOnlyProduct(t *testing.T) {
+	projectInfo := distgo.ProjectInfo{
+		ProjectDir: t.TempDir(),
+		Version:    "1.0.0",
+	}
+	projectParam := distgo.ProjectParam{
+		Products: map[distgo.ProductID]distgo.ProductParam{
+			"lib": {
+				ID:   "lib",
+				Name: "lib",
+				// No Build config, only Vulncheck
+				Vulncheck: &distgo.VulncheckParam{
+					Pkg: "./...",
+				},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	err := vulncheck.Products(projectInfo, projectParam, nil, vulncheck.Options{DryRun: true}, &buf)
+	assert.NoError(t, err)
+	assert.Contains(t, buf.String(), "Running vulncheck for lib")
+	assert.Contains(t, buf.String(), "govulncheck -format openvex ./...")
 }
 
 func TestProductsDryRunFiltersByProductID(t *testing.T) {

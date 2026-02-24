@@ -52,14 +52,15 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 	}()
 
 	for _, currProductParam := range productParams {
-		if currProductParam.Build == nil {
+		scanPkg := scanPkgForProduct(currProductParam)
+		if scanPkg == "" {
 			continue
 		}
 		currProductTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, currProductParam)
 		if err != nil {
 			return errors.Wrapf(err, "failed to compute output information for %s", currProductParam.ID)
 		}
-		if err := executeVulncheck(currProductTaskOutputInfo, currProductParam.Build.MainPkg, opts, stdout); err != nil {
+		if err := executeVulncheck(currProductTaskOutputInfo, scanPkg, opts, stdout); err != nil {
 			return errors.Wrapf(err, "vulncheck failed for %s", currProductParam.ID)
 		}
 	}
@@ -103,6 +104,19 @@ func executeVulncheck(outputInfo distgo.ProductTaskOutputInfo, mainPkg string, o
 	elapsed := time.Since(start)
 	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Finished vulncheck for %s (%.3fs)", productName, elapsed.Seconds()), false)
 	return nil
+}
+
+// scanPkgForProduct returns the package pattern to scan for the given product.
+// Uses Vulncheck.Pkg if configured, otherwise falls back to Build.MainPkg.
+// Returns "" if neither is available.
+func scanPkgForProduct(p distgo.ProductParam) string {
+	if p.Vulncheck != nil && p.Vulncheck.Pkg != "" {
+		return p.Vulncheck.Pkg
+	}
+	if p.Build != nil {
+		return p.Build.MainPkg
+	}
+	return ""
 }
 
 func runGovulncheck(mainPkg string) ([]byte, error) {
