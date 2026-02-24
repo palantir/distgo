@@ -39,16 +39,16 @@ func TestProductVulncheckOutputPaths(t *testing.T) {
 				OSArchs:        []osarch.OSArch{{OS: "linux", Arch: "amd64"}},
 			},
 		}
-		assert.Equal(t, "/project/out/vulncheck/myapp/1.0.0", distgo.ProductVulncheckOutputDir(projectInfo, productOutputInfo))
-		assert.Equal(t, "/project/out/vulncheck/myapp/1.0.0/vex.json", distgo.ProductVulncheckVEXPath(projectInfo, productOutputInfo))
+		assert.Equal(t, "/project/out/build/vulncheck/myapp/1.0.0", distgo.ProductVulncheckOutputDir(projectInfo, productOutputInfo))
+		assert.Equal(t, "/project/out/build/vulncheck/myapp/1.0.0/vex.json", distgo.ProductVulncheckVEXPath(projectInfo, productOutputInfo))
 	})
 	t.Run("works without build info", func(t *testing.T) {
 		productOutputInfo := distgo.ProductOutputInfo{
 			ID:   "myapp",
 			Name: "myapp",
 		}
-		assert.Equal(t, "/project/out/vulncheck/myapp/1.0.0", distgo.ProductVulncheckOutputDir(projectInfo, productOutputInfo))
-		assert.Equal(t, "/project/out/vulncheck/myapp/1.0.0/vex.json", distgo.ProductVulncheckVEXPath(projectInfo, productOutputInfo))
+		assert.Equal(t, "/project/out/build/vulncheck/myapp/1.0.0", distgo.ProductVulncheckOutputDir(projectInfo, productOutputInfo))
+		assert.Equal(t, "/project/out/build/vulncheck/myapp/1.0.0/vex.json", distgo.ProductVulncheckVEXPath(projectInfo, productOutputInfo))
 	})
 }
 

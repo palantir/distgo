@@ -282,13 +282,13 @@ func ProductDockerDistArtifactPaths(projectInfo ProjectInfo, productOutputInfo P
 }
 
 // ProductVulncheckOutputDir returns the output directory for vulncheck outputs, which is
-// "{{ProjectDir}}/out/vulncheck/{{ProductID}}/{{Version}}".
+// "{{ProjectDir}}/out/build/vulncheck/{{ProductID}}/{{Version}}".
 func ProductVulncheckOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) string {
-	return path.Join(projectInfo.ProjectDir, "out", "vulncheck", string(productOutputInfo.ID), projectInfo.Version)
+	return path.Join(projectInfo.ProjectDir, "out", "build", "vulncheck", string(productOutputInfo.ID), projectInfo.Version)
 }
 
 // ProductVulncheckVEXPath returns the path to the VEX document produced by vulncheck, which is
-// "{{ProjectDir}}/out/vulncheck/{{ProductID}}/{{Version}}/vex.json".
+// "{{ProjectDir}}/out/build/vulncheck/{{ProductID}}/{{Version}}/vex.json".
 func ProductVulncheckVEXPath(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) string {
 	return path.Join(ProductVulncheckOutputDir(projectInfo, productOutputInfo), "vex.json")
 }
