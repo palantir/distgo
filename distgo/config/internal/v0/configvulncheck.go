@@ -15,13 +15,21 @@
 package v0
 
 type VulncheckConfig struct {
-	// Pkg is the package pattern to scan with govulncheck. If not specified, the product's build main-pkg is used.
-	Pkg *string `yaml:"pkg,omitempty"`
+	// Pkgs is the list of package patterns to scan with govulncheck.
+	// Multiple patterns are scanned in a single invocation, producing one VEX document
+	// covering all binaries. If not specified, the product's build main-pkg is used.
+	Pkgs []string `yaml:"pkgs,omitempty"`
 	// Dir is the working directory in which to run govulncheck, relative to the project root.
 	// Use this when the Go module is in a subdirectory (e.g. "out/build/sourcecode").
 	// If not specified, the project root is used.
 	Dir *string `yaml:"dir,omitempty"`
 	// Env is a list of environment variables to set when running govulncheck, in "KEY=VALUE" format.
 	// For example, ["GOOS=linux", "GOARCH=amd64"] to scan Linux packages on a macOS host.
+	//
+	// Set GOVERSION to override the Go stdlib version used for vulnerability analysis.
+	// By default, govulncheck uses the host toolchain version. When the scanned source
+	// is compiled with a different Go version (e.g. inside a Docker builder image),
+	// set GOVERSION to match that version for accurate stdlib vulnerability reporting:
+	//   env: ["GOVERSION=go1.24.0"]
 	Env []string `yaml:"env,omitempty"`
 }

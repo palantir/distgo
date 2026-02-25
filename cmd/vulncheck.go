@@ -35,11 +35,28 @@ var (
 		},
 	}
 
-	vulncheckDryRunFlagVal bool
+	vulncheckPrintCmd = &cobra.Command{
+		Use:   "print [flags] [product-ids]",
+		Short: "Run vulnerability check and print results to stdout in text format",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			projectInfo, projectParam, err := distgoProjectParamFromFlags()
+			if err != nil {
+				return err
+			}
+			return vulncheck.PrintProducts(projectInfo, projectParam, distgo.ToProductIDs(args), vulncheck.Options{
+				DryRun: vulncheckPrintDryRunFlagVal,
+			}, cmd.OutOrStdout())
+		},
+	}
+
+	vulncheckDryRunFlagVal      bool
+	vulncheckPrintDryRunFlagVal bool
 )
 
 func init() {
 	vulncheckCmd.Flags().BoolVar(&vulncheckDryRunFlagVal, "dry-run", false, "print the operations that would be performed")
+	vulncheckPrintCmd.Flags().BoolVar(&vulncheckPrintDryRunFlagVal, "dry-run", false, "print the operations that would be performed")
 
+	vulncheckCmd.AddCommand(vulncheckPrintCmd)
 	rootCmd.AddCommand(vulncheckCmd)
 }

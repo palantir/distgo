@@ -116,7 +116,7 @@ func TestProductsDryRunUsesVulncheckPkg(t *testing.T) {
 					OSArchs:   []osarch.OSArch{{OS: "linux", Arch: "amd64"}},
 				},
 				Vulncheck: &distgo.VulncheckParam{
-					Pkg: "./custom/scan/path",
+					Pkgs: []string{"./custom/scan/path"},
 				},
 			},
 		},
@@ -141,7 +141,7 @@ func TestProductsDryRunVulncheckOnlyProduct(t *testing.T) {
 				Name: "lib",
 				// No Build config, only Vulncheck
 				Vulncheck: &distgo.VulncheckParam{
-					Pkg: "./...",
+					Pkgs: []string{"./..."},
 				},
 			},
 		},
@@ -165,7 +165,7 @@ func TestProductsDryRunNormalizesBarePath(t *testing.T) {
 				ID:   "operator",
 				Name: "operator",
 				Vulncheck: &distgo.VulncheckParam{
-					Pkg: "out/build/sourcecode/operator",
+					Pkgs: []string{"out/build/sourcecode/operator"},
 				},
 			},
 		},
@@ -189,8 +189,8 @@ func TestProductsDryRunUsesDir(t *testing.T) {
 				ID:   "operator",
 				Name: "operator",
 				Vulncheck: &distgo.VulncheckParam{
-					Pkg: "./operator",
-					Dir: "out/build/sourcecode",
+					Pkgs: []string{"./operator"},
+					Dir:  "out/build/sourcecode",
 				},
 			},
 		},
@@ -201,6 +201,30 @@ func TestProductsDryRunUsesDir(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, buf.String(), "govulncheck -format openvex ./operator")
 	assert.Contains(t, buf.String(), "out/build/sourcecode")
+}
+
+func TestProductsDryRunMultiplePkgs(t *testing.T) {
+	projectInfo := distgo.ProjectInfo{
+		ProjectDir: t.TempDir(),
+		Version:    "1.0.0",
+	}
+	projectParam := distgo.ProjectParam{
+		Products: map[distgo.ProductID]distgo.ProductParam{
+			"agent": {
+				ID:   "agent",
+				Name: "agent",
+				Vulncheck: &distgo.VulncheckParam{
+					Pkgs: []string{"./cmd/agent", "./cmd/cni", "./cmd/hubble"},
+					Dir:  "out/build/sourcecode",
+				},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	err := vulncheck.Products(projectInfo, projectParam, nil, vulncheck.Options{DryRun: true}, &buf)
+	assert.NoError(t, err)
+	assert.Contains(t, buf.String(), "govulncheck -format openvex ./cmd/agent ./cmd/cni ./cmd/hubble")
 }
 
 func TestProductsDryRunFiltersByProductID(t *testing.T) {

@@ -15,8 +15,9 @@
 package distgo
 
 type VulncheckParam struct {
-	// Pkg is the package pattern to scan with govulncheck. If empty, the product's Build.MainPkg is used.
-	Pkg string
+	// Pkgs is the list of package patterns to scan with govulncheck.
+	// If empty, the product's Build.MainPkg is used as a single-element list.
+	Pkgs []string
 	// Dir is the working directory in which to run govulncheck, relative to the project root.
 	// Use this when the Go module is in a subdirectory (e.g. "out/build/sourcecode").
 	// If empty, the project root is used.

@@ -17,6 +17,7 @@ package vulncheck
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -40,8 +41,8 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 	}
 
 	for _, currProductParam := range productParams {
-		scanPkg := scanPkgForProduct(currProductParam)
-		if scanPkg == "" {
+		pkgs := scanPkgsForProduct(currProductParam)
+		if len(pkgs) == 0 {
 			continue
 		}
 		currProductTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, currProductParam)
@@ -50,14 +51,14 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 		}
 		scanDir := scanDirForProduct(projectInfo, currProductParam)
 		scanEnv := scanEnvForProduct(currProductParam)
-		if err := executeVulncheck(currProductTaskOutputInfo, scanPkg, scanDir, scanEnv, opts, stdout); err != nil {
+		if err := executeVulncheck(currProductTaskOutputInfo, pkgs, scanDir, scanEnv, opts, stdout); err != nil {
 			return errors.Wrapf(err, "vulncheck failed for %s", currProductParam.ID)
 		}
 	}
 	return nil
 }
 
-func executeVulncheck(outputInfo distgo.ProductTaskOutputInfo, mainPkg string, scanDir string, env []string, opts Options, stdout io.Writer) error {
+func executeVulncheck(outputInfo distgo.ProductTaskOutputInfo, pkgs []string, scanDir string, env []string, opts Options, stdout io.Writer) error {
 	productName := outputInfo.Product.ID
 	vexPath := outputInfo.ProductVulncheckVEXPath()
 
@@ -71,7 +72,7 @@ func executeVulncheck(outputInfo distgo.ProductTaskOutputInfo, mainPkg string, s
 	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running vulncheck for %s, output: %s", productName, vexDisplayPath), opts.DryRun)
 
 	if opts.DryRun {
-		distgo.DryRunPrintln(stdout, fmt.Sprintf("Run: govulncheck -format openvex %s (in %s)", mainPkg, scanDir))
+		distgo.DryRunPrintln(stdout, fmt.Sprintf("Run: govulncheck -format openvex %s (in %s)", strings.Join(pkgs, " "), scanDir))
 		return nil
 	}
 
@@ -95,9 +96,19 @@ func executeVulncheck(outputInfo distgo.ProductTaskOutputInfo, mainPkg string, s
 
 	start := time.Now()
 
-	vexOutput, err := runGovulncheck(mainPkg, env)
+	vexOutput, err := runGovulncheck(pkgs, env)
 	if err != nil {
 		return err
+	}
+
+	// govulncheck sets the product @id to "Unknown Product" which prevents
+	// Trivy from matching VEX statements against scan results. Trivy's
+	// go-vex matching requires the product @id to be a PURL that matches
+	// the scanned component. Promote subcomponents to products so that the
+	// module PURLs (e.g. pkg:golang/stdlib@v1.24.0) are directly matchable.
+	vexOutput, err = rewriteVEXProducts(vexOutput)
+	if err != nil {
+		return errors.Wrap(err, "failed to rewrite VEX products for Trivy compatibility")
 	}
 
 	if err := os.WriteFile(vexPath, vexOutput, 0644); err != nil {
@@ -109,19 +120,23 @@ func executeVulncheck(outputInfo distgo.ProductTaskOutputInfo, mainPkg string, s
 	return nil
 }
 
-// scanPkgForProduct returns the package pattern to scan for the given product.
-// Uses Vulncheck.Pkg if configured, otherwise falls back to Build.MainPkg.
-// Returns "" if neither is available. The returned value is normalized to
+// scanPkgsForProduct returns the package patterns to scan for the given product.
+// Uses Vulncheck.Pkgs if configured, otherwise falls back to Build.MainPkg.
+// Returns nil if neither is available. Each returned value is normalized to
 // ensure relative filesystem paths have a "./" prefix, which Go tooling
 // requires to distinguish them from import paths.
-func scanPkgForProduct(p distgo.ProductParam) string {
-	var pkg string
-	if p.Vulncheck != nil && p.Vulncheck.Pkg != "" {
-		pkg = p.Vulncheck.Pkg
-	} else if p.Build != nil {
-		pkg = p.Build.MainPkg
+func scanPkgsForProduct(p distgo.ProductParam) []string {
+	if p.Vulncheck != nil && len(p.Vulncheck.Pkgs) > 0 {
+		pkgs := make([]string, len(p.Vulncheck.Pkgs))
+		for i, pkg := range p.Vulncheck.Pkgs {
+			pkgs[i] = ensureLocalPkgPrefix(pkg)
+		}
+		return pkgs
 	}
-	return ensureLocalPkgPrefix(pkg)
+	if p.Build != nil && p.Build.MainPkg != "" {
+		return []string{p.Build.MainPkg}
+	}
+	return nil
 }
 
 // scanDirForProduct returns the directory in which to run govulncheck. If
@@ -140,6 +155,14 @@ func scanDirForProduct(projectInfo distgo.ProjectInfo, p distgo.ProductParam) st
 // platform-specific build constraints load correctly), then appends any
 // explicit env overrides from the vulncheck config. Explicit values take
 // precedence because scan.Cmd uses the last value for each key.
+//
+// To override the Go stdlib version used for vulnerability analysis (which
+// defaults to the host toolchain version), set GOVERSION in the env list.
+// This is useful when the scan directory contains source compiled with a
+// different Go version than the host, e.g.:
+//
+//	env:
+//	  - GOVERSION=go1.24.0
 func scanEnvForProduct(p distgo.ProductParam) []string {
 	var env []string
 	if p.Build != nil && len(p.Build.OSArchs) > 0 {
@@ -177,9 +200,81 @@ func ensureLocalPkgPrefix(pkg string) string {
 	return "./" + pkg
 }
 
-func runGovulncheck(mainPkg string, env []string) ([]byte, error) {
+// PrintProducts runs govulncheck in text mode for the specified products and
+// writes the human-readable output to stdout.
+func PrintProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productIDs []distgo.ProductID, opts Options, stdout io.Writer) error {
+	productParams, err := distgo.ProductParamsForProductArgs(projectParam.Products, productIDs...)
+	if err != nil {
+		return err
+	}
+
+	for _, currProductParam := range productParams {
+		pkgs := scanPkgsForProduct(currProductParam)
+		if len(pkgs) == 0 {
+			continue
+		}
+		scanDir := scanDirForProduct(projectInfo, currProductParam)
+		scanEnv := scanEnvForProduct(currProductParam)
+		if err := executePrintVulncheck(currProductParam.ID, pkgs, scanDir, scanEnv, opts, stdout); err != nil {
+			return errors.Wrapf(err, "vulncheck failed for %s", currProductParam.ID)
+		}
+	}
+	return nil
+}
+
+func executePrintVulncheck(productID distgo.ProductID, pkgs []string, scanDir string, env []string, opts Options, stdout io.Writer) error {
+	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running vulncheck for %s", productID), opts.DryRun)
+
+	if opts.DryRun {
+		distgo.DryRunPrintln(stdout, fmt.Sprintf("Run: govulncheck %s (in %s)", strings.Join(pkgs, " "), scanDir))
+		return nil
+	}
+
+	origDir, err := os.Getwd()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get working directory")
+	}
+	if err := os.Chdir(scanDir); err != nil {
+		return errors.Wrapf(err, "failed to change to scan directory %s", scanDir)
+	}
+	defer func() {
+		_ = os.Chdir(origDir)
+	}()
+
+	return runGovulncheckText(pkgs, env, stdout)
+}
+
+func runGovulncheckText(pkgs []string, env []string, stdout io.Writer) error {
 	ctx := context.Background()
-	cmd := scan.Command(ctx, "-format", "openvex", mainPkg)
+	args := append([]string{}, pkgs...)
+	cmd := scan.Command(ctx, args...)
+
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
+
+	cmd.Stdout = stdout
+	cmd.Stderr = stdout
+
+	if err := cmd.Start(); err != nil {
+		return errors.Wrapf(err, "failed to start govulncheck")
+	}
+
+	err := cmd.Wait()
+	if err != nil {
+		if exitCoder, ok := err.(interface{ ExitCode() int }); ok && exitCoder.ExitCode() == 3 {
+			return nil
+		}
+		return errors.Wrapf(err, "govulncheck failed")
+	}
+	return nil
+}
+
+func runGovulncheck(pkgs []string, env []string) ([]byte, error) {
+	ctx := context.Background()
+	args := []string{"-format", "openvex"}
+	args = append(args, pkgs...)
+	cmd := scan.Command(ctx, args...)
 
 	if len(env) > 0 {
 		cmd.Env = append(os.Environ(), env...)
@@ -204,4 +299,74 @@ func runGovulncheck(mainPkg string, env []string) ([]byte, error) {
 	}
 
 	return stdoutBuf.Bytes(), nil
+}
+
+// vexDocument and related types mirror the OpenVEX JSON structure produced by
+// govulncheck, used only for post-processing the product identifiers.
+type vexDocument struct {
+	Context    string         `json:"@context,omitempty"`
+	ID         string         `json:"@id,omitempty"`
+	Author     string         `json:"author,omitempty"`
+	Timestamp  string         `json:"timestamp,omitempty"`
+	Version    int            `json:"version,omitempty"`
+	Tooling    string         `json:"tooling,omitempty"`
+	Statements []vexStatement `json:"statements,omitempty"`
+}
+
+type vexStatement struct {
+	Vulnerability   json.RawMessage `json:"vulnerability,omitempty"`
+	Products        []vexProduct    `json:"products,omitempty"`
+	Status          string          `json:"status,omitempty"`
+	Justification   string          `json:"justification,omitempty"`
+	ImpactStatement string          `json:"impact_statement,omitempty"`
+}
+
+type vexProduct struct {
+	ID            string         `json:"@id,omitempty"`
+	Subcomponents []vexComponent `json:"subcomponents,omitempty"`
+}
+
+type vexComponent struct {
+	ID string `json:"@id,omitempty"`
+}
+
+// rewriteVEXProducts transforms govulncheck's VEX output to be compatible
+// with Trivy's OpenVEX matching logic. govulncheck sets the product @id to
+// the literal string "Unknown Product" with module PURLs as subcomponents.
+// Trivy's go-vex library requires the product @id to match the scanned
+// component's PURL — it checks product matching before subcomponent matching,
+// so the "Unknown Product" string causes all statements to be silently
+// ignored.
+//
+// This function promotes each subcomponent to a top-level product so that
+// Trivy can match the module PURL (e.g. "pkg:golang/stdlib@v1.24.0")
+// directly against its scan results during dependency tree traversal.
+func rewriteVEXProducts(data []byte) ([]byte, error) {
+	var doc vexDocument
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return data, err
+	}
+
+	changed := false
+	for i := range doc.Statements {
+		stmt := &doc.Statements[i]
+		var newProducts []vexProduct
+		for _, p := range stmt.Products {
+			if p.ID == "Unknown Product" && len(p.Subcomponents) > 0 {
+				for _, sc := range p.Subcomponents {
+					newProducts = append(newProducts, vexProduct{ID: sc.ID})
+				}
+				changed = true
+			} else {
+				newProducts = append(newProducts, p)
+			}
+		}
+		stmt.Products = newProducts
+	}
+
+	if !changed {
+		return data, nil
+	}
+
+	return json.MarshalIndent(doc, "", "  ")
 }

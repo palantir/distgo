@@ -94,13 +94,15 @@ func BuildProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectPa
 	}
 	for _, currID := range topoOrderedIDs {
 		currProduct := targetProducts[currID]
+		if err := RunBuild(projectInfo, currProduct, verbose, dryRun, stdout); err != nil {
+			return err
+		}
+		// Run vulncheck after docker build so that build scripts (which may set
+		// up the source tree) have already executed.
 		if currProduct.Docker != nil && currProduct.Docker.Attest {
 			if err := vulncheck.Products(projectInfo, projectParam, []distgo.ProductID{currID}, vulncheck.Options{DryRun: dryRun}, stdout); err != nil {
 				return err
 			}
-		}
-		if err := RunBuild(projectInfo, currProduct, verbose, dryRun, stdout); err != nil {
-			return err
 		}
 	}
 	return nil
