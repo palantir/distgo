@@ -34,18 +34,25 @@ const pomTemplate = `<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xs
 </project>
 `
 
-// POM produces a POM file name and content for a product. Returns an error if the provided outputInfo has multiple
-// distributions with differing non-empty packaging extensions, since there is no well-defined way to generate a POM
-// for such distributions.
-func POM(groupID string, outputInfo distgo.ProductTaskOutputInfo) (string, string, error) {
-	packaging, err := getSinglePackagingExtensionForProduct(outputInfo)
-	if err != nil {
-		return "", "", err
+// POM produces a POM file name and content for a product. The provided packagingExtension is used as the packaging
+// extension. If the provided packagingExtension is empty, then the extension is inferred from the provided outputInfo.
+//
+// Returns an error if the provided packagingExtension is empty and the provided outputInfo has multiple distributions
+// with differing non-empty packaging extensions, since there is no well-defined way to generate a POM for such
+// distributions.
+func POM(groupID string, outputInfo distgo.ProductTaskOutputInfo, packagingExtension string) (string, string, error) {
+	// if packagingExtension is not specified, infer it from output info
+	if packagingExtension == "" {
+		gotPackagingExtension, err := getSinglePackagingExtensionForProduct(outputInfo)
+		if err != nil {
+			return "", "", err
+		}
+		packagingExtension = gotPackagingExtension
 	}
 	pomName := fmt.Sprintf("%s-%s.pom", outputInfo.Product.Name, outputInfo.Project.Version)
 
 	git := getRepoOrigin()
-	pomContent, err := renderPOM(outputInfo.Product.Name, outputInfo.Project.Version, groupID, packaging, git)
+	pomContent, err := renderPOM(outputInfo.Product.Name, outputInfo.Project.Version, groupID, packagingExtension, git)
 	if err != nil {
 		return "", "", err
 	}

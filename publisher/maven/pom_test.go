@@ -118,6 +118,168 @@ func TestRenderPOM(t *testing.T) {
 	}
 }
 
+// TestPOM tests the functionality of the POM function, including specifying a packaging extension. Written by Claude
+// with prompting to base on existing tests in the file.
+func TestPOM(t *testing.T) {
+	for _, tc := range []struct {
+		name               string
+		outputInfo         distgo.ProductTaskOutputInfo
+		packagingExtension string
+		wantErrorStr       string
+	}{
+		{
+			"succeed if there is no dist output",
+			distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID:              "ProdID",
+					Name:            "foo",
+					DistOutputInfos: nil,
+				},
+				Project: distgo.ProjectInfo{
+					Version: "1.0.0",
+				},
+			},
+			"",
+			"",
+		},
+		{
+			"succeed if there is only a single dist",
+			distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID:   "ProdID",
+					Name: "foo",
+					DistOutputInfos: &distgo.DistOutputInfos{
+						DistIDs: []distgo.DistID{"A"},
+						DistInfos: map[distgo.DistID]distgo.DistOutputInfo{
+							"A": {
+								PackagingExtension: "tgz",
+							},
+						},
+					},
+				},
+				Project: distgo.ProjectInfo{
+					Version: "1.0.0",
+				},
+			},
+			"",
+			"",
+		},
+		{
+			"succeed if there are multiple dists with the same packaging extension",
+			distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID:   "ProdID",
+					Name: "foo",
+					DistOutputInfos: &distgo.DistOutputInfos{
+						DistIDs: []distgo.DistID{"A", "B"},
+						DistInfos: map[distgo.DistID]distgo.DistOutputInfo{
+							"A": {
+								PackagingExtension: "tgz",
+							},
+							"B": {
+								PackagingExtension: "tgz",
+							},
+						},
+					},
+				},
+				Project: distgo.ProjectInfo{
+					Version: "1.0.0",
+				},
+			},
+			"",
+			"",
+		},
+		{
+			"fail if there are multiple dists with different packaging extensions",
+			distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID:   "ProdID",
+					Name: "foo",
+					DistOutputInfos: &distgo.DistOutputInfos{
+						DistIDs: []distgo.DistID{"A", "B"},
+						DistInfos: map[distgo.DistID]distgo.DistOutputInfo{
+							"A": {
+								PackagingExtension: "tgz",
+							},
+							"B": {
+								PackagingExtension: "json",
+							},
+						},
+					},
+				},
+				Project: distgo.ProjectInfo{
+					Version: "1.0.0",
+				},
+			},
+			"",
+			"product ProdID has dists with different packaging extensions: distID A with packaging: tgz vs. distID B with packaging: json",
+		},
+		{
+			"succeed if there are multiple dists but only one has a packaging extensions",
+			distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID:   "ProdID",
+					Name: "foo",
+					DistOutputInfos: &distgo.DistOutputInfos{
+						DistIDs: []distgo.DistID{"A", "B"},
+						DistInfos: map[distgo.DistID]distgo.DistOutputInfo{
+							"A": {
+								PackagingExtension: "tgz",
+							},
+							"B": {
+								PackagingExtension: "",
+							},
+						},
+					},
+				},
+				Project: distgo.ProjectInfo{
+					Version: "1.0.0",
+				},
+			},
+			"",
+			"",
+		},
+		{
+			"succeed if there are multiple dists with different packaging extensions and packaging extension is specified",
+			distgo.ProductTaskOutputInfo{
+				Product: distgo.ProductOutputInfo{
+					ID:   "ProdID",
+					Name: "foo",
+					DistOutputInfos: &distgo.DistOutputInfos{
+						DistIDs: []distgo.DistID{"A", "B"},
+						DistInfos: map[distgo.DistID]distgo.DistOutputInfo{
+							"A": {
+								PackagingExtension: "tgz",
+							},
+							"B": {
+								PackagingExtension: "json",
+							},
+						},
+					},
+				},
+				Project: distgo.ProjectInfo{
+					Version: "1.0.0",
+				},
+			},
+			"tgz",
+			"",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			pomName, pomContent, err := POM("com.palantir", tc.outputInfo, tc.packagingExtension)
+			if tc.wantErrorStr == "" {
+				require.NoError(t, err)
+				assert.Equal(t, "foo-1.0.0.pom", pomName)
+				assert.NotEmpty(t, pomContent)
+			} else {
+				assert.EqualError(t, err, tc.wantErrorStr)
+				assert.Empty(t, pomName)
+				assert.Empty(t, pomContent)
+			}
+		})
+	}
+}
+
 func TestGetSinglePackagingExtensionForProduct(t *testing.T) {
 	for _, tc := range []struct {
 		name         string
