@@ -170,7 +170,7 @@ func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distg
 	}
 
 	if !cfg.NoPOM {
-		pomName, pomContent, err := maven.POM(groupID, productTaskOutputInfo)
+		pomName, pomContent, err := maven.POM(groupID, productTaskOutputInfo, cfg.POMPackagingExtension)
 		if err != nil {
 			return nil, err
 		}

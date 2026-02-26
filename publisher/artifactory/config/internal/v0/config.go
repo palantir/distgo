@@ -23,7 +23,13 @@ import (
 type Config struct {
 	publisher.BasicConnectionInfo `yaml:",inline,omitempty"`
 	Repository                    string `yaml:"repository,omitempty"`
-	NoPOM                         bool   `yaml:"no-pom,omitempty"`
+	// NoPOM specifies whether POM generation and upload should be skipped.
+	NoPOM bool `yaml:"no-pom,omitempty"`
+	// POMPackagingExtension specifies the packaging extension that should be recorded in the generated POM.
+	// Generally, this value can be blank, as it is automatically inferred from the extension(s) of the distribution
+	// artifacts being uploaded. However, if this value is non-blank, then the packaging extension inference logic is
+	// not run and this value is used directly.
+	POMPackagingExtension string `yaml:"pom-packaging-extension,omitempty"`
 	// Properties is a map of properties to attach to an artifact on publishing:
 	// https://www.jfrog.com/confluence/display/RTF/Using+Properties+in+Deployment+and+Resolution
 	// The values are processed as Go templates. In particular, it is possible to get the value of an

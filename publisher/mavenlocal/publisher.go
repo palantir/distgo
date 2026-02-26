@@ -105,7 +105,7 @@ func (p *mavenLocalPublisher) RunPublish(productTaskOutputInfo distgo.ProductTas
 	// if error is non-nil, wd will be empty
 	wd, _ := os.Getwd()
 	if !cfg.NoPOM {
-		pomName, pomContent, err := maven.POM(groupID, productTaskOutputInfo)
+		pomName, pomContent, err := maven.POM(groupID, productTaskOutputInfo, "")
 		if err != nil {
 			return err
 		}
