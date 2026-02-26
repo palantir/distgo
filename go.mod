@@ -27,6 +27,7 @@ require (
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa
 	golang.org/x/oauth2 v0.35.0
 	golang.org/x/tools v0.42.0
+	golang.org/x/vuln v1.1.4
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -68,5 +69,6 @@ require (
 	golang.org/x/mod v0.33.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/telemetry v0.0.0-20260209163413-e7419c687ee4 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

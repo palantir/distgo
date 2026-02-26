@@ -25,6 +25,11 @@ type DockerConfig struct {
 	// Repository is the repository that is made available to the tag and Dockerfile templates.
 	Repository *string `yaml:"repository,omitempty"`
 
+	// Attest, when set to true, automatically runs govulncheck for the product before building
+	// the Docker image. The resulting VEX document is written to the standard vulncheck output
+	// directory and can be attached as an attestation during docker push.
+	Attest *bool `yaml:"attest,omitempty"`
+
 	// DockerBuilderParams contains the Docker params for this distribution.
 	DockerBuildersConfig *DockerBuildersConfig `yaml:"docker-builders,omitempty"`
 }
