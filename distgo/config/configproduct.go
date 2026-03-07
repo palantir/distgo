@@ -88,6 +88,16 @@ func (cfg *ProductConfig) ToParam(productID distgo.ProductID, scriptIncludes str
 		dockerParam = &dockerParamVar
 	}
 
+	var vulncheckParam *distgo.VulncheckParam
+	if cfg.Vulncheck != nil {
+		defaultVulncheckCfg := VulncheckConfig{}
+		if defaultCfg.Vulncheck != nil {
+			defaultVulncheckCfg = VulncheckConfig(*defaultCfg.Vulncheck)
+		}
+		vulncheckParamVar := (*VulncheckConfig)(cfg.Vulncheck).ToParam(defaultVulncheckCfg)
+		vulncheckParam = &vulncheckParamVar
+	}
+
 	var firstLevelDeps []distgo.ProductID
 	seen := make(map[distgo.ProductID]struct{})
 	if cfg.Dependencies != nil {
@@ -108,6 +118,7 @@ func (cfg *ProductConfig) ToParam(productID distgo.ProductID, scriptIncludes str
 		Dist:                   distParam,
 		Publish:                publishParam,
 		Docker:                 dockerParam,
+		Vulncheck:              vulncheckParam,
 		FirstLevelDependencies: firstLevelDeps,
 	}, nil
 }

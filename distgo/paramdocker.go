@@ -41,6 +41,10 @@ type DockerParam struct {
 	// Repository is the Docker repository. This value is made available to TagTemplates as {{Repository}}.
 	Repository string
 
+	// Attest, when true, automatically runs govulncheck for the product before building the
+	// Docker image.
+	Attest bool
+
 	// DockerBuilderParams contains the Docker params for this distribution.
 	DockerBuilderParams map[DockerID]DockerBuilderParam
 }

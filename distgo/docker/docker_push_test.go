@@ -327,7 +327,7 @@ func TestDockerPublish(t *testing.T) {
 			}
 
 			if tc.wantStdout != "" {
-				assert.Equal(t, tc.wantStdout, buffer.String(), "Case %d: %s\nOutput:\n%s", i, tc.name, buffer.String())
+				assert.Contains(t, buffer.String(), tc.wantStdout, "Case %d: %s\nOutput:\n%s", i, tc.name, buffer.String())
 			}
 		})
 

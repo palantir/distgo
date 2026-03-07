@@ -28,6 +28,7 @@ import (
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/build"
 	"github.com/palantir/distgo/distgo/dist"
+	"github.com/palantir/distgo/distgo/vulncheck"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/signals"
 	"github.com/pkg/errors"
@@ -95,6 +96,13 @@ func BuildProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectPa
 		currProduct := targetProducts[currID]
 		if err := RunBuild(projectInfo, currProduct, verbose, dryRun, stdout); err != nil {
 			return err
+		}
+		// Run vulncheck after docker build so that build scripts (which may set
+		// up the source tree) have already executed.
+		if currProduct.Docker != nil && currProduct.Docker.Attest {
+			if err := vulncheck.Products(projectInfo, projectParam, []distgo.ProductID{currID}, vulncheck.Options{DryRun: dryRun}, stdout); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

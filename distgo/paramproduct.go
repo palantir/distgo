@@ -46,6 +46,9 @@ type ProductParam struct {
 	// Docker specifies the Docker configuration for the product.
 	Docker *DockerParam
 
+	// Vulncheck specifies the vulnerability check configuration for the product.
+	Vulncheck *VulncheckParam
+
 	// FirstLevelDependencies stores the IDs of the products that are declared as dependencies of this product.
 	FirstLevelDependencies []ProductID
 

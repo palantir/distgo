@@ -42,6 +42,7 @@ var (
 		newTaskInfoFromCmd(projectVersionCmd),
 		newTaskInfoFromCmd(publishCmd),
 		newTaskInfoFromCmd(runCmd),
+		newTaskInfoFromCmd(vulncheckCmd),
 		newTaskInfoFromCmd(distgoTaskCmd,
 			pluginapi.TaskInfoVerifyOptions(
 				pluginapi.VerifyOptionsApplyFalseArgs("--verify"),
