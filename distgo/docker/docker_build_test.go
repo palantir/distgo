@@ -93,7 +93,7 @@ func TestDockerBuild(t *testing.T) {
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./foo"),
+							MainPkg: new("./foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -105,8 +105,8 @@ func TestDockerBuild(t *testing.T) {
 						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:       stringPtr(printDockerfileDockerBuilderTypeName),
-									ContextDir: stringPtr("docker-context-dir"),
+									Type:       new(printDockerfileDockerBuilderTypeName),
+									ContextDir: new("docker-context-dir"),
 									InputBuilds: &[]distgo.ProductBuildID{
 										"foo",
 									},
@@ -148,7 +148,7 @@ func TestDockerBuild(t *testing.T) {
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./foo"),
+							MainPkg: new("./foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -160,8 +160,8 @@ func TestDockerBuild(t *testing.T) {
 						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:       stringPtr(printDockerfileDockerBuilderTypeName),
-									ContextDir: stringPtr("docker-context-dir"),
+									Type:       new(printDockerfileDockerBuilderTypeName),
+									ContextDir: new("docker-context-dir"),
 									InputDists: &[]distgo.ProductDistID{
 										"foo",
 									},
@@ -205,7 +205,7 @@ func TestDockerBuild(t *testing.T) {
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./foo"),
+							MainPkg: new("./foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -215,12 +215,12 @@ func TestDockerBuild(t *testing.T) {
 							}),
 						}),
 						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
-							Repository: stringPtr("registry-host:5000"),
+							Repository: new("registry-host:5000"),
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:             stringPtr(printDockerfileDockerBuilderTypeName),
-									ContextDir:       stringPtr("docker-context-dir"),
-									InputProductsDir: stringPtr("input-products"),
+									Type:             new(printDockerfileDockerBuilderTypeName),
+									ContextDir:       new("docker-context-dir"),
+									InputProductsDir: new("input-products"),
 									InputBuilds: &[]distgo.ProductBuildID{
 										"foo",
 									},
@@ -243,7 +243,7 @@ func TestDockerBuild(t *testing.T) {
 				require.NoError(t, err)
 
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = os.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+				err = os.WriteFile(dockerfile, fmt.Appendf(nil, `FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
 RUN echo 'Version: {{Version}}'
 RUN echo 'Repository: {{Repository}}'
@@ -252,7 +252,7 @@ RUN echo 'InputBuildArtifact for foo: {{InputBuildArtifact "foo" %q}}'
 RUN echo 'InputDistArtifacts for foo: {{InputDistArtifacts "foo" "os-arch-bin"}}'
 RUN echo 'Tag for foo: {{Tag "foo" "print-dockerfile" "default"}}'
 RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
-`, osarch.Current().String())), 0644)
+`, osarch.Current().String()), 0644)
 
 				require.NoError(t, err)
 				gittest.CommitAllFiles(t, projectDir, "Commit files")
@@ -294,8 +294,8 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:       stringPtr(printDockerfileDockerBuilderTypeName),
-									ContextDir: stringPtr("docker-context-dir"),
+									Type:       new(printDockerfileDockerBuilderTypeName),
+									ContextDir: new("docker-context-dir"),
 									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
 										"0", "foo:5",
 										"2", "foo:3",
@@ -345,12 +345,12 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"bar": {
 						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
-							Repository: stringPtr("registry-host:5000"),
+							Repository: new("registry-host:5000"),
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:             stringPtr(printDockerfileDockerBuilderTypeName),
-									ContextDir:       stringPtr("docker-context-dir"),
-									InputProductsDir: stringPtr("input-products"),
+									Type:             new(printDockerfileDockerBuilderTypeName),
+									ContextDir:       new("docker-context-dir"),
+									InputProductsDir: new("input-products"),
 									InputBuilds: &[]distgo.ProductBuildID{
 										"foo",
 									},
@@ -366,7 +366,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 					},
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./foo"),
+							MainPkg: new("./foo"),
 						}),
 					},
 				}),
@@ -378,13 +378,13 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 				require.NoError(t, err)
 
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = os.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+				err = os.WriteFile(dockerfile, fmt.Appendf(nil, `FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
 RUN echo 'Version: {{Version}}'
 RUN echo 'Repository: {{Repository}}'
 RUN echo 'RepositoryLiteral: {{RepositoryLiteral}}'
 RUN echo 'InputBuildArtifact for bar: {{InputBuildArtifact "foo" %q}}'
-`, osarch.Current().String())), 0644)
+`, osarch.Current().String()), 0644)
 
 				require.NoError(t, err)
 				gittest.CommitAllFiles(t, projectDir, "Commit files")
@@ -419,12 +419,12 @@ RUN echo 'InputBuildArtifact for bar: {{InputBuildArtifact "foo" %q}}'
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"bar": {
 						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
-							Repository: stringPtr("registry-host:5000"),
+							Repository: new("registry-host:5000"),
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:             stringPtr(printDockerfileDockerBuilderTypeName),
-									ContextDir:       stringPtr("docker-context-dir"),
-									InputProductsDir: stringPtr("input-products"),
+									Type:             new(printDockerfileDockerBuilderTypeName),
+									ContextDir:       new("docker-context-dir"),
+									InputProductsDir: new("input-products"),
 									InputDists: &[]distgo.ProductDistID{
 										"foo.manual",
 									},
@@ -449,7 +449,7 @@ RUN echo 'InputBuildArtifact for bar: {{InputBuildArtifact "foo" %q}}'
 											Value: "tar",
 										},
 									},
-									Script: stringPtr(`#!/usr/bin/env bash
+									Script: new(`#!/usr/bin/env bash
 echo "hello" > $DIST_WORK_DIR/out.txt
 tar -cf "$DIST_DIR/$DIST_NAME".tar -C "$DIST_WORK_DIR" out.txt`),
 								}),
@@ -465,13 +465,13 @@ tar -cf "$DIST_DIR/$DIST_NAME".tar -C "$DIST_WORK_DIR" out.txt`),
 				require.NoError(t, err)
 
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = os.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+				err = os.WriteFile(dockerfile, fmt.Appendf(nil, `FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
 RUN echo 'Version: {{Version}}'
 RUN echo 'Repository: {{Repository}}'
 RUN echo 'RepositoryLiteral: {{RepositoryLiteral}}'
 RUN echo 'InputDistArtifacts for bar: {{InputDistArtifacts "foo" "manual"}}'
-`)), 0644)
+`), 0644)
 
 				require.NoError(t, err)
 				gittest.CommitAllFiles(t, projectDir, "Commit files")
@@ -506,7 +506,7 @@ RUN echo 'InputDistArtifacts for bar: {{InputDistArtifacts "foo" "manual"}}'
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./foo"),
+							MainPkg: new("./foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -518,9 +518,9 @@ RUN echo 'InputDistArtifacts for bar: {{InputDistArtifacts "foo" "manual"}}'
 						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:             stringPtr(printDockerfileDockerBuilderTypeName),
-									ContextDir:       stringPtr("docker-context-dir"),
-									InputProductsDir: stringPtr("input-products"),
+									Type:             new(printDockerfileDockerBuilderTypeName),
+									ContextDir:       new("docker-context-dir"),
+									InputProductsDir: new("input-products"),
 									InputBuilds: &[]distgo.ProductBuildID{
 										"foo",
 									},
@@ -543,7 +543,7 @@ RUN echo 'InputDistArtifacts for bar: {{InputDistArtifacts "foo" "manual"}}'
 				require.NoError(t, err)
 
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = os.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+				err = os.WriteFile(dockerfile, fmt.Appendf(nil, `FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
 RUN echo 'Version: {{Version}}'
 RUN echo 'Repository: {{Repository}}'
@@ -551,7 +551,7 @@ RUN echo 'RepositoryLiteral: {{RepositoryLiteral}}'
 RUN echo 'InputBuildArtifact for foo: {{InputBuildArtifact "foo" %q}}'
 RUN echo 'InputDistArtifacts for foo: {{InputDistArtifacts "foo" "os-arch-bin"}}'
 RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
-`, osarch.Current().String())), 0644)
+`, osarch.Current().String()), 0644)
 
 				require.NoError(t, err)
 				gittest.CommitAllFiles(t, projectDir, "Commit files")
@@ -589,7 +589,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./foo"),
+							MainPkg: new("./foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -599,13 +599,13 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 							}),
 						}),
 						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
-							Repository: stringPtr("registry-host:5000"),
+							Repository: new("registry-host:5000"),
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:                     stringPtr(printDockerfileDockerBuilderTypeName),
-									DisableTemplateRendering: boolPtr(true),
-									ContextDir:               stringPtr("docker-context-dir"),
-									InputProductsDir:         stringPtr("input-products"),
+									Type:                     new(printDockerfileDockerBuilderTypeName),
+									DisableTemplateRendering: new(true),
+									ContextDir:               new("docker-context-dir"),
+									InputProductsDir:         new("input-products"),
 									InputBuilds: &[]distgo.ProductBuildID{
 										"foo",
 									},
@@ -628,14 +628,14 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 				require.NoError(t, err)
 
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = os.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+				err = os.WriteFile(dockerfile, fmt.Appendf(nil, `FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
 RUN echo 'Version: {{Version}}'
 RUN echo 'Repository: {{Repository}}'
 RUN echo 'InputBuildArtifact for foo: {{InputBuildArtifact "foo" %q}}'
 RUN echo 'InputDistArtifacts for foo: {{InputDistArtifacts "foo" "os-arch-bin"}}'
 RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
-`, osarch.Current().String())), 0644)
+`, osarch.Current().String()), 0644)
 
 				require.NoError(t, err)
 				gittest.CommitAllFiles(t, projectDir, "Commit files")
@@ -671,7 +671,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./foo"),
+							MainPkg: new("./foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -681,12 +681,12 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 							}),
 						}),
 						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
-							Repository: stringPtr("registry-host:5000"),
+							Repository: new("registry-host:5000"),
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:             stringPtr(printDockerfileDockerBuilderTypeName),
-									ContextDir:       stringPtr("docker-context-dir"),
-									InputProductsDir: stringPtr("input-products"),
+									Type:             new(printDockerfileDockerBuilderTypeName),
+									ContextDir:       new("docker-context-dir"),
+									InputProductsDir: new("input-products"),
 									InputBuilds: &[]distgo.ProductBuildID{
 										"foo",
 									},
@@ -712,7 +712,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 				require.NoError(t, err)
 
 				dockerfile := path.Join(contextDir, "Dockerfile")
-				err = os.WriteFile(dockerfile, []byte(fmt.Sprintf(`FROM alpine:3.5
+				err = os.WriteFile(dockerfile, fmt.Appendf(nil, `FROM alpine:3.5
 RUN echo 'Product: {{Product}}'
 RUN echo 'Version: {{Version}}'
 RUN echo 'Repository: {{Repository}}'
@@ -720,7 +720,7 @@ RUN echo 'RepositoryLiteral: {{RepositoryLiteral}}'
 RUN echo 'InputBuildArtifact for foo: {{InputBuildArtifact "foo" %q}}'
 RUN echo 'InputDistArtifacts for foo: {{InputDistArtifacts "foo" "os-arch-bin"}}'
 RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
-`, osarch.Current().String())), 0644)
+`, osarch.Current().String()), 0644)
 
 				require.NoError(t, err)
 				gittest.CommitAllFiles(t, projectDir, "Commit files")
@@ -812,12 +812,14 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 	}
 }
 
+//go:fix inline
 func stringPtr(in string) *string {
-	return &in
+	return new(in)
 }
 
+//go:fix inline
 func boolPtr(in bool) *bool {
-	return &in
+	return new(in)
 }
 
 func mustTagTemplatesMap(nameAndVal ...string) *distgoconfig.TagTemplatesMap {

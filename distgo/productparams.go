@@ -16,6 +16,7 @@ package distgo
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -161,13 +162,7 @@ func ProductParamsForBuildProductArgs(inputProducts map[ProductID]ProductParam, 
 
 	// all IDs are valid. For any ID that has an empty OS/Arch as a value, expand to all OS/Archs.
 	for productID, osArchs := range productIDToOSArchs {
-		allVals := false
-		for _, currOSArchs := range osArchs {
-			if currOSArchs == (osarch.OSArch{}) {
-				allVals = true
-				break
-			}
-		}
+		allVals := slices.Contains(osArchs, (osarch.OSArch{}))
 		if !allVals || inputProducts[productID].Build == nil {
 			continue
 		}
@@ -323,13 +318,7 @@ func ProductParamsForDistProductArgs(inputProducts map[ProductID]ProductParam, p
 
 	// all IDs are valid. For any ID that has "" as a value, expand to all dists.
 	for productID, distIDs := range productIDToDistIDs {
-		allVals := false
-		for _, currDistID := range distIDs {
-			if currDistID == "" {
-				allVals = true
-				break
-			}
-		}
+		allVals := slices.Contains(distIDs, "")
 		if !allVals || inputProducts[productID].Dist == nil {
 			continue
 		}
@@ -383,9 +372,9 @@ func (id ProductDockerID) Parse() (ProductID, DockerID, DockerTagID) {
 
 		rest := string(id[dotIdx+1:])
 		dockerID = DockerID(rest)
-		if secondDotIdx := strings.Index(rest, "."); secondDotIdx != -1 {
-			dockerID = DockerID(rest[:secondDotIdx])
-			tagID = DockerTagID(rest[secondDotIdx+1:])
+		if before, after, ok := strings.Cut(rest, "."); ok {
+			dockerID = DockerID(before)
+			tagID = DockerTagID(after)
 		}
 	}
 	return productID, dockerID, tagID

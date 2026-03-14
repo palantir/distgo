@@ -93,7 +93,7 @@ func TestDist(t *testing.T) {
 							osarchbin.TypeName: {
 								Type:   defaultDisterCfg.Type,
 								Config: defaultDisterCfg.Config,
-								Script: stringPtr(`#!/usr/bin/env bash
+								Script: new(`#!/usr/bin/env bash
 touch $DIST_DIR/test-file.txt`),
 							},
 						}),
@@ -118,7 +118,7 @@ touch $DIST_DIR/test-file.txt`),
 							osarchbin.TypeName: {
 								Type:   defaultDisterCfg.Type,
 								Config: defaultDisterCfg.Config,
-								Script: stringPtr(`#!/usr/bin/env bash
+								Script: new(`#!/usr/bin/env bash
 touch $DIST_DIR/$DIST_TEST_KEY.txt`),
 							},
 						}),
@@ -151,7 +151,7 @@ helper_func() {
 							osarchbin.TypeName: {
 								Type:   defaultDisterCfg.Type,
 								Config: defaultDisterCfg.Config,
-								Script: stringPtr(`#!/usr/bin/env bash
+								Script: new(`#!/usr/bin/env bash
 touch $DIST_DIR/$VERSION
 helper_func`),
 							},
@@ -198,14 +198,14 @@ helper_func() {
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("foo"),
+							MainPkg: new("foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								osarchbin.TypeName: {
 									Type:   defaultDisterCfg.Type,
 									Config: defaultDisterCfg.Config,
-									Script: stringPtr(`#!/usr/bin/env bash
+									Script: new(`#!/usr/bin/env bash
 echo $DEP_PRODUCT_ID_COUNT $DEP_PRODUCT_ID_0 > $DIST_DIR/dep-product-ids.txt
 echo $DEP_PRODUCT_ID_0_BUILD_DIR > $DIST_DIR/bar-build-dir.txt
 echo $DEP_PRODUCT_ID_0_DIST_ID_0_DIST_DIR > $DIST_DIR/bar-dist-dir.txt
@@ -220,7 +220,7 @@ echo $DEP_PRODUCT_ID_0_DIST_ID_0_DIST_ARTIFACT_0 > $DIST_DIR/bar-dist-artifacts.
 					},
 					"bar": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("bar"),
+							MainPkg: new("bar"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -271,7 +271,7 @@ func main() {}
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"product-1": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("foo"),
+							MainPkg: new("foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -291,7 +291,7 @@ func main() {}
 					},
 					"product-2": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("foo"),
+							MainPkg: new("foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -509,7 +509,7 @@ func TestRepeatedDist(t *testing.T) {
 							Value: "tar",
 						},
 					},
-					Script: stringPtr(`
+					Script: new(`
 #!/usr/bin/env bash
 echo "hello" > $DIST_WORK_DIR/out.txt
 tar -cf "$DIST_DIR/$DIST_NAME".tar -C "$DIST_WORK_DIR" out.txt
@@ -527,6 +527,7 @@ tar -cf "$DIST_DIR/$DIST_NAME".tar -C "$DIST_WORK_DIR" out.txt
 	}
 }
 
+//go:fix inline
 func stringPtr(in string) *string {
-	return &in
+	return new(in)
 }

@@ -156,7 +156,7 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 	var releaseRes *github.RepositoryRelease
 	if !dryRun {
 		releaseRes, _, err = client.Repositories.CreateRelease(context.Background(), cfg.Owner, cfg.Repository, &github.RepositoryRelease{
-			TagName: github.String(releaseVersion),
+			TagName: new(releaseVersion),
 		})
 		if err != nil {
 			// newline to complement "..." output

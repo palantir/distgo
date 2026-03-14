@@ -40,7 +40,6 @@ func New(providedDockerBuilderCreators []dockerbuilder.Creator, providedConfigUp
 		dockerBuilderCreators[currCreator.TypeName()] = currCreator.Creator()
 	}
 	for _, currUpgrader := range providedConfigUpgraders {
-		currUpgrader := currUpgrader
 		configUpgraders[currUpgrader.TypeName()] = currUpgrader
 	}
 	return &dockerBuilderFactory{

@@ -102,14 +102,14 @@ exclude:
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"test": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							OutputDir: stringPtr("build"),
-							MainPkg:   stringPtr("./cmd/test"),
-							BuildArgsScript: stringPtr(`YEAR=$(date +%Y)
+							OutputDir: new("build"),
+							MainPkg:   new("./cmd/test"),
+							BuildArgsScript: new(`YEAR=$(date +%Y)
 echo "-ldflags"
 echo "-X"
 echo "main.year=$YEAR"
 `),
-							VersionVar: stringPtr("main.version"),
+							VersionVar: new("main.version"),
 							Environment: &map[string]string{
 								"foo":  "bar",
 								"baz":  "1",
@@ -127,10 +127,10 @@ echo "main.year=$YEAR"
 							},
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
-							OutputDir: stringPtr("dist"),
+							OutputDir: new("dist"),
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								"sls": {
-									Type: stringPtr("sls"),
+									Type: new("sls"),
 									InputDir: distgoconfig.ToInputDirConfig(&distgoconfig.InputDirConfig{
 										Path: "input-product",
 									}),
@@ -165,7 +165,7 @@ echo "main.year=$YEAR"
 							}),
 						}),
 						Publish: distgoconfig.ToPublishConfig(&distgoconfig.PublishConfig{
-							GroupID: stringPtr("com.test.foo"),
+							GroupID: new("com.test.foo"),
 							PublishInfo: distgoconfig.ToPublishInfo(&map[distgo.PublisherTypeID]distgoconfig.PublisherConfig{
 								"github": {
 									Config: &yaml.MapSlice{
@@ -205,12 +205,12 @@ products:
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"test": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./cmd/test"),
+							MainPkg: new("./cmd/test"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								"bin": {
-									Type: stringPtr("bin"),
+									Type: new("bin"),
 								},
 							}),
 						}),
@@ -239,7 +239,7 @@ products:
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"test": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./cmd/test"),
+							MainPkg: new("./cmd/test"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -1374,8 +1374,9 @@ import _ "github.com/palantir/witchcraft-go-logging/wlog-zap"
 	assert.Equal(t, wantKeys, gotKeys)
 }
 
+//go:fix inline
 func stringPtr(val string) *string {
-	return &val
+	return new(val)
 }
 
 func mustOSArch(in string) osarch.OSArch {

@@ -16,6 +16,7 @@ package distgo
 
 import (
 	"fmt"
+	"maps"
 	"path"
 
 	"github.com/palantir/godel/v2/pkg/osarch"
@@ -62,9 +63,7 @@ func (p *ProductTaskOutputInfo) AllProductOutputInfos() []ProductOutputInfo {
 func (p *ProductTaskOutputInfo) AllProductOutputInfosMap() map[ProductID]ProductOutputInfo {
 	allMap := make(map[ProductID]ProductOutputInfo)
 	allMap[p.Product.ID] = p.Product
-	for k, v := range p.Deps {
-		allMap[k] = v
-	}
+	maps.Copy(allMap, p.Deps)
 	return allMap
 }
 

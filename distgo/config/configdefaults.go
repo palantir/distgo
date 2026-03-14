@@ -59,7 +59,6 @@ func mainPkgsProductsConfig(projectDir string, defaultDisterCfg DisterConfig, ex
 	productsCfg := make(map[distgo.ProductID]ProductConfig)
 	for _, currMainPkgPath := range mainPkgPaths {
 		// redeclare locally so address can be taken
-		currMainPkgPath := currMainPkgPath
 		productID := uniqueProductID(mainPkgPathToProductID[currMainPkgPath], mainProductIDs, usedProductIDs)
 		productsCfg[productID] = ProductConfig{
 			Build: (*v0.BuildConfig)(&BuildConfig{
