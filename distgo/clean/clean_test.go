@@ -72,7 +72,7 @@ func TestClean(t *testing.T) {
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("foo"),
+							MainPkg: new("foo"),
 						}),
 					},
 				}),
@@ -123,7 +123,7 @@ func TestClean(t *testing.T) {
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("foo"),
+							MainPkg: new("foo"),
 						}),
 					},
 				}),
@@ -185,7 +185,7 @@ func TestClean(t *testing.T) {
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("foo"),
+							MainPkg: new("foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -247,7 +247,7 @@ func TestClean(t *testing.T) {
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("foo"),
+							MainPkg: new("foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -323,7 +323,7 @@ func TestClean(t *testing.T) {
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("foo"),
+							MainPkg: new("foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -393,6 +393,7 @@ func TestClean(t *testing.T) {
 	}
 }
 
+//go:fix inline
 func stringPtr(in string) *string {
-	return &in
+	return new(in)
 }

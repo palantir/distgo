@@ -16,6 +16,7 @@ package config
 
 import (
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 
@@ -208,9 +209,7 @@ func (cfg *ProjectConfig) ToParam(
 func newProductSubmap(productParam distgo.ProductParam) map[distgo.ProductID]distgo.ProductParam {
 	out := make(map[distgo.ProductID]distgo.ProductParam)
 	out[productParam.ID] = productParam
-	for k, v := range productParam.AllDependencies {
-		out[k] = v
-	}
+	maps.Copy(out, productParam.AllDependencies)
 	return out
 }
 
@@ -240,9 +239,7 @@ func computeAllDependencies(currProduct distgo.ProductID, allProducts map[distgo
 		if err != nil {
 			return nil, err
 		}
-		for k, v := range allCurDepProductDeps {
-			allDeps[k] = v
-		}
+		maps.Copy(allDeps, allCurDepProductDeps)
 	}
 	return allDeps, nil
 }

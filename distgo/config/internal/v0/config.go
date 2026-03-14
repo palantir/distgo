@@ -130,7 +130,6 @@ func upgradeAssets(
 	changed = changed || defaultsChanged
 
 	for k, v := range cfg.Products {
-		v := v
 		currProductChanged, err := upgradeProductAssets(&v, disterFactory, dockerBuilderFactory, publisherFactory)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to upgrade assets for product %q", k)

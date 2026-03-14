@@ -53,7 +53,6 @@ func AssetDockerBuilderCreators(assetPaths ...string) ([]Creator, []distgo.Confi
 	var configUpgraders []distgo.ConfigUpgrader
 	dockerBuilderNameToAssets := make(map[string][]string)
 	for _, currAssetPath := range assetPaths {
-		currAssetPath := currAssetPath
 		currDockerBuilder := assetDockerBuilder{
 			assetPath: currAssetPath,
 		}

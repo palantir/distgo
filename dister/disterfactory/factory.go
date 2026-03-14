@@ -40,7 +40,6 @@ func New(providedDisterCreators []dister.Creator, providedConfigUpgraders []dist
 		disterCreators[currCreator.TypeName()] = currCreator.Creator()
 	}
 	for _, currUpgrader := range providedConfigUpgraders {
-		currUpgrader := currUpgrader
 		configUpgraders[currUpgrader.TypeName()] = currUpgrader
 	}
 	return &disterFactoryImpl{

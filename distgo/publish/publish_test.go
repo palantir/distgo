@@ -139,7 +139,7 @@ os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-darwin-amd64.tgz %s/ou
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./foo"),
+							MainPkg: new("./foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -154,7 +154,7 @@ os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-darwin-amd64.tgz %s/ou
 					},
 					"bar": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./foo"),
+							MainPkg: new("./foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -220,8 +220,9 @@ func exactMatchRegexp(in string) string {
 	return "^" + regexp.QuoteMeta(in) + "$"
 }
 
+//go:fix inline
 func stringPtr(in string) *string {
-	return &in
+	return new(in)
 }
 
 func mustMapSlicePtr(in any) *yaml.MapSlice {

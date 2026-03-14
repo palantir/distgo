@@ -40,7 +40,6 @@ func New(providedProjectVersionerCreators []projectversioner.Creator, providedCo
 		projectVersionerCreators[currCreator.TypeName()] = currCreator.Creator()
 	}
 	for _, currUpgrader := range providedConfigUpgraders {
-		currUpgrader := currUpgrader
 		configUpgraders[currUpgrader.TypeName()] = currUpgrader
 	}
 	return &projectVersionerFactoryImpl{
