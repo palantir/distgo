@@ -104,7 +104,7 @@ func TestBuildAll(t *testing.T) {
 echo "Custom build script content"
 `
 			}),
-			wantBuildOutput: stringVar(`(?sm)^Custom build script content\n.+`),
+			wantBuildOutput: new(`(?sm)^Custom build script content\n.+`),
 			wantOutput:      "defaultVersion",
 		},
 		// building project that requires CGo succeeds if "CGO_ENABLED" environment variable is set to 1
@@ -600,6 +600,7 @@ func createBuildProductParam(fn func(*distgo.ProductParam)) distgo.ProductParam 
 	return param
 }
 
+//go:fix inline
 func stringVar(in string) *string {
-	return &in
+	return new(in)
 }

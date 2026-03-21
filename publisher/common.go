@@ -399,7 +399,7 @@ func SetConfigValues(flagVals map[distgo.PublisherFlagName]any, flagAndPtrs ...a
 
 func SetConfigValue(flagVals map[distgo.PublisherFlagName]any, flag distgo.PublisherFlag, configValPtr any) error {
 	configValPtrType := reflect.TypeOf(configValPtr)
-	if configValPtrType.Kind() != reflect.Ptr {
+	if configValPtrType.Kind() != reflect.Pointer {
 		return errors.Errorf("configValPtr type %q is not a pointer type", configValPtrType)
 	}
 

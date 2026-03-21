@@ -43,7 +43,7 @@ func getConfigValue(primaryValPtr, secondaryValPtr, defaultVal any) any {
 	if t1 != t2 {
 		panic(fmt.Sprintf("types of primaryValPtr and secondaryValPtr are not equal: %v != %v", t1, t2))
 	}
-	if t1.Kind() != reflect.Ptr {
+	if t1.Kind() != reflect.Pointer {
 		panic(fmt.Sprintf("type %v is not a pointer type", t1))
 	}
 

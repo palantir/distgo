@@ -16,6 +16,7 @@ package legacy
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -474,13 +475,13 @@ func upgradeLegacyConfig(
 	// BuildOutputDir
 	if legacyCfg.BuildOutputDir != "" {
 		productDefaults.Build = &v0.BuildConfig{
-			OutputDir: stringPtr(legacyCfg.BuildOutputDir),
+			OutputDir: new(legacyCfg.BuildOutputDir),
 		}
 	}
 	// DistOutputDir
 	if legacyCfg.DistOutputDir != "" {
 		productDefaults.Dist = &v0.DistConfig{
-			OutputDir: stringPtr(legacyCfg.DistOutputDir),
+			OutputDir: new(legacyCfg.DistOutputDir),
 		}
 	}
 	// DistScriptInclude
@@ -488,7 +489,7 @@ func upgradeLegacyConfig(
 	// GroupID
 	if legacyCfg.GroupID != "" {
 		productDefaults.Publish = &v0.PublishConfig{
-			GroupID: stringPtr(legacyCfg.GroupID),
+			GroupID: new(legacyCfg.GroupID),
 		}
 	}
 	upgradedCfg.ProductDefaults = productDefaults
@@ -516,25 +517,25 @@ func upgradeLegacyConfig(
 			// Script
 			if legacyProduct.Build.Script != "" {
 				if product.Build.Script == nil {
-					product.Build.Script = stringPtr("")
+					product.Build.Script = new("")
 				}
-				product.Build.Script = stringPtr(appendToScript(*product.Build.Script, translateEnvVars(legacyProduct.Build.Script)))
+				product.Build.Script = new(appendToScript(*product.Build.Script, translateEnvVars(legacyProduct.Build.Script)))
 			}
 			// MainPkg
 			if legacyProduct.Build.MainPkg != "" {
-				product.Build.MainPkg = stringPtr(legacyProduct.Build.MainPkg)
+				product.Build.MainPkg = new(legacyProduct.Build.MainPkg)
 			}
 			// OutputDir
 			if legacyProduct.Build.OutputDir != "" {
-				product.Build.OutputDir = stringPtr(legacyProduct.Build.OutputDir)
+				product.Build.OutputDir = new(legacyProduct.Build.OutputDir)
 			}
 			// BuildArgsScript
 			if legacyProduct.Build.BuildArgsScript != "" {
-				product.Build.BuildArgsScript = stringPtr(legacyProduct.Build.BuildArgsScript)
+				product.Build.BuildArgsScript = new(legacyProduct.Build.BuildArgsScript)
 			}
 			// VersionVar
 			if legacyProduct.Build.VersionVar != "" {
-				product.Build.VersionVar = stringPtr(legacyProduct.Build.VersionVar)
+				product.Build.VersionVar = new(legacyProduct.Build.VersionVar)
 			}
 			// Environment
 			if len(legacyProduct.Build.Environment) > 0 {
@@ -585,7 +586,7 @@ func upgradeLegacyConfig(
 			distType := DistInfoType(legacyDist.DistType.Type)
 			switch distType {
 			case SLSDistType:
-				upgradedDisterCfg.Type = stringPtr("sls")
+				upgradedDisterCfg.Type = new("sls")
 
 				slsDist := legacyDist.DistType.Info.(SLSDist)
 				slsDist.Legacy = true
@@ -604,9 +605,9 @@ func upgradeLegacyConfig(
 						return nil, errors.Errorf("bin dist for product %q specifies a custom init.sh template file, which is no longer supported", k)
 					}
 					if upgradedDisterCfg.Script == nil {
-						upgradedDisterCfg.Script = stringPtr("")
+						upgradedDisterCfg.Script = new("")
 					}
-					upgradedDisterCfg.Script = stringPtr(appendToScript(*upgradedDisterCfg.Script, binDistInitShScript()))
+					upgradedDisterCfg.Script = new(appendToScript(*upgradedDisterCfg.Script, binDistInitShScript()))
 				}
 			case OSArchBinDistType:
 				upgradedDisterCfg.Type = stringPtr(osarchbin.TypeName)
@@ -629,7 +630,7 @@ func upgradeLegacyConfig(
 				}
 				legacyDisterCfgBytes = cfgBytes
 			case RPMDistType:
-				upgradedDisterCfg.Type = stringPtr("rpm")
+				upgradedDisterCfg.Type = new("rpm")
 
 				rpmDist := legacyDist.DistType.Info.(RPMDist)
 				rpmDist.Legacy = true
@@ -661,7 +662,7 @@ func upgradeLegacyConfig(
 			product.Dist = &v0.DistConfig{}
 			// OutputDir
 			if legacyDist.OutputDir != "" {
-				product.Dist.OutputDir = stringPtr(legacyDist.OutputDir)
+				product.Dist.OutputDir = new(legacyDist.OutputDir)
 			}
 			// InputDir
 			if legacyDist.InputDir != "" {
@@ -685,9 +686,9 @@ func upgradeLegacyConfig(
 			// Script
 			if legacyDist.Script != "" {
 				if upgradedDisterCfg.Script == nil {
-					upgradedDisterCfg.Script = stringPtr("")
+					upgradedDisterCfg.Script = new("")
 				}
-				upgradedDisterCfg.Script = stringPtr(appendToScript(*upgradedDisterCfg.Script, translateEnvVars(legacyDist.Script)))
+				upgradedDisterCfg.Script = new(appendToScript(*upgradedDisterCfg.Script, translateEnvVars(legacyDist.Script)))
 			}
 			// DistType
 			product.Dist.Disters = &v0.DistersConfig{
@@ -700,7 +701,7 @@ func upgradeLegacyConfig(
 				if publishCfg == nil {
 					publishCfg = &v0.PublishConfig{}
 				}
-				publishCfg.GroupID = stringPtr(legacyDist.Publish.GroupID)
+				publishCfg.GroupID = new(legacyDist.Publish.GroupID)
 			}
 			if len(legacyDist.Publish.Almanac.Tags) > 0 || len(legacyDist.Publish.Almanac.Metadata) > 0 {
 				if publishCfg == nil {
@@ -744,7 +745,7 @@ func upgradeLegacyConfig(
 
 				// BuildArgsScript
 				if legacyDockerImage.BuildArgsScript != "" {
-					upgradedDockerBuilderConfig.Script = stringPtr(appendToScript("", legacyDockerImage.BuildArgsScript))
+					upgradedDockerBuilderConfig.Script = new(appendToScript("", legacyDockerImage.BuildArgsScript))
 				}
 
 				// Tag
@@ -765,7 +766,7 @@ func upgradeLegacyConfig(
 
 				// ContextDir
 				if legacyDockerImage.ContextDir != "" {
-					upgradedDockerBuilderConfig.ContextDir = stringPtr(legacyDockerImage.ContextDir)
+					upgradedDockerBuilderConfig.ContextDir = new(legacyDockerImage.ContextDir)
 				}
 				// Deps
 				if len(legacyDockerImage.Deps) > 0 {
@@ -779,13 +780,7 @@ func upgradeLegacyConfig(
 								upgradedDockerBuilderConfig.InputDists = &[]distgo.ProductDistID{}
 							}
 							inputDistID := distgo.ProductDistID(fmt.Sprintf("%s.%s", currLegacyDockerDep.Product, dockerDepType))
-							inputDistIDPresent := false
-							for _, currID := range *upgradedDockerBuilderConfig.InputDists {
-								if inputDistID == currID {
-									inputDistIDPresent = true
-									break
-								}
-							}
+							inputDistIDPresent := slices.Contains(*upgradedDockerBuilderConfig.InputDists, inputDistID)
 							if !inputDistIDPresent {
 								*upgradedDockerBuilderConfig.InputDists = append(*upgradedDockerBuilderConfig.InputDists, inputDistID)
 							}
@@ -815,7 +810,7 @@ func upgradeLegacyConfig(
 				}
 
 				if legacyDockerImage.Info.Type == "sls" {
-					upgradedDockerBuilderConfig.Type = stringPtr("sls")
+					upgradedDockerBuilderConfig.Type = new("sls")
 
 					dockerImageInfo := legacyDockerImage.Info.Data.(SLSDockerImageInfo)
 					dockerImageInfo.Legacy = true
@@ -863,8 +858,9 @@ func upgradeLegacyConfig(
 	return &upgradedCfg, nil
 }
 
+//go:fix inline
 func stringPtr(in string) *string {
-	return &in
+	return new(in)
 }
 
 // appendToScript appends the provided string to the given script. If the given script is empty, it prepends it with the
@@ -940,13 +936,7 @@ func translateVar(in, oldVar, newVar string) string {
 }
 
 func addDepIfNotPresent(deps []distgo.ProductID, productID distgo.ProductID) []distgo.ProductID {
-	productIDPresent := false
-	for _, currID := range deps {
-		if productID == currID {
-			productIDPresent = true
-			break
-		}
-	}
+	productIDPresent := slices.Contains(deps, productID)
 	if productIDPresent {
 		return deps
 	}

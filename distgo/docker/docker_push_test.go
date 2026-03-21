@@ -57,7 +57,7 @@ func TestDockerPublish(t *testing.T) {
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./foo"),
+							MainPkg: new("./foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -69,8 +69,8 @@ func TestDockerPublish(t *testing.T) {
 						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:       stringPtr(printDockerfileDockerBuilderTypeName),
-									ContextDir: stringPtr("docker-context-dir"),
+									Type:       new(printDockerfileDockerBuilderTypeName),
+									ContextDir: new("docker-context-dir"),
 									InputBuilds: &[]distgo.ProductBuildID{
 										"foo",
 									},
@@ -109,7 +109,7 @@ func TestDockerPublish(t *testing.T) {
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./foo"),
+							MainPkg: new("./foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -121,8 +121,8 @@ func TestDockerPublish(t *testing.T) {
 						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:       stringPtr(printDockerfileDockerBuilderTypeName),
-									ContextDir: stringPtr("docker-context-dir"),
+									Type:       new(printDockerfileDockerBuilderTypeName),
+									ContextDir: new("docker-context-dir"),
 									InputBuilds: &[]distgo.ProductBuildID{
 										"foo",
 									},
@@ -163,7 +163,7 @@ func TestDockerPublish(t *testing.T) {
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./foo"),
+							MainPkg: new("./foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -175,8 +175,8 @@ func TestDockerPublish(t *testing.T) {
 						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:       stringPtr(printDockerfileDockerBuilderTypeName),
-									ContextDir: stringPtr("docker-context-dir"),
+									Type:       new(printDockerfileDockerBuilderTypeName),
+									ContextDir: new("docker-context-dir"),
 									InputBuilds: &[]distgo.ProductBuildID{
 										"foo",
 									},
@@ -218,7 +218,7 @@ func TestDockerPublish(t *testing.T) {
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
 						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-							MainPkg: stringPtr("./foo"),
+							MainPkg: new("./foo"),
 						}),
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
@@ -230,8 +230,8 @@ func TestDockerPublish(t *testing.T) {
 						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:       stringPtr(printDockerfileDockerBuilderTypeName),
-									ContextDir: stringPtr("docker-context-dir"),
+									Type:       new(printDockerfileDockerBuilderTypeName),
+									ContextDir: new("docker-context-dir"),
 									InputBuilds: &[]distgo.ProductBuildID{
 										"foo",
 									},
@@ -253,8 +253,8 @@ func TestDockerPublish(t *testing.T) {
 						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:       stringPtr(printDockerfileDockerBuilderTypeName),
-									ContextDir: stringPtr("docker-context-dir"),
+									Type:       new(printDockerfileDockerBuilderTypeName),
+									ContextDir: new("docker-context-dir"),
 									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
 										"default", "bar:latest",
 									)),

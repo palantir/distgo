@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"slices"
 	"sort"
 
 	"github.com/mholt/archiver/v3"
@@ -119,13 +120,7 @@ func osArchInBuildSpec(osArch osarch.OSArch, productOutputInfo distgo.ProductOut
 	if productOutputInfo.BuildOutputInfo == nil {
 		return false
 	}
-	found := false
-	for _, currBuildOSArch := range productOutputInfo.BuildOutputInfo.OSArchs {
-		if currBuildOSArch == osArch {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(productOutputInfo.BuildOutputInfo.OSArchs, osArch)
 	return found
 }
 

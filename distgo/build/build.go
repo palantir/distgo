@@ -105,10 +105,7 @@ func Run(projectInfo distgo.ProjectInfo, productParams []distgo.ProductParam, bu
 		close(buildUnitsJobs)
 
 		// create workers
-		nWorkers := runtime.NumCPU()
-		if nUnits < nWorkers {
-			nWorkers = nUnits
-		}
+		nWorkers := min(nUnits, runtime.NumCPU())
 		var cs []<-chan error
 		for i := 0; i < nWorkers; i++ {
 			cs = append(cs, worker(buildUnitsJobs, buildOpts, stdout))

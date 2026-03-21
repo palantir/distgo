@@ -69,6 +69,7 @@ func newTaskInfoFromCmd(cmd *cobra.Command, params ...pluginapi.TaskInfoParam) p
 	)
 }
 
+//go:fix inline
 func intPtr(i int) *int {
-	return &i
+	return new(i)
 }
