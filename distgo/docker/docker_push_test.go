@@ -62,7 +62,7 @@ func TestDockerPublish(t *testing.T) {
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
-									Type: stringPtr(osarchbin.TypeName),
+									Type: new(osarchbin.TypeName),
 								}),
 							}),
 						}),
@@ -114,7 +114,7 @@ func TestDockerPublish(t *testing.T) {
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
-									Type: stringPtr(osarchbin.TypeName),
+									Type: new(osarchbin.TypeName),
 								}),
 							}),
 						}),
@@ -168,7 +168,7 @@ func TestDockerPublish(t *testing.T) {
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
-									Type: stringPtr(osarchbin.TypeName),
+									Type: new(osarchbin.TypeName),
 								}),
 							}),
 						}),
@@ -223,7 +223,7 @@ func TestDockerPublish(t *testing.T) {
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
-									Type: stringPtr(osarchbin.TypeName),
+									Type: new(osarchbin.TypeName),
 								}),
 							}),
 						}),

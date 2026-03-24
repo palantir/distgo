@@ -98,7 +98,7 @@ func TestDockerBuild(t *testing.T) {
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
-									Type: stringPtr(osarchbin.TypeName),
+									Type: new(osarchbin.TypeName),
 								}),
 							}),
 						}),
@@ -153,7 +153,7 @@ func TestDockerBuild(t *testing.T) {
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
-									Type: stringPtr(osarchbin.TypeName),
+									Type: new(osarchbin.TypeName),
 								}),
 							}),
 						}),
@@ -210,7 +210,7 @@ func TestDockerBuild(t *testing.T) {
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
-									Type: stringPtr(osarchbin.TypeName),
+									Type: new(osarchbin.TypeName),
 								}),
 							}),
 						}),
@@ -442,7 +442,7 @@ RUN echo 'InputBuildArtifact for bar: {{InputBuildArtifact "foo" %q}}'
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								manual.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
-									Type: stringPtr(manual.TypeName),
+									Type: new(manual.TypeName),
 									Config: &yaml.MapSlice{
 										{
 											Key:   "extension",
@@ -511,7 +511,7 @@ RUN echo 'InputDistArtifacts for bar: {{InputDistArtifacts "foo" "manual"}}'
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
-									Type: stringPtr(osarchbin.TypeName),
+									Type: new(osarchbin.TypeName),
 								}),
 							}),
 						}),
@@ -594,7 +594,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
-									Type: stringPtr(osarchbin.TypeName),
+									Type: new(osarchbin.TypeName),
 								}),
 							}),
 						}),
@@ -676,7 +676,7 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
-									Type: stringPtr(osarchbin.TypeName),
+									Type: new(osarchbin.TypeName),
 								}),
 							}),
 						}),
@@ -810,16 +810,6 @@ RUN echo 'Tags for foo: {{Tags "foo" "print-dockerfile"}}'
 		})
 
 	}
-}
-
-//go:fix inline
-func stringPtr(in string) *string {
-	return new(in)
-}
-
-//go:fix inline
-func boolPtr(in bool) *bool {
-	return new(in)
 }
 
 func mustTagTemplatesMap(nameAndVal ...string) *distgoconfig.TagTemplatesMap {

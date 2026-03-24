@@ -342,8 +342,3 @@ func main() {
 		})
 	}
 }
-
-//go:fix inline
-func stringPtr(in string) *string {
-	return new(in)
-}

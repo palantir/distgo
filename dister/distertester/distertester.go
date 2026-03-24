@@ -273,8 +273,3 @@ func RunRepeatedDistTest(t *testing.T,
 		require.NoError(t, err, distBuf.String())
 	}
 }
-
-//go:fix inline
-func stringPtr(s string) *string {
-	return new(s)
-}

@@ -392,8 +392,3 @@ func TestClean(t *testing.T) {
 		})
 	}
 }
-
-//go:fix inline
-func stringPtr(in string) *string {
-	return new(in)
-}

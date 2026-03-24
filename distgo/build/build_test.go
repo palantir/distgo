@@ -599,8 +599,3 @@ func createBuildProductParam(fn func(*distgo.ProductParam)) distgo.ProductParam 
 	}
 	return param
 }
-
-//go:fix inline
-func stringVar(in string) *string {
-	return new(in)
-}
