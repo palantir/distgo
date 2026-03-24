@@ -202,7 +202,7 @@ func RunRepeatedDistTest(t *testing.T,
 					Disters: distgoconfig.ToDistersConfig(&distersCfg),
 				}),
 				Publish: distgoconfig.ToPublishConfig(&distgoconfig.PublishConfig{
-					GroupID: stringPtr("com.palantir.test"),
+					GroupID: new("com.palantir.test"),
 				}),
 			},
 		}),
@@ -212,7 +212,7 @@ func RunRepeatedDistTest(t *testing.T,
 	internalFiles := map[string][]byte{
 		"godel/config/dist-plugin.yml": projectCfgBytes,
 		"main.go":                      []byte(`package main; func main() {}`),
-		"go.mod":                       []byte(fmt.Sprintf("module %s\ngo 1.15", productName)),
+		"go.mod":                       fmt.Appendf(nil, "module %s\ngo 1.15", productName),
 	}
 	wd, err := os.Getwd()
 	require.NoError(t, err)
@@ -262,7 +262,7 @@ func RunRepeatedDistTest(t *testing.T,
 		projectDir, false, buildBuf)
 	require.NoError(t, err, buildBuf.String())
 
-	for j := 0; j < 2; j++ {
+	for range 2 {
 		// run dist task twice and ensure no errors
 		distBuf := new(bytes.Buffer)
 		_, err = pluginapitester.RunPlugin(
@@ -272,8 +272,4 @@ func RunRepeatedDistTest(t *testing.T,
 			projectDir, false, distBuf)
 		require.NoError(t, err, distBuf.String())
 	}
-}
-
-func stringPtr(s string) *string {
-	return &s
 }

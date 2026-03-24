@@ -78,7 +78,7 @@ func TestRun(t *testing.T) {
 			`"run" runs main file`,
 			distgoconfig.ProductConfig{
 				Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-					MainPkg: stringPtr("."),
+					MainPkg: new("."),
 				}),
 			},
 			nil,
@@ -97,7 +97,7 @@ func TestRun(t *testing.T) {
 			`"run" uses arguments provided in configuration (but does not evaluate them)`,
 			distgoconfig.ProductConfig{
 				Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-					MainPkg: stringPtr("."),
+					MainPkg: new("."),
 				}),
 				Run: distgoconfig.ToRunConfig(&distgoconfig.RunConfig{
 					Args: &[]string{
@@ -123,7 +123,7 @@ func TestRun(t *testing.T) {
 			`"run" uses arguments provided in slice`,
 			distgoconfig.ProductConfig{
 				Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-					MainPkg: stringPtr("."),
+					MainPkg: new("."),
 				}),
 			},
 			[]string{"foo", "bar", "$GOPATH"},
@@ -142,7 +142,7 @@ func TestRun(t *testing.T) {
 			`"run" combines arguments in configuration with provided arguments`,
 			distgoconfig.ProductConfig{
 				Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-					MainPkg: stringPtr("."),
+					MainPkg: new("."),
 				}),
 				Run: distgoconfig.ToRunConfig(&distgoconfig.RunConfig{
 					Args: &[]string{
@@ -168,8 +168,8 @@ func TestRun(t *testing.T) {
 			`"run" uses build arguments specified in build configuration`,
 			distgoconfig.ProductConfig{
 				Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-					MainPkg:    stringPtr("."),
-					VersionVar: stringPtr("main.testVersionVar"),
+					MainPkg:    new("."),
+					VersionVar: new("main.testVersionVar"),
 				}),
 			},
 			nil,
@@ -201,7 +201,7 @@ func main() {
 			`"run" works with multiple main package files as long as there is a single main function`,
 			distgoconfig.ProductConfig{
 				Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-					MainPkg: stringPtr("./foo"),
+					MainPkg: new("./foo"),
 				}),
 			},
 			nil,
@@ -236,7 +236,7 @@ func Bar() string {
 			`"run" works with multiple main package files with tests`,
 			distgoconfig.ProductConfig{
 				Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-					MainPkg: stringPtr("./foo"),
+					MainPkg: new("./foo"),
 				}),
 			},
 			nil,
@@ -264,7 +264,7 @@ func TestBar(t *testing.T) {
 			`"run" fails if a main package does not exist`,
 			distgoconfig.ProductConfig{
 				Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-					MainPkg: stringPtr("./foo"),
+					MainPkg: new("./foo"),
 				}),
 			},
 			nil,
@@ -287,7 +287,7 @@ func main() {
 			`"run" fails if main function does not exist in a main pkg`,
 			distgoconfig.ProductConfig{
 				Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
-					MainPkg: stringPtr("./foo"),
+					MainPkg: new("./foo"),
 				}),
 			},
 			nil,
@@ -341,8 +341,4 @@ func main() {
 			}
 		})
 	}
-}
-
-func stringPtr(in string) *string {
-	return &in
 }

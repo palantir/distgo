@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -75,9 +76,7 @@ func BuildProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectPa
 
 	filteredDockerProductsMap := make(map[distgo.ProductID]distgo.ProductParam)
 	// copy old values into new map
-	for k, v := range projectParam.Products {
-		filteredDockerProductsMap[k] = v
-	}
+	maps.Copy(filteredDockerProductsMap, projectParam.Products)
 	// copy computed params into map, which may filter dists for products
 	for _, v := range productParams {
 		filteredDockerProductsMap[v.ID] = v

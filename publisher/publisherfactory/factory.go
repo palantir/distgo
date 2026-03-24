@@ -43,7 +43,6 @@ func New(providedPublisherCreators []publisher.Creator, providedConfigUpgraders 
 		configUpgraders[k] = v.Upgrader
 	}
 	for _, currCreator := range providedPublisherCreators {
-		currCreator := currCreator
 		if _, ok := seenTypes[currCreator.TypeName()]; ok {
 			return nil, errors.Errorf("publisher creator with type %q specified more than once", currCreator.TypeName())
 		}
@@ -52,7 +51,6 @@ func New(providedPublisherCreators []publisher.Creator, providedConfigUpgraders 
 		publisherCreators[currCreator.TypeName()] = currCreator
 	}
 	for _, currUpgrader := range providedConfigUpgraders {
-		currUpgrader := currUpgrader
 		configUpgraders[currUpgrader.TypeName()] = currUpgrader
 	}
 	return &publisherFactoryImpl{
