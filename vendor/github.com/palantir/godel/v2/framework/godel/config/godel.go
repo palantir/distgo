@@ -15,8 +15,6 @@
 package config
 
 import (
-	"maps"
-
 	"github.com/palantir/godel/v2/framework/artifactresolver"
 	v0 "github.com/palantir/godel/v2/framework/godel/config/internal/v0"
 	"github.com/palantir/godel/v2/framework/godellauncher"
@@ -26,8 +24,6 @@ import (
 type GodelConfig v0.GodelConfig
 
 type TasksConfig v0.TasksConfig
-
-type VerifyTasksConfig v0.VerifyTasksConfig
 
 type TasksConfigInfo struct {
 	// BuiltinPluginsConfig is the configuration for built-in plugins that is built as part of gödel.
@@ -49,9 +45,6 @@ func (c *TasksConfig) Combine(configs ...TasksConfig) {
 	if c.DefaultTasks.Tasks == nil {
 		c.DefaultTasks.Tasks = make(map[string]v0.SingleDefaultTaskConfig)
 	}
-	if c.VerifyTasks.Ordering == nil {
-		c.VerifyTasks.Ordering = make(map[string]int)
-	}
 
 	var pluginsFromConfigs []v0.SinglePluginConfig
 	for _, cfg := range configs {
@@ -68,9 +61,6 @@ func (c *TasksConfig) Combine(configs ...TasksConfig) {
 
 		// Append provided plugins to "pluginsFromConfigs" list
 		pluginsFromConfigs = append(pluginsFromConfigs, cfg.Plugins.Plugins...)
-
-		// Add all "VerifyTasks.Ordering" values from config
-		maps.Insert(c.VerifyTasks.Ordering, maps.All(cfg.VerifyTasks.Ordering))
 	}
 
 	// determine all of the provided plugins that specify overrides

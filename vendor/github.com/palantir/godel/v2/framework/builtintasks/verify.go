@@ -21,18 +21,17 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/palantir/godel/v2/framework/godel/config"
 	"github.com/palantir/godel/v2/framework/godellauncher"
 	"github.com/spf13/cobra"
 )
 
-func VerifyTask(tasks []godellauncher.Task, verifyTasksConfig config.VerifyTasksConfig) godellauncher.Task {
+func VerifyTask(tasks []godellauncher.Task) godellauncher.Task {
 	const (
 		verifyCmdName = "verify"
 		apply         = "apply"
 	)
 
-	verifyTasks, verifyTaskFlags := extractVerifyTasks(tasks, verifyTasksConfig)
+	verifyTasks, verifyTaskFlags := extractVerifyTasks(tasks)
 	skipVerifyTasks := make(map[string]*bool)
 	verifyTaskFlagVals := make(map[string]map[godellauncher.VerifyFlag]interface{})
 
@@ -134,7 +133,7 @@ func VerifyTask(tasks []godellauncher.Task, verifyTasksConfig config.VerifyTasks
 	}
 }
 
-func extractVerifyTasks(tasks []godellauncher.Task, verifyTasksConfig config.VerifyTasksConfig) ([]godellauncher.Task, map[string][]godellauncher.VerifyFlag) {
+func extractVerifyTasks(tasks []godellauncher.Task) ([]godellauncher.Task, map[string][]godellauncher.VerifyFlag) {
 	var verifyTasks []godellauncher.Task
 	verifyTaskFlags := make(map[string][]godellauncher.VerifyFlag)
 	for _, task := range tasks {
@@ -145,16 +144,7 @@ func extractVerifyTasks(tasks []godellauncher.Task, verifyTasksConfig config.Ver
 		verifyTaskFlags[task.Name] = task.Verify.VerifyTaskFlags
 	}
 	sort.SliceStable(verifyTasks, func(i, j int) bool {
-		return verifyTaskOrderingValue(verifyTasks[i], verifyTasksConfig) < verifyTaskOrderingValue(verifyTasks[j], verifyTasksConfig)
+		return verifyTasks[i].Verify.Ordering < verifyTasks[j].Verify.Ordering
 	})
 	return verifyTasks, verifyTaskFlags
-}
-
-func verifyTaskOrderingValue(task godellauncher.Task, verifyTasksConfig config.VerifyTasksConfig) int {
-	// if value is specified in configuration, use it
-	if configVal, ok := verifyTasksConfig.Ordering[task.Name]; ok {
-		return configVal
-	}
-	// otherwise, use the task's value directly
-	return task.Verify.Ordering
 }
