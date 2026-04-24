@@ -111,7 +111,7 @@ os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-%s.tgz]
 					Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 						Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 							osarchbin.TypeName: {
-								Type: stringPtr(osarchbin.TypeName),
+								Type: new(osarchbin.TypeName),
 								Config: mustMapSlicePtr(osarchbinconfig.OSArchBin{
 									OSArchs: []osarch.OSArch{
 										mustOSArch("darwin-amd64"),
@@ -144,7 +144,7 @@ os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-darwin-amd64.tgz %s/ou
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
-									Type: stringPtr(osarchbin.TypeName),
+									Type: new(osarchbin.TypeName),
 								}),
 							}),
 						}),
@@ -159,7 +159,7 @@ os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-darwin-amd64.tgz %s/ou
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
-									Type: stringPtr(osarchbin.TypeName),
+									Type: new(osarchbin.TypeName),
 								}),
 							}),
 						}),
