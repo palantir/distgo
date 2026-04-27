@@ -47,7 +47,7 @@ var (
 				pluginapi.VerifyOptionsApplyFalseArgs("--verify"),
 				pluginapi.VerifyOptionsApplyTrueArgs("--verify", "--apply"),
 				// run before "Test", but after most other verifications
-				pluginapi.VerifyOptionsOrdering(intPtr(verifyorder.Test-100)),
+				pluginapi.VerifyOptionsOrdering(new(verifyorder.Test-100)),
 			),
 		),
 		pluginapi.PluginInfoUpgradeConfigTaskInfo(

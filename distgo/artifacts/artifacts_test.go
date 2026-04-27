@@ -473,7 +473,7 @@ func TestPrintDockerArtifacts(t *testing.T) {
 					Repository: new("repo"),
 					DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 						"docker-builder-1": distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-							Type:       stringPtr(defaultdockerbuilder.TypeName),
+							Type:       new(defaultdockerbuilder.TypeName),
 							ContextDir: new("dockerContextDir"),
 							TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
 								"latest", "{{Repository}}foo-db-1:latest",
@@ -481,7 +481,7 @@ func TestPrintDockerArtifacts(t *testing.T) {
 							)),
 						}),
 						"docker-builder-2": distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-							Type:       stringPtr(defaultdockerbuilder.TypeName),
+							Type:       new(defaultdockerbuilder.TypeName),
 							ContextDir: new("dockerContextDir-2"),
 							TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
 								"latest", "{{Repository}}foo-db-2:latest",
@@ -495,7 +495,7 @@ func TestPrintDockerArtifacts(t *testing.T) {
 					Repository: new("repo"),
 					DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 						"docker-builder-1": distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-							Type:       stringPtr(defaultdockerbuilder.TypeName),
+							Type:       new(defaultdockerbuilder.TypeName),
 							ContextDir: new("dockerContextDir"),
 							TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
 								"latest", "{{Repository}}bar-db-1:latest",
@@ -602,7 +602,7 @@ func TestDockerArtifacts(t *testing.T) {
 							Repository: new("repo"),
 							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
 								defaultdockerbuilder.TypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
-									Type:       stringPtr(defaultdockerbuilder.TypeName),
+									Type:       new(defaultdockerbuilder.TypeName),
 									ContextDir: new("dockerContextDir"),
 									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
 										"latest", "{{Repository}}foo:latest",
