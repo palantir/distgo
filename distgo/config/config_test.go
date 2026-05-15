@@ -244,7 +244,7 @@ products:
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								osarchbin.TypeName: {
-									Type: stringPtr(osarchbin.TypeName),
+									Type: new(osarchbin.TypeName),
 									Config: &yaml.MapSlice{
 										{
 											Key: "os-archs",
@@ -297,7 +297,7 @@ products:
 						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
 							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
 								manual.TypeName: {
-									Type: stringPtr(manual.TypeName),
+									Type: new(manual.TypeName),
 									Config: &yaml.MapSlice{
 										{
 											Key:   "extension",

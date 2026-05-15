@@ -596,7 +596,7 @@ func upgradeLegacyConfig(
 				}
 				legacyDisterCfgBytes = cfgBytes
 			case BinDistType:
-				upgradedDisterCfg.Type = stringPtr(bin.TypeName)
+				upgradedDisterCfg.Type = new(bin.TypeName)
 
 				// upgrade legacy bin configuration manually into script rather than upgrading into current bin config
 				binDist := legacyDist.DistType.Info.(BinDist)
@@ -610,7 +610,7 @@ func upgradeLegacyConfig(
 					upgradedDisterCfg.Script = new(appendToScript(*upgradedDisterCfg.Script, binDistInitShScript()))
 				}
 			case OSArchBinDistType:
-				upgradedDisterCfg.Type = stringPtr(osarchbin.TypeName)
+				upgradedDisterCfg.Type = new(osarchbin.TypeName)
 
 				osArchBinDist := legacyDist.DistType.Info.(OSArchBinDist)
 				osArchBinDist.Legacy = true
@@ -620,7 +620,7 @@ func upgradeLegacyConfig(
 				}
 				legacyDisterCfgBytes = cfgBytes
 			case ManualDistType:
-				upgradedDisterCfg.Type = stringPtr(manual.TypeName)
+				upgradedDisterCfg.Type = new(manual.TypeName)
 
 				manualDist := legacyDist.DistType.Info.(ManualDist)
 				manualDist.Legacy = true
@@ -836,7 +836,7 @@ func upgradeLegacyConfig(
 					}
 				} else {
 					// use default builder
-					upgradedDockerBuilderConfig.Type = stringPtr(defaultdockerbuilder.TypeName)
+					upgradedDockerBuilderConfig.Type = new(defaultdockerbuilder.TypeName)
 				}
 
 				dockerID := distgo.DockerID(fmt.Sprintf("docker-image-%d", i))

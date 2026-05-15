@@ -486,7 +486,7 @@ func TestRepeatedDist(t *testing.T) {
 			disterType: osarchbin.TypeName,
 			distersCfg: distgoconfig.DistersConfig{
 				osarchbin.TypeName: {
-					Type: stringPtr(osarchbin.TypeName),
+					Type: new(osarchbin.TypeName),
 				},
 			},
 		},
@@ -494,7 +494,7 @@ func TestRepeatedDist(t *testing.T) {
 			disterType: bin.TypeName,
 			distersCfg: distgoconfig.DistersConfig{
 				bin.TypeName: {
-					Type: stringPtr(bin.TypeName),
+					Type: new(bin.TypeName),
 				},
 			},
 		},
@@ -502,7 +502,7 @@ func TestRepeatedDist(t *testing.T) {
 			disterType: manual.TypeName,
 			distersCfg: distgoconfig.DistersConfig{
 				manual.TypeName: {
-					Type: stringPtr(manual.TypeName),
+					Type: new(manual.TypeName),
 					Config: &yaml.MapSlice{
 						{
 							Key:   "extension",
