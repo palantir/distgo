@@ -112,7 +112,16 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		}
 		destFile := filepath.Join(destDir, "image.tar")
 
-		ociArgs := append(args, d.BuildxPlatformArg, fmt.Sprintf("--output=type=oci,rewrite-timestamp=true,dest=%s", destFile), contextDirPath)
+		// When WithBuildxPlatforms is called with an empty platform list (the
+		// documented "host arch only" mode), BuildxPlatformArg stays "". Appending
+		// it unconditionally would insert an empty positional argument between
+		// the flags and the context dir, and `docker buildx build` rejects it
+		// with "requires 1 argument". Skip the append when it's empty.
+		ociArgs := args
+		if d.BuildxPlatformArg != "" {
+			ociArgs = append(ociArgs, d.BuildxPlatformArg)
+		}
+		ociArgs = append(ociArgs, fmt.Sprintf("--output=type=oci,rewrite-timestamp=true,dest=%s", destFile), contextDirPath)
 		cmd := exec.Command("docker", ociArgs...)
 		if err := distgo.RunCommandWithVerboseOption(cmd, verbose, dryRun, stdout); err != nil {
 			return err
