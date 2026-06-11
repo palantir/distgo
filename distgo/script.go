@@ -80,7 +80,7 @@ func WriteAndExecuteScript(projectInfo ProjectInfo, script string, additionalEnv
 			env = append(env, fmt.Sprintf("%v=%v", k, v))
 		}
 
-		cmd := exec.Command(tmpFile)
+		cmd := exec.Command("bash", tmpFile)
 		cmd.Dir = projectInfo.ProjectDir
 		cmd.Env = env
 		cmd.Stdout = stdOut
