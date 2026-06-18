@@ -25,6 +25,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const bashBinaryPath = "/bin/bash"
+
 func WriteScript(projectInfo ProjectInfo, script string) (name string, cleanup func() error, rErr error) {
 	tmpFile, err := os.CreateTemp(projectInfo.ProjectDir, "")
 	if err != nil {
@@ -43,7 +45,7 @@ func WriteScript(projectInfo ProjectInfo, script string) (name string, cleanup f
 		}
 	}()
 
-	if _, err := tmpFile.WriteString(fmt.Sprintf("#!/bin/bash\n%v", script)); err != nil {
+	if _, err := tmpFile.WriteString(fmt.Sprintf("#!%v\n%v", bashBinaryPath, script)); err != nil {
 		return "", nil, errors.Wrapf(err, "Failed to write script file")
 	}
 
@@ -80,7 +82,9 @@ func WriteAndExecuteScript(projectInfo ProjectInfo, script string, additionalEnv
 			env = append(env, fmt.Sprintf("%v=%v", k, v))
 		}
 
-		cmd := exec.Command(tmpFile)
+		// exec file indirectly as workaround for https://github.com/golang/go/issues/22315
+		// prevents "text file busy" error from fork+exec race condition
+		cmd := exec.Command(bashBinaryPath, tmpFile)
 		cmd.Dir = projectInfo.ProjectDir
 		cmd.Env = env
 		cmd.Stdout = stdOut
