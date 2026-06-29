@@ -17,30 +17,18 @@ package productmavencoord
 import (
 	"fmt"
 	"io"
-	"maps"
-	"slices"
 
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/publisher"
 )
 
 func Run(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, specifiedProductIDs []distgo.ProductID, stdout io.Writer) error {
-	var productIDs []distgo.ProductID
-
-	if len(specifiedProductIDs) == 0 {
-		// if no products were specified, use all of them
-		productIDs = slices.Sorted(maps.Keys(projectParam.Products))
-	} else {
-		// otherwise, filter products to only those specified
-		for _, productID := range specifiedProductIDs {
-			if _, ok := projectParam.Products[productID]; !ok {
-				continue
-			}
-			productIDs = append(productIDs, productID)
-		}
+	productParams, err := distgo.ProductParamsForProductArgs(projectParam.Products, specifiedProductIDs...)
+	if err != nil {
+		return err
 	}
-
-	for _, productID := range productIDs {
+	for _, productParam := range productParams {
+		productID := productParam.ID
 		productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products[productID])
 		if err != nil {
 			return err
