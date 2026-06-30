@@ -91,12 +91,12 @@ com.example:foo:1.0.0
 			setupProjectDir: func(projectDir string) {
 				gittest.CreateGitTag(t, projectDir, "2.1.0")
 			},
-			want: `com.example.foo:foo:2.1.0
-com.example.baz:baz:2.1.0
+			want: `com.example.baz:baz:2.1.0
+com.example.foo:foo:2.1.0
 `,
 		},
 		{
-			name: "filters out non-existent product IDs",
+			name: "returns error for non-existent product IDs",
 			projectCfg: distgoconfig.ProjectConfig{
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
@@ -110,11 +110,10 @@ com.example.baz:baz:2.1.0
 			setupProjectDir: func(projectDir string) {
 				gittest.CreateGitTag(t, projectDir, "1.5.0")
 			},
-			want: `com.example:foo:1.5.0
-`,
+			wantError: "not valid",
 		},
 		{
-			name: "prints nothing when only non-existent product IDs specified",
+			name: "returns error when only non-existent product IDs specified",
 			projectCfg: distgoconfig.ProjectConfig{
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
 					"foo": {
@@ -128,7 +127,7 @@ com.example.baz:baz:2.1.0
 			setupProjectDir: func(projectDir string) {
 				gittest.CreateGitTag(t, projectDir, "1.0.0")
 			},
-			want: "",
+			wantError: "not valid",
 		},
 		{
 			name: "uses product name when specified instead of ID",
@@ -193,7 +192,7 @@ com.zebra:zebra:3.0.0
 `,
 		},
 		{
-			name: "handles empty products map",
+			name: "returns error for empty products map",
 			projectCfg: distgoconfig.ProjectConfig{
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{}),
 			},
@@ -201,7 +200,7 @@ com.zebra:zebra:3.0.0
 			setupProjectDir: func(projectDir string) {
 				gittest.CreateGitTag(t, projectDir, "1.0.0")
 			},
-			want: "",
+			wantError: "does not contain any productIDs",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

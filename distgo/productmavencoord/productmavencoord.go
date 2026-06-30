@@ -28,8 +28,7 @@ func Run(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, speci
 		return err
 	}
 	for _, productParam := range productParams {
-		productID := productParam.ID
-		productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products[productID])
+		productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, productParam)
 		if err != nil {
 			return err
 		}
