@@ -38,6 +38,7 @@ var (
 		newTaskInfoFromCmd(cleanCmd),
 		newTaskInfoFromCmd(distCmd),
 		newTaskInfoFromCmd(dockerCmd),
+		newTaskInfoFromCmd(productMavenCoordCmd),
 		newTaskInfoFromCmd(productsCmd),
 		newTaskInfoFromCmd(projectVersionCmd),
 		newTaskInfoFromCmd(publishCmd),
