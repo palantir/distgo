@@ -2,7 +2,7 @@ module github.com/palantir/distgo/pkg/git
 
 go 1.26.0
 
-toolchain go1.26.4
+toolchain go1.26.5
 
 require (
 	github.com/nmiyake/pkg/dirs v1.1.0
