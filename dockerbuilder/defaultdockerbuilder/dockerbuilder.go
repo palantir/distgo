@@ -96,6 +96,8 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		}
 		args = append(args, buildArgsFromScript...)
 	}
+	// Resolve a "FROM <dependency image tag>" from the dependency's on-disk OCI layout instead of a registry.
+	args = append(args, dependencyImageBuildContextArgs(productTaskOutputInfo, dryRun)...)
 
 	if d.OutputType&allOutputs == 0 {
 		return errors.New("a valid output type of docker builder must be specified")
@@ -118,7 +120,7 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 			return err
 		}
 		if !dryRun {
-			if err := d.extractToOCILayout(destDir, destFile); err != nil {
+			if err := d.extractToOCILayout(destDir, destFile, dockerBuilderOutputInfo.RenderedTags); err != nil {
 				return err
 			}
 		}
@@ -138,7 +140,22 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 // image index produced contains a manifest per-tag, which point to the "actual" image index we want to publish. Since
 // we know all the rendered tags at publish time, we can move the "actual" image index back to the top level and do a
 // publish per-tag.
-func (d *DefaultDockerBuilder) extractToOCILayout(destOCILayoutDir, sourceOCITarball string) error {
+func (d *DefaultDockerBuilder) extractToOCILayout(destOCILayoutDir, sourceOCITarball string, renderedTags []string) error {
+	// Clear any prior extraction output (keeping the source tarball) first: the tar extractor won't overwrite existing
+	// files, so re-running "docker build" at an unchanged version (e.g. a "-dirty" version) would otherwise fail.
+	entries, err := os.ReadDir(destOCILayoutDir)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read OCI output directory %s", destOCILayoutDir)
+	}
+	sourceBase := filepath.Base(sourceOCITarball)
+	for _, entry := range entries {
+		if entry.Name() == sourceBase {
+			continue
+		}
+		if err := os.RemoveAll(filepath.Join(destOCILayoutDir, entry.Name())); err != nil {
+			return errors.Wrapf(err, "failed to remove stale OCI layout artifact %s", entry.Name())
+		}
+	}
 	if err := archiver.DefaultTar.Unarchive(sourceOCITarball, destOCILayoutDir); err != nil {
 		return errors.Wrapf(err, "failed to extract OCI tarball %s to location %s", sourceOCITarball, destOCILayoutDir)
 	}
@@ -153,8 +170,15 @@ func (d *DefaultDockerBuilder) extractToOCILayout(destOCILayoutDir, sourceOCITar
 	if len(idxManifest.Manifests) == 0 {
 		return errors.New("top-level OCI image index does not contain any manifests. While this is a valid image index, it is unexpected and likely means something erroneous happened earlier in the build")
 	}
-	if err := os.Rename(filepath.Join(destOCILayoutDir, "blobs", idxManifest.Manifests[0].Digest.Algorithm, idxManifest.Manifests[0].Digest.Hex), filepath.Join(destOCILayoutDir, "index.json")); err != nil {
+	indexDesc := idxManifest.Manifests[0]
+	if err := os.Rename(filepath.Join(destOCILayoutDir, "blobs", indexDesc.Digest.Algorithm, indexDesc.Digest.Hex), filepath.Join(destOCILayoutDir, "index.json")); err != nil {
 		return err
+	}
+	// Also emit a buildx-consumable wrapper layout so a dependent's "FROM" can resolve this image from disk.
+	if len(renderedTags) > 0 {
+		if err := writeBuildxContextLayout(destOCILayoutDir, indexDesc, renderedTags); err != nil {
+			return err
+		}
 	}
 	return nil
 }
