@@ -45,8 +45,8 @@ func TestExtractToOCILayoutIsRerunnable(t *testing.T) {
 	}, tarball))
 
 	b := &DefaultDockerBuilder{}
-	require.NoError(t, b.extractToOCILayout(destDir, tarball, []string{"foo:bar"}), "first extraction should succeed")
-	require.NoError(t, b.extractToOCILayout(destDir, tarball, []string{"foo:bar"}), "re-extraction into a populated directory should succeed")
+	require.NoError(t, b.extractToOCILayout(destDir, tarball), "first extraction should succeed")
+	require.NoError(t, b.extractToOCILayout(destDir, tarball), "re-extraction into a populated directory should succeed")
 
 	// The source tarball must be preserved across re-extraction (it is the input, not stale output).
 	_, err = os.Stat(tarball)
