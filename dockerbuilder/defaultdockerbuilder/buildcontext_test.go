@@ -41,7 +41,7 @@ func TestDependencyImageBuildContextArgs(t *testing.T) {
 			},
 		},
 	}
-	layoutDir := filepath.Join(projectDir, "out", "dist", "base", "1.0.0", "oci-base-docker", buildxContextLayoutSubdir)
+	layoutDir := filepath.Join(projectDir, "out", "dist", "base", "1.0.0", "oci-base-docker", distgo.DockerBuildContextLayoutSubdir)
 	wantArgs := []string{
 		"--build-context", "registry/base:1.0.0=oci-layout://" + layoutDir,
 		"--build-context", "registry/base:latest=oci-layout://" + layoutDir,

@@ -239,7 +239,26 @@ func runSingleDockerBuild(
 
 	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running Docker build for configuration %s of product %s...", dockerID, productID), dryRun)
 	// run the Docker build task
-	return dockerBuilderParam.DockerBuilder.RunDockerBuild(dockerID, productTaskOutputInfo, verbose, dryRun, stdout)
+	if err := dockerBuilderParam.DockerBuilder.RunDockerBuild(dockerID, productTaskOutputInfo, verbose, dryRun, stdout); err != nil {
+		return err
+	}
+
+	// If the builder produced an OCI layout, write the buildx build-context wrapper so a dependent product's
+	// "FROM <this image's tag>" can resolve from the on-disk layout with no registry. This is done here at the task
+	// level -- rather than inside the builder -- so it works for every builder that leaves an OCI layout, including
+	// re-layering builders (e.g. the chunkah asset) that rewrite the layout after building and would otherwise clobber
+	// a wrapper the builder wrote itself. Builders that produce no OCI layout (daemon-only) leave no index.json and are
+	// skipped: they cannot serve as a local FROM base.
+	if !dryRun {
+		ociDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID)
+		if _, err := os.Stat(filepath.Join(ociDir, "index.json")); err == nil {
+			renderedTags := productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags
+			if err := distgo.WriteDockerBuildContextLayout(ociDir, renderedTags); err != nil {
+				return errors.Wrapf(err, "failed to write Docker build context layout for %s", dockerID)
+			}
+		}
+	}
+	return nil
 }
 
 func inputBuildArtifactTemplateFunction(dockerID distgo.DockerID, pathToContextDir string, buildArtifactPaths map[distgo.ProductID]map[osarch.OSArch]string) distgo.TemplateFunction {

@@ -25,11 +25,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestCrossProductBuildContextRegistryFree proves the registry-free behavior with real builds: a base image built
-// with OCI-layout output writes the buildx sidecar layout, then a dependent leaf's "FROM itbase:tag" (a tag in no
-// registry) builds only by resolving the base from that on-disk sidecar. Skipped without a docker-container builder.
-// (type: default is daemon-only and writes no layout; OCILayout is opted into by callers like the managed asset,
-// emulated here via NewDefaultDockerBuilderWithOptions.)
+// TestCrossProductBuildContextRegistryFree proves the registry-free behavior with real builds: a base image built with
+// OCI-layout output plus the build-context wrapper, then a dependent leaf's "FROM itbase:tag" (a tag in no registry)
+// builds only by resolving the base from that on-disk wrapper. Skipped without a docker-container builder.
+//
+// The wrapper is written by the Docker build task (distgo.WriteDockerBuildContextLayout) after the builder runs, not by
+// the builder itself; this test drives the builder directly, so it calls WriteDockerBuildContextLayout itself to stand
+// in for that task step.
 func TestCrossProductBuildContextRegistryFree(t *testing.T) {
 	if uses, err := defaultdockerbuilder.UsesDockerContainerDriver(); err != nil || !uses {
 		t.Skip("requires an active docker-container buildx builder")
@@ -69,12 +71,14 @@ func TestCrossProductBuildContextRegistryFree(t *testing.T) {
 		Deps: map[distgo.ProductID]distgo.ProductOutputInfo{"base": baseProduct},
 	}
 
-	// OCI-layout output (as the managed builder uses) writes the buildx sidecar layout.
+	// OCI-layout output (as the managed builder uses) produces the layout the wrapper is written into.
 	builder := defaultdockerbuilder.NewDefaultDockerBuilderWithOptions(
 		defaultdockerbuilder.WithBuildxOutput(defaultdockerbuilder.OCILayout),
 		defaultdockerbuilder.WithBuildxPlatforms([]string{"linux/amd64", "linux/arm64"}),
 	)
 	require.NoError(t, builder.RunDockerBuild("base-docker", baseInfo, false, false, io.Discard))
+	// Stand in for the Docker build task's post-build wrapper write.
+	require.NoError(t, distgo.WriteDockerBuildContextLayout(baseInfo.ProductDockerOCIDistOutputDir("base-docker"), []string{"itbase:tag"}))
 	require.NoError(t, builder.RunDockerBuild("leaf-docker", leafInfo, false, false, io.Discard),
 		"leaf must resolve FROM itbase:tag from the base's local layout (registry-free)")
 }
