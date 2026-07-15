@@ -52,15 +52,18 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publi
 		return nil
 	}
 
-	// verify that distribution artifacts to publish exists
-	productOutputInfo, err := productParam.ToProductOutputInfo(projectInfo.Version)
-	if err != nil {
-		return errors.Wrapf(err, "failed to compute output info")
-	}
-	for _, currDistID := range productOutputInfo.DistOutputInfos.DistIDs {
-		for _, currArtifactPath := range distgo.ProductDistArtifactPaths(projectInfo, productOutputInfo)[currDistID] {
-			if _, err := os.Stat(currArtifactPath); os.IsNotExist(err) {
-				return errors.Errorf("distribution artifact for product %s with dist %s does not exist at %s", productParam.ID, currDistID, currArtifactPath)
+	// verify that dist artifacts to publish exists (dist is skipped in dry-run mode, so the
+	// artifacts are never actually written to disk and there is nothing to verify)
+	if !dryRun {
+		productOutputInfo, err := productParam.ToProductOutputInfo(projectInfo.Version)
+		if err != nil {
+			return errors.Wrapf(err, "failed to compute output info")
+		}
+		for _, currDistID := range productOutputInfo.DistOutputInfos.DistIDs {
+			for _, currArtifactPath := range distgo.ProductDistArtifactPaths(projectInfo, productOutputInfo)[currDistID] {
+				if _, err := os.Stat(currArtifactPath); os.IsNotExist(err) {
+					return errors.Errorf("distribution artifact for product %s with dist %s does not exist at %s", productParam.ID, currDistID, currArtifactPath)
+				}
 			}
 		}
 	}
