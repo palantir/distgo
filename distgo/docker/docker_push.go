@@ -68,6 +68,10 @@ func RunPush(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, d
 	}
 
 	for _, dockerID := range dockerIDs {
+		if productParam.Docker.DockerBuilderParams[dockerID].SkipPush {
+			distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Skipping push for configuration %s of product %s (skip-push is set)", dockerID, productParam.ID), dryRun)
+			continue
+		}
 		if err := runSingleDockerPush(
 			productParam.ID,
 			dockerID,

@@ -158,6 +158,11 @@ type DockerBuilderParam struct {
 	// templates using Go templates.
 	DisableTemplateRendering bool
 
+	// SkipPush, when true, excludes this Docker image from the "docker push" task (it is never published, even by a
+	// no-argument "docker push" that otherwise pushes every image). The image is still built -- including as a
+	// dependency of another product -- so it can serve as a local base image without being published under its own tag.
+	SkipPush bool
+
 	// ContextDir is the Docker context directory for building the Docker image.
 	ContextDir string
 
