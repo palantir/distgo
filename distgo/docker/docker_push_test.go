@@ -284,6 +284,58 @@ func TestDockerPublish(t *testing.T) {
 [DRY RUN] Run [docker push foo:0.1.0]
 `,
 		},
+		{
+			"publish skips Docker images for which skip-push is set",
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
+					"foo": {
+						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
+							MainPkg: new("./foo"),
+						}),
+						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
+									Type: new(osarchbin.TypeName),
+								}),
+							}),
+						}),
+						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
+							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
+								printDockerfileDockerBuilderTypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
+									Type:       new(printDockerfileDockerBuilderTypeName),
+									ContextDir: new("docker-context-dir"),
+									SkipPush:   new(true),
+									InputBuilds: &[]distgo.ProductBuildID{
+										"foo",
+									},
+									InputDists: &[]distgo.ProductDistID{
+										"foo",
+									},
+									TagTemplates: distgoconfig.ToTagTemplatesMap(mustTagTemplatesMap(
+										"default", "foo:latest",
+									)),
+								}),
+							}),
+						}),
+					},
+				}),
+			},
+			nil,
+			nil,
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
+				contextDir := path.Join(projectDir, "docker-context-dir")
+				err := os.Mkdir(contextDir, 0755)
+				require.NoError(t, err)
+				dockerfile := path.Join(contextDir, "Dockerfile")
+				err = os.WriteFile(dockerfile, []byte(testDockerfile), 0644)
+				require.NoError(t, err)
+				gittest.CommitAllFiles(t, projectDir, "Commit files")
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			"",
+			`[DRY RUN] Skipping push for configuration print-dockerfile of product foo (skip-push is set)
+`,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			projectDir, err := os.MkdirTemp(tmp, "")

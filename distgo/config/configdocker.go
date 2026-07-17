@@ -124,6 +124,7 @@ func (cfg *DockerBuilderConfig) ToParam(scriptIncludes string, defaultCfg Docker
 		Script:                   distgo.CreateScriptContent(getConfigStringValue(cfg.Script, defaultCfg.Script, ""), scriptIncludes),
 		DockerfilePath:           getConfigStringValue(cfg.DockerfilePath, defaultCfg.DockerfilePath, "Dockerfile"),
 		DisableTemplateRendering: getConfigValue(cfg.DisableTemplateRendering, defaultCfg.DisableTemplateRendering, false).(bool),
+		SkipPush:                 getConfigValue(cfg.SkipPush, defaultCfg.SkipPush, false).(bool),
 		ContextDir:               contextDir,
 		InputProductsDir:         getConfigStringValue(cfg.InputProductsDir, defaultCfg.InputProductsDir, ""),
 		InputBuilds:              getConfigValue(cfg.InputBuilds, defaultCfg.InputBuilds, nil).([]distgo.ProductBuildID),

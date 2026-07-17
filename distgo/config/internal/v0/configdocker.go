@@ -58,6 +58,11 @@ type DockerBuilderConfig struct {
 	// this case, disabling rendering removes the need for the extra level of indirection usually necessary to render Go
 	// templates using Go templates.
 	DisableTemplateRendering *bool `yaml:"disable-template-rendering,omitempty"`
+	// SkipPush, when set to true, excludes this Docker image from the "docker push" task: it is never published, even
+	// when "docker push" is run with no product arguments (which otherwise pushes every image). The image is still
+	// built -- including when another product depends on it -- so it can serve as a local base image for a dependent
+	// product's build without being published under its own tag.
+	SkipPush *bool `yaml:"skip-push,omitempty"`
 	// ContextDir is the Docker context directory for building the Docker image.
 	ContextDir *string `yaml:"context-dir,omitempty"`
 	// InputProductsDir is the directory in the context dir in which input products are written.
