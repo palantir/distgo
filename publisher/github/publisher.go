@@ -155,8 +155,11 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 
 	var releaseRes *github.RepositoryRelease
 	if !dryRun {
+		// create the release as a draft since GitHub's immutable-releases feature rejects asset uploads to a
+		// non-draft release, so uploads must happen before the release is published.
 		releaseRes, _, err = client.Repositories.CreateRelease(context.Background(), cfg.Owner, cfg.Repository, &github.RepositoryRelease{
 			TagName: new(releaseVersion),
+			Draft:   new(true),
 		})
 		if err != nil {
 			// newline to complement "..." output
@@ -185,6 +188,21 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 				return err
 			}
 		}
+	}
+
+	// publish the release now that all assets have been uploaded. Only necessary if the release was created as a
+	// draft above (a pre-existing, already-published release found via the "already_exists" path above does not need this step).
+	if releaseRes.GetDraft() {
+		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Publishing GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository), dryRun)
+		if !dryRun {
+			if _, _, err := client.Repositories.EditRelease(context.Background(), cfg.Owner, cfg.Repository, releaseRes.GetID(), &github.RepositoryRelease{
+				Draft: new(false),
+			}); err != nil {
+				_, _ = fmt.Fprintln(stdout)
+				return errors.Wrapf(err, "failed to publish GitHub release %s for %s/%s after uploading assets", releaseVersion, cfg.Owner, cfg.Repository)
+			}
+		}
+		_, _ = fmt.Fprintln(stdout, "done")
 	}
 	return nil
 }
