@@ -192,13 +192,15 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 
 	// publish the release now that all assets have been uploaded. Only necessary if the release was created as a
 	// draft above (a pre-existing, already-published release found via the "already_exists" path above does not need this step).
-	if !dryRun && releaseRes.GetDraft() {
+	if releaseRes.GetDraft() {
 		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Publishing GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository), dryRun)
-		if _, _, err := client.Repositories.EditRelease(context.Background(), cfg.Owner, cfg.Repository, releaseRes.GetID(), &github.RepositoryRelease{
-			Draft: new(false),
-		}); err != nil {
-			_, _ = fmt.Fprintln(stdout)
-			return errors.Wrapf(err, "failed to publish GitHub release %s for %s/%s after uploading assets", releaseVersion, cfg.Owner, cfg.Repository)
+		if !dryRun {
+			if _, _, err := client.Repositories.EditRelease(context.Background(), cfg.Owner, cfg.Repository, releaseRes.GetID(), &github.RepositoryRelease{
+				Draft: new(false),
+			}); err != nil {
+				_, _ = fmt.Fprintln(stdout)
+				return errors.Wrapf(err, "failed to publish GitHub release %s for %s/%s after uploading assets", releaseVersion, cfg.Owner, cfg.Repository)
+			}
 		}
 		_, _ = fmt.Fprintln(stdout, "done")
 	}
