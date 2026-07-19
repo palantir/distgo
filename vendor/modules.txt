@@ -238,7 +238,7 @@ golang.org/x/crypto/openpgp/elgamal
 golang.org/x/crypto/openpgp/errors
 golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
-# golang.org/x/exp v0.0.0-20260709172345-9ea1abe57597
+# golang.org/x/exp v0.0.0-20260718201538-764159d718ef
 ## explicit; go 1.25.0
 golang.org/x/exp/maps
 # golang.org/x/mod v0.38.0
