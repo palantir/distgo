@@ -31,7 +31,7 @@ import (
 )
 
 // TestRunPublish_CreatesDraftReleaseThenPublishesAfterUpload verifies that RunPublish creates the release as a draft,
-// uploads all of the dist artifacts to it, and only publishes (un-drafts) the release once every upload has succeeded.
+// uploads all the dist artifacts to it, and only publishes (un-drafts) the release once every upload has succeeded.
 // GitHub's immutable-releases feature rejects asset uploads made to a release once it is published (non-draft).
 func TestRunPublish_CreatesDraftReleaseThenPublishesAfterUpload(t *testing.T) {
 	var (
@@ -42,14 +42,22 @@ func TestRunPublish_CreatesDraftReleaseThenPublishesAfterUpload(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/testOwner/testRepo/releases", func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, http.MethodPost, r.Method)
-		var body struct {
-			Draft *bool `json:"draft"`
+		switch r.Method {
+		case http.MethodGet:
+			// no existing release for the tag, so RunPublish must create one
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprint(w, `[]`)
+		case http.MethodPost:
+			var body struct {
+				Draft *bool `json:"draft"`
+			}
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
+			createReleaseDraft.Store(body.Draft)
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprintf(w, `{"id": 123, "draft": true, "upload_url": "http://%s/upload/123/assets{?name,label}"}`, r.Host)
+		default:
+			http.Error(w, "unexpected method", http.StatusMethodNotAllowed)
 		}
-		require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
-		createReleaseDraft.Store(body.Draft)
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = fmt.Fprintf(w, `{"id": 123, "draft": true, "upload_url": "http://%s/upload/123/assets{?name,label}"}`, r.Host)
 	})
 	mux.HandleFunc("/repos/testOwner/testRepo/releases/123", func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, http.MethodPatch, r.Method)
@@ -120,5 +128,97 @@ func TestRunPublish_CreatesDraftReleaseThenPublishesAfterUpload(t *testing.T) {
 
 	gotEditReleaseDraft := editReleaseDraft.Load()
 	require.NotNil(t, gotEditReleaseDraft, "release must be published (un-drafted) after assets are uploaded")
+	assert.False(t, *gotEditReleaseDraft)
+}
+
+// TestRunPublish_ReusesExistingDraftRelease verifies that when a draft release already exists for the tag, RunPublish
+// reuses that draft to upload the dist artifacts and finalize it instead of creating a new release.
+func TestRunPublish_ReusesExistingDraftRelease(t *testing.T) {
+	var (
+		createReleaseCalled atomic.Bool
+		uploadedAssetName   atomic.Pointer[string]
+		editReleaseDraft    atomic.Pointer[bool]
+	)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/repos/testOwner/testRepo/releases", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprintf(w, `[{"id": 123, "draft": true, "tag_name": "1.0.0", "upload_url": "http://%s/upload/123/assets{?name,label}"}]`, r.Host)
+		case http.MethodPost:
+			createReleaseCalled.Store(true)
+			http.Error(w, "release creation must not be called when a draft already exists for the tag", http.StatusInternalServerError)
+		default:
+			http.Error(w, "unexpected method", http.StatusMethodNotAllowed)
+		}
+	})
+	mux.HandleFunc("/repos/testOwner/testRepo/releases/123", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPatch, r.Method)
+		var body struct {
+			Draft *bool `json:"draft"`
+		}
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
+		editReleaseDraft.Store(body.Draft)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprint(w, `{"id": 123, "draft": false}`)
+	})
+	mux.HandleFunc("/upload/123/assets", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPost, r.Method)
+		name := r.URL.Query().Get("name")
+		uploadedAssetName.Store(&name)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = fmt.Fprint(w, `{"id": 1, "name": "asset"}`)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	projectDir := t.TempDir()
+	artifactPath := filepath.Join(projectDir, "out", "dist", "foo", "1.0.0", "os-arch-bin", "foo-1.0.0-linux-amd64.tgz")
+	require.NoError(t, os.MkdirAll(filepath.Dir(artifactPath), 0755))
+	require.NoError(t, os.WriteFile(artifactPath, []byte("fake tgz content"), 0644))
+
+	productTaskOutputInfo := distgo.ProductTaskOutputInfo{
+		Project: distgo.ProjectInfo{
+			ProjectDir: projectDir,
+			Version:    "1.0.0",
+		},
+		Product: distgo.ProductOutputInfo{
+			ID: "foo",
+			DistOutputInfos: &distgo.DistOutputInfos{
+				DistOutputDir: "out/dist",
+				DistIDs:       []distgo.DistID{"os-arch-bin"},
+				DistInfos: map[distgo.DistID]distgo.DistOutputInfo{
+					"os-arch-bin": {
+						DistNameTemplateRendered: "foo-1.0.0",
+						DistArtifactNames:        []string{"foo-1.0.0-linux-amd64.tgz"},
+						PackagingExtension:       "tgz",
+					},
+				},
+			},
+		},
+	}
+
+	flagVals := map[distgo.PublisherFlagName]any{
+		githubPublisherAPIURLFlag.Name:     server.URL,
+		githubPublisherUserFlag.Name:       "testUser",
+		githubPublisherTokenFlag.Name:      "testToken",
+		githubPublisherRepositoryFlag.Name: "testRepo",
+		githubPublisherOwnerFlag.Name:      "testOwner",
+	}
+
+	publisher := new(githubPublisher)
+	err := publisher.RunPublish(productTaskOutputInfo, []byte("{}\n"), flagVals, false, io.Discard)
+	require.NoError(t, err)
+
+	assert.False(t, createReleaseCalled.Load(), "existing draft release must be reused instead of creating a new release")
+
+	gotUploadedAssetName := uploadedAssetName.Load()
+	require.NotNil(t, gotUploadedAssetName, "dist artifact must be uploaded to the existing draft release")
+	assert.Equal(t, "foo-1.0.0-linux-amd64.tgz", *gotUploadedAssetName)
+
+	gotEditReleaseDraft := editReleaseDraft.Load()
+	require.NotNil(t, gotEditReleaseDraft, "existing draft release must be published (un-drafted) after assets are uploaded")
 	assert.False(t, *gotEditReleaseDraft)
 }
