@@ -216,6 +216,70 @@ os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-%s.tgz]
 	}
 }
 
+type testBatchPublisher struct {
+	testPublisher
+	runPublishCalls      []distgo.ProductID
+	runPublishBatchCalls [][]distgo.ProductID
+}
+
+func (p *testBatchPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, _ []byte, _ map[distgo.PublisherFlagName]any, _ bool, _ io.Writer) error {
+	p.runPublishCalls = append(p.runPublishCalls, productTaskOutputInfo.Product.ID)
+	return nil
+}
+
+func (p *testBatchPublisher) RunPublishBatch(inputs []distgo.BatchPublishInput, _ map[distgo.PublisherFlagName]any, _ bool, _ io.Writer) error {
+	var productIDs []distgo.ProductID
+	for _, input := range inputs {
+		productIDs = append(productIDs, input.ProductTaskOutputInfo.Product.ID)
+	}
+	p.runPublishBatchCalls = append(p.runPublishBatchCalls, productIDs)
+	return nil
+}
+
+func TestProducts_UsesBatchPublisherForAllSelectedProducts(t *testing.T) {
+	projectDir := t.TempDir()
+	gittest.InitGitDir(t, projectDir)
+	for _, productID := range []string{"foo", "bar"} {
+		require.NoError(t, os.MkdirAll(path.Join(projectDir, productID), 0755))
+		require.NoError(t, os.WriteFile(path.Join(projectDir, productID, "main.go"), []byte(testMain), 0644))
+	}
+	require.NoError(t, os.WriteFile(path.Join(projectDir, "go.mod"), []byte("module foo"), 0644))
+	gittest.CommitAllFiles(t, projectDir, "Commit")
+	gittest.CreateGitTag(t, projectDir, "0.1.0")
+
+	distConfig := distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+		Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+			osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
+				Type: new(osarchbin.TypeName),
+			}),
+		}),
+	})
+	projectCfg := distgoconfig.ProjectConfig{
+		Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
+			"foo": {
+				Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{MainPkg: new("./foo")}),
+				Dist:  distConfig,
+			},
+			"bar": {
+				Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{MainPkg: new("./bar")}),
+				Dist:  distConfig,
+			},
+		}),
+	}
+	projectParam := testfuncs.NewProjectParam(t, projectCfg, projectDir, t.Name())
+	projectInfo, err := projectParam.ProjectInfo(projectDir)
+	require.NoError(t, err)
+
+	stdout := new(bytes.Buffer)
+	require.NoError(t, dist.Products(projectInfo, projectParam, nil, nil, false, true, stdout))
+
+	publisher := new(testBatchPublisher)
+	require.NoError(t, publish.Products(projectInfo, projectParam, nil, nil, publisher, nil, true, io.Discard))
+
+	assert.Empty(t, publisher.runPublishCalls)
+	assert.Equal(t, [][]distgo.ProductID{{"bar", "foo"}}, publisher.runPublishBatchCalls)
+}
+
 func exactMatchRegexp(in string) string {
 	return "^" + regexp.QuoteMeta(in) + "$"
 }
