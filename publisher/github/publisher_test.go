@@ -15,6 +15,7 @@
 package github
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -251,6 +252,37 @@ func TestFinalizePublish_PublishesDraftRelease(t *testing.T) {
 	gotEditReleaseDraft := editReleaseDraft.Load()
 	require.NotNil(t, gotEditReleaseDraft, "the draft release must be published (un-drafted)")
 	assert.False(t, *gotEditReleaseDraft)
+}
+
+// TestFinalizePublish_DryRun verifies that FinalizePublish prints the publish message and makes no GitHub API calls
+// when dryRun is true.
+func TestFinalizePublish_DryRun(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "FinalizePublish must not call the GitHub API in dry-run mode", http.StatusInternalServerError)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	productTaskOutputInfo := distgo.ProductTaskOutputInfo{
+		Project: distgo.ProjectInfo{
+			Version: "1.0.0",
+		},
+	}
+	flagVals := map[distgo.PublisherFlagName]any{
+		githubPublisherAPIURLFlag.Name:     server.URL,
+		githubPublisherUserFlag.Name:       "testUser",
+		githubPublisherTokenFlag.Name:      "testToken",
+		githubPublisherRepositoryFlag.Name: "testRepo",
+		githubPublisherOwnerFlag.Name:      "testOwner",
+	}
+
+	var stdout bytes.Buffer
+	publisher := new(githubPublisher)
+	err := publisher.FinalizePublish(productTaskOutputInfo, []byte("{}\n"), flagVals, true, &stdout)
+	require.NoError(t, err)
+
+	assert.Equal(t, "[DRY RUN] Publishing GitHub release 1.0.0 for testOwner/testRepo...done\n", stdout.String())
 }
 
 // TestFinalizePublish_NoopIfAlreadyPublished verifies that FinalizePublish is a no-op when there's no draft release for the tag.

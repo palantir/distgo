@@ -115,20 +115,20 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 	// Reuse an existing draft release for this tag if one already exists.
 	var releaseRes *github.RepositoryRelease
 	if !dryRun {
-		releaseRes, err = findExistingDraftRelease(target.client, target.cfg.Owner, target.cfg.Repository, target.releaseVersion)
+		releaseRes, err = findExistingDraftRelease(target.client, target.owner, target.repository, target.releaseVersion)
 		if err != nil {
 			return err
 		}
 	}
 
 	if releaseRes != nil {
-		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Using existing draft GitHub release %s for %s/%s...", target.releaseVersion, target.cfg.Owner, target.cfg.Repository), dryRun)
+		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Using existing draft GitHub release %s for %s/%s...", target.releaseVersion, target.owner, target.repository), dryRun)
 	} else {
-		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Creating GitHub release %s for %s/%s...", target.releaseVersion, target.cfg.Owner, target.cfg.Repository), dryRun)
+		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Creating GitHub release %s for %s/%s...", target.releaseVersion, target.owner, target.repository), dryRun)
 		if !dryRun {
 			// create the release as a draft since GitHub's immutable-releases feature rejects asset uploads to a
 			// non-draft release, so uploads must happen before the release is published.
-			releaseRes, _, err = target.client.Repositories.CreateRelease(context.Background(), target.cfg.Owner, target.cfg.Repository, &github.RepositoryRelease{
+			releaseRes, _, err = target.client.Repositories.CreateRelease(context.Background(), target.owner, target.repository, &github.RepositoryRelease{
 				TagName: new(target.releaseVersion),
 				Draft:   new(true),
 			})
@@ -138,14 +138,14 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 
 				if ghErr, ok := err.(*github.ErrorResponse); ok && len(ghErr.Errors) > 0 && ghErr.Errors[0].Code == "already_exists" {
 					// release already exists: attempt to get it instead
-					gotRelease, _, err := target.client.Repositories.GetReleaseByTag(context.Background(), target.cfg.Owner, target.cfg.Repository, target.releaseVersion)
+					gotRelease, _, err := target.client.Repositories.GetReleaseByTag(context.Background(), target.owner, target.repository, target.releaseVersion)
 					if err != nil {
-						return errors.Errorf("Failed to get GitHub release %s for %s/%s", target.releaseVersion, target.cfg.Owner, target.cfg.Repository)
+						return errors.Errorf("Failed to get GitHub release %s for %s/%s", target.releaseVersion, target.owner, target.repository)
 					}
 					// if release is found, use it and upload to the release
 					releaseRes = gotRelease
 				} else {
-					return errors.Wrapf(err, "failed to create GitHub release %s for %s/%s...", target.releaseVersion, target.cfg.Owner, target.cfg.Repository)
+					return errors.Wrapf(err, "failed to create GitHub release %s for %s/%s...", target.releaseVersion, target.owner, target.repository)
 				}
 			}
 		}
@@ -161,7 +161,7 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 		}
 	}
 
-	// Leave the release as a draft since other products may still need to upload to it, and GitHub's
+	// Leave the release as a draft since other products may still need to upload to it and GitHub's
 	// immutable-releases will reject uploads to a published release. FinalizePublish will un-draft the final release.
 	return nil
 }
@@ -175,34 +175,36 @@ func (p *githubPublisher) FinalizePublish(productTaskOutputInfo distgo.ProductTa
 		return err
 	}
 
-	if dryRun {
-		return nil
+	var draftRelease *github.RepositoryRelease
+	if !dryRun {
+		draftRelease, err = findExistingDraftRelease(target.client, target.owner, target.repository, target.releaseVersion)
+		if err != nil {
+			return err
+		}
+		if draftRelease == nil {
+			// already published by an earlier call for a sibling product sharing this release
+			return nil
+		}
 	}
 
-	draftRelease, err := findExistingDraftRelease(target.client, target.cfg.Owner, target.cfg.Repository, target.releaseVersion)
-	if err != nil {
-		return err
-	}
-	if draftRelease == nil {
-		// already published by an earlier call for a sibling product sharing this release
-		return nil
-	}
-
-	distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Publishing GitHub release %s for %s/%s...", target.releaseVersion, target.cfg.Owner, target.cfg.Repository), dryRun)
-	if _, _, err := target.client.Repositories.EditRelease(context.Background(), target.cfg.Owner, target.cfg.Repository, draftRelease.GetID(), &github.RepositoryRelease{
-		Draft: new(false),
-	}); err != nil {
-		_, _ = fmt.Fprintln(stdout)
-		return errors.Wrapf(err, "failed to publish GitHub release %s for %s/%s", target.releaseVersion, target.cfg.Owner, target.cfg.Repository)
+	distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Publishing GitHub release %s for %s/%s...", target.releaseVersion, target.owner, target.repository), dryRun)
+	if !dryRun {
+		if _, _, err := target.client.Repositories.EditRelease(context.Background(), target.owner, target.repository, draftRelease.GetID(), &github.RepositoryRelease{
+			Draft: new(false),
+		}); err != nil {
+			_, _ = fmt.Fprintln(stdout)
+			return errors.Wrapf(err, "failed to publish GitHub release %s for %s/%s", target.releaseVersion, target.owner, target.repository)
+		}
 	}
 	_, _ = fmt.Fprintln(stdout, "done")
 	return nil
 }
 
-// githubReleaseTarget is the resolved GitHub client and release identity that RunPublish and FinalizePublish operate on.
+// githubReleaseTarget identifies the GitHub release that a publish operation should act on.
 type githubReleaseTarget struct {
 	client         *github.Client
-	cfg            config.GitHub
+	owner          string
+	repository     string
 	releaseVersion string
 }
 
@@ -255,7 +257,8 @@ func resolveGitHubReleaseTarget(cfgYML []byte, flagVals map[distgo.PublisherFlag
 
 	return githubReleaseTarget{
 		client:         client,
-		cfg:            cfg,
+		owner:          cfg.Owner,
+		repository:     cfg.Repository,
 		releaseVersion: releaseVersion,
 	}, nil
 }
