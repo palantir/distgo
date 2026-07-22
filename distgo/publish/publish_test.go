@@ -218,16 +218,16 @@ os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-%s.tgz]
 
 type testFinalizingPublisher struct {
 	testPublisher
-	calls *[]string
+	calls []string
 }
 
 func (p *testFinalizingPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
-	*p.calls = append(*p.calls, "RunPublish:"+string(productTaskOutputInfo.Product.ID))
+	p.calls = append(p.calls, "RunPublish:"+string(productTaskOutputInfo.Product.ID))
 	return p.testPublisher.RunPublish(productTaskOutputInfo, cfgYML, flagVals, dryRun, stdout)
 }
 
 func (p *testFinalizingPublisher) FinalizePublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
-	*p.calls = append(*p.calls, "FinalizePublish:"+string(productTaskOutputInfo.Product.ID))
+	p.calls = append(p.calls, "FinalizePublish:"+string(productTaskOutputInfo.Product.ID))
 	return nil
 }
 
@@ -272,23 +272,17 @@ func TestProducts_FinalizesAfterAllProductsPublished(t *testing.T) {
 	buffer := new(bytes.Buffer)
 	require.NoError(t, dist.Products(projectInfo, projectParam, nil, nil, false, true, buffer))
 
-	var calls []string
-	publisher := &testFinalizingPublisher{calls: &calls}
+	publisher := &testFinalizingPublisher{}
 	buffer = new(bytes.Buffer)
 	require.NoError(t, publish.Products(projectInfo, projectParam, nil, nil, publisher, nil, true, buffer))
 
 	// products are processed in sorted ID order to make this deterministic
-	assert.Equal(t, []string{"RunPublish:bar", "RunPublish:foo", "FinalizePublish:bar", "FinalizePublish:foo"}, calls)
+	assert.Equal(t, []string{"RunPublish:bar", "RunPublish:foo", "FinalizePublish:bar", "FinalizePublish:foo"}, publisher.calls)
 }
 
 // TestRunFinalizesPublishedProductImmediately verifies that Run finalizes right after RunPublish.
 func TestRun_FinalizesPublishedProductImmediately(t *testing.T) {
-	tmp, cleanup, err := dirs.TempDir("", "")
-	defer cleanup()
-	require.NoError(t, err)
-
-	projectDir, err := os.MkdirTemp(tmp, "")
-	require.NoError(t, err)
+	projectDir := t.TempDir()
 
 	gittest.InitGitDir(t, projectDir)
 	require.NoError(t, os.MkdirAll(path.Join(projectDir, "foo"), 0755))
@@ -304,12 +298,11 @@ func TestRun_FinalizesPublishedProductImmediately(t *testing.T) {
 	buffer := new(bytes.Buffer)
 	require.NoError(t, dist.Products(projectInfo, projectParam, nil, nil, false, true, buffer))
 
-	var calls []string
-	publisher := &testFinalizingPublisher{calls: &calls}
+	publisher := &testFinalizingPublisher{}
 	buffer = new(bytes.Buffer)
 	require.NoError(t, publish.Run(projectInfo, projectParam.Products["foo"], publisher, nil, true, buffer))
 
-	assert.Equal(t, []string{"RunPublish:foo", "FinalizePublish:foo"}, calls)
+	assert.Equal(t, []string{"RunPublish:foo", "FinalizePublish:foo"}, publisher.calls)
 }
 
 func exactMatchRegexp(in string) string {
