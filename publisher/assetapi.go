@@ -35,6 +35,7 @@ func AssetRootCmd(creator Creator, upgradeConfigFn pluginapi.UpgradeConfigFn, sh
 	rootCmd.AddCommand(assetapi.NewAssetTypeCmd(assetapi.Publisher))
 	rootCmd.AddCommand(newFlagsCmd(publisher))
 	rootCmd.AddCommand(newRunPublishCmd(publisher))
+	rootCmd.AddCommand(newRunPublishBatchCmd(publisher))
 	rootCmd.AddCommand(pluginapi.CobraUpgradeConfigCmd(upgradeConfigFn))
 
 	return rootCmd
@@ -124,6 +125,54 @@ func newRunPublishCmd(publisher distgo.Publisher) *cobra.Command {
 		runPublishCmdDryRunFlagName,
 	)
 	return runDistCmd
+}
+
+const (
+	runPublishBatchCmdName           = "run-publish-batch"
+	runPublishBatchCmdInputsFlagName = "inputs"
+)
+
+// newRunPublishBatchCmd returns the run-publish-batch command. If publisher implements [distgo.BatchPublisher], then the
+// RunPublishBatch command will be run with all inputs, otherwise each input is run through RunPublish independently.
+func newRunPublishBatchCmd(publisher distgo.Publisher) *cobra.Command {
+	var (
+		inputsFlagVal   string
+		flagValsFlagVal string
+		dryRunFlagVal   bool
+	)
+	runPublishBatchCmd := &cobra.Command{
+		Use:   runPublishBatchCmdName,
+		Short: "Runs the publish action for every product in the batch",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var inputs []distgo.BatchPublishInput
+			if err := json.Unmarshal([]byte(inputsFlagVal), &inputs); err != nil {
+				return errors.Wrapf(err, "failed to unmarshal JSON %s", inputsFlagVal)
+			}
+			var flagVals map[distgo.PublisherFlagName]any
+			if err := json.Unmarshal([]byte(flagValsFlagVal), &flagVals); err != nil {
+				return errors.Wrapf(err, "failed to unmarshal JSON %s", flagValsFlagVal)
+			}
+			if batchPublisher, ok := publisher.(distgo.BatchPublisher); ok {
+				return batchPublisher.RunPublishBatch(inputs, flagVals, dryRunFlagVal, cmd.OutOrStdout())
+			}
+			// This publisher does not implement batch publishing, so publish each input individually.
+			for _, input := range inputs {
+				if err := publisher.RunPublish(input.ProductTaskOutputInfo, input.ConfigYML, flagVals, dryRunFlagVal, cmd.OutOrStdout()); err != nil {
+					return errors.Wrapf(err, "failed to publish product %s", input.ProductTaskOutputInfo.Product.ID)
+				}
+			}
+			return nil
+		},
+	}
+	runPublishBatchCmd.Flags().StringVar(&inputsFlagVal, runPublishBatchCmdInputsFlagName, "", "JSON representation of []distgo.BatchPublishInput")
+	runPublishBatchCmd.Flags().StringVar(&flagValsFlagVal, runPublishCmdFlagValsFlagName, "", "JSON representation of map[distgo.PublisherFlag]any")
+	runPublishBatchCmd.Flags().BoolVar(&dryRunFlagVal, runPublishCmdDryRunFlagName, false, "true if the operation should be run as a dry run")
+	mustMarkFlagsRequired(runPublishBatchCmd,
+		runPublishBatchCmdInputsFlagName,
+		runPublishCmdFlagValsFlagName,
+		runPublishCmdDryRunFlagName,
+	)
+	return runPublishBatchCmd
 }
 
 func mustMarkFlagsRequired(cmd *cobra.Command, flagNames ...string) {

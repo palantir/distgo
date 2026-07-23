@@ -59,7 +59,15 @@ func AssetPublisherCreators(assetPaths ...string) ([]Creator, []distgo.ConfigUpg
 			return nil, nil, errors.Wrapf(err, "failed to determine type name for asset %s", currAssetPath)
 		}
 		publisherNameToAssets[publisherName] = append(publisherNameToAssets[publisherName], currAssetPath)
+		supportsBatchPublish := assetSupportsBatchPublish(currAssetPath)
 		publisherCreators = append(publisherCreators, NewCreator(publisherName, func() distgo.Publisher {
+			if supportsBatchPublish {
+				return &batchAssetPublisher{
+					assetPublisher{
+						assetPath: currAssetPath,
+					},
+				}
+			}
 			return &assetPublisher{
 				assetPath: currAssetPath,
 			}
