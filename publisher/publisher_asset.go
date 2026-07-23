@@ -83,3 +83,38 @@ func (p *assetPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutp
 	}
 	return nil
 }
+
+// assetSupportsBatchPublish reports whether the asset at assetPath registers the run-publish-batch command.
+func assetSupportsBatchPublish(assetPath string) bool {
+	return exec.Command(assetPath, runPublishBatchCmdName, "--help").Run() == nil
+}
+
+// batchAssetPublisher wraps an assetPublisher to support the run-publish-batch command.
+type batchAssetPublisher struct {
+	assetPublisher
+}
+
+func (p *batchAssetPublisher) RunPublishBatch(inputs []distgo.BatchPublishInput, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+	inputsJSON, err := json.Marshal(inputs)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal JSON for inputs")
+	}
+	flagValsJSON, err := json.Marshal(flagVals)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal JSON for flagVals")
+	}
+
+	args := []string{runPublishBatchCmdName}
+	args = append(args, "--"+runPublishBatchCmdInputsFlagName, string(inputsJSON))
+	args = append(args, "--"+runPublishCmdFlagValsFlagName, string(flagValsJSON))
+	args = append(args, "--"+runPublishCmdDryRunFlagName+"="+strconv.FormatBool(dryRun))
+
+	runPublishBatchCmd := exec.Command(p.assetPath, args...)
+	runPublishBatchCmd.Stdout = stdout
+	runPublishBatchCmd.Stderr = stdout
+
+	if err := runPublishBatchCmd.Run(); err != nil {
+		return errors.Wrapf(err, "command %v failed", runPublishBatchCmd.Args[0])
+	}
+	return nil
+}
