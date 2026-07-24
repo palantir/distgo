@@ -150,6 +150,15 @@ func ProductDockerOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOu
 	return path.Join(projectInfo.ProjectDir, productOutputInfo.DockerOutputInfos.DockerOutputDir, string(productOutputInfo.ID), projectInfo.Version, string(dockerID))
 }
 
+// ProductDockerOCIDistOutputDir returns the Docker output directory for the given DockerID.
+//
+// Deprecated: use ProductDockerOutputDir. This method is retained so assets that vendored the previous API keep
+// compiling. Its result now comes from ProductDockerOutputDir (the "{{DockerOutputDir}}" namespace), superseding the
+// former "{{DistOutputDir}}/.../oci-{{DockerID}}" location.
+func (p *ProductTaskOutputInfo) ProductDockerOCIDistOutputDir(dockerID DockerID) string {
+	return ProductDockerOutputDir(p.Project, p.Product, dockerID)
+}
+
 // ProductDistWorkDirs returns a map from DistID to the directory used to prepare the distribution for that DistID,
 // which is "{{ProjectDir}}/{{DistOutputDir}}/{{ProductID}}/{{Version}}/{{DistID}}/{{NameTemplateRendered}}".
 func ProductDistWorkDirs(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) map[DistID]string {
