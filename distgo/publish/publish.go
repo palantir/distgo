@@ -35,9 +35,37 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 	if err != nil {
 		return err
 	}
+
+	publisherType, err := publisher.TypeName()
+	if err != nil {
+		return errors.Wrapf(err, "failed to determine type of publisher")
+	}
+
+	var inputs []distgo.BatchPublishInput
 	for _, currProduct := range productParams {
-		if err := Run(projectInfo, currProduct, publisher, flagVals, dryRun, stdout); err != nil {
+		input, err := preparePublishInput(projectInfo, currProduct, publisherType, dryRun, stdout)
+		if err != nil {
 			return err
+		}
+		if input == nil {
+			continue
+		}
+		inputs = append(inputs, *input)
+	}
+	if len(inputs) == 0 {
+		return nil
+	}
+
+	if batchPublisher, ok := publisher.(distgo.BatchPublisher); ok {
+		if err := batchPublisher.RunPublishBatch(inputs, flagVals, dryRun, stdout); err != nil {
+			return errors.Wrapf(err, "failed to publish products using %s publisher", publisherType)
+		}
+		return nil
+	}
+
+	for _, input := range inputs {
+		if err := publisher.RunPublish(input.ProductTaskOutputInfo, input.ConfigYML, flagVals, dryRun, stdout); err != nil {
+			return errors.Wrapf(err, "failed to publish %s using %s publisher", input.ProductTaskOutputInfo.Product.ID, publisherType)
 		}
 	}
 	return nil
@@ -47,9 +75,28 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 // artifacts for the product. The outputs for the dependent products for the provided product must already exist in the
 // proper locations.
 func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publisher distgo.Publisher, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+	publisherType, err := publisher.TypeName()
+	if err != nil {
+		return errors.Wrapf(err, "failed to determine type of publisher")
+	}
+	input, err := preparePublishInput(projectInfo, productParam, publisherType, dryRun, stdout)
+	if err != nil {
+		return err
+	}
+	if input == nil {
+		return nil
+	}
+	if err := publisher.RunPublish(input.ProductTaskOutputInfo, input.ConfigYML, flagVals, dryRun, stdout); err != nil {
+		return errors.Wrapf(err, "failed to publish %s using %s publisher", productParam.ID, publisherType)
+	}
+
+	return nil
+}
+
+func preparePublishInput(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publisherType string, dryRun bool, stdout io.Writer) (*distgo.BatchPublishInput, error) {
 	if productParam.Dist == nil {
 		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("%s does not have dist outputs; skipping publish", productParam.ID), dryRun)
-		return nil
+		return nil, nil
 	}
 
 	// verify that dist artifacts to publish exists (dist is skipped in dry-run mode, so the
@@ -57,33 +104,27 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publi
 	if !dryRun {
 		productOutputInfo, err := productParam.ToProductOutputInfo(projectInfo.Version)
 		if err != nil {
-			return errors.Wrapf(err, "failed to compute output info")
+			return nil, errors.Wrapf(err, "failed to compute output info")
 		}
 		for _, currDistID := range productOutputInfo.DistOutputInfos.DistIDs {
 			for _, currArtifactPath := range distgo.ProductDistArtifactPaths(projectInfo, productOutputInfo)[currDistID] {
 				if _, err := os.Stat(currArtifactPath); os.IsNotExist(err) {
-					return errors.Errorf("distribution artifact for product %s with dist %s does not exist at %s", productParam.ID, currDistID, currArtifactPath)
+					return nil, errors.Errorf("distribution artifact for product %s with dist %s does not exist at %s", productParam.ID, currDistID, currArtifactPath)
 				}
 			}
 		}
 	}
 
-	// run publish
 	productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, productParam)
 	if err != nil {
-		return err
-	}
-	publisherType, err := publisher.TypeName()
-	if err != nil {
-		return errors.Wrapf(err, "failed to determine type of publisher")
+		return nil, err
 	}
 	var publishCfgBytes []byte
 	if productParam.Publish != nil {
 		publishCfgBytes = productParam.Publish.PublishInfo[distgo.PublisherTypeID(publisherType)].ConfigBytes
 	}
-	if err := publisher.RunPublish(productTaskOutputInfo, publishCfgBytes, flagVals, dryRun, stdout); err != nil {
-		return errors.Wrapf(err, "failed to publish %s using %s publisher", productParam.ID, publisherType)
-	}
-
-	return nil
+	return &distgo.BatchPublishInput{
+		ProductTaskOutputInfo: productTaskOutputInfo,
+		ConfigYML:             publishCfgBytes,
+	}, nil
 }

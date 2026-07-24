@@ -34,6 +34,17 @@ type Publisher interface {
 	RunPublish(productTaskOutputInfo ProductTaskOutputInfo, cfgYML []byte, flagVals map[PublisherFlagName]any, dryRun bool, stdout io.Writer) error
 }
 
+// BatchPublishInput contains the product output information and product specific configuration for one publish.
+type BatchPublishInput struct {
+	ProductTaskOutputInfo ProductTaskOutputInfo
+	ConfigYML             []byte
+}
+
+// BatchPublisher is an optional extension of [Publisher] for publishers that need to coordinate work across all products being published.
+type BatchPublisher interface {
+	RunPublishBatch(inputs []BatchPublishInput, flagVals map[PublisherFlagName]any, dryRun bool, stdout io.Writer) error
+}
+
 type PublisherFactory interface {
 	Types() []string
 	NewPublisher(typeName string) (Publisher, error)
