@@ -56,20 +56,22 @@ func (p *testPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	return nil, nil
 }
 
-func (p *testPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
-	productDistArtifactPaths := productTaskOutputInfo.ProductDistArtifactPaths()
-	var distIDs []distgo.DistID
-	for distID := range productDistArtifactPaths {
-		distIDs = append(distIDs, distID)
-	}
-	sort.Sort(distgo.ByDistID(distIDs))
+func (p *testPublisher) RunPublish(inputs []distgo.PublishInput, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+	for _, input := range inputs {
+		productDistArtifactPaths := input.ProductTaskOutputInfo.ProductDistArtifactPaths()
+		var distIDs []distgo.DistID
+		for distID := range productDistArtifactPaths {
+			distIDs = append(distIDs, distID)
+		}
+		sort.Sort(distgo.ByDistID(distIDs))
 
-	var outputs []string
-	outputs = append(outputs, fmt.Sprintf("Publish the following dist outputs for product %s:", productTaskOutputInfo.Product.ID))
-	for _, distID := range distIDs {
-		outputs = append(outputs, fmt.Sprintf("%s: %v", distID, productDistArtifactPaths[distID]))
+		var outputs []string
+		outputs = append(outputs, fmt.Sprintf("Publish the following dist outputs for product %s:", input.ProductTaskOutputInfo.Product.ID))
+		for _, distID := range distIDs {
+			outputs = append(outputs, fmt.Sprintf("%s: %v", distID, productDistArtifactPaths[distID]))
+		}
+		_, _ = fmt.Fprintln(stdout, strings.Join(outputs, "\n"))
 	}
-	_, _ = fmt.Fprintln(stdout, strings.Join(outputs, "\n"))
 	return nil
 }
 
@@ -176,6 +178,48 @@ os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-darwin-amd64.tgz %s/ou
 				return exactMatchRegexp(fmt.Sprintf(`Publish the following dist outputs for product foo:
 os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-%s.tgz]
 `, projectDir, osarch.Current().String()))
+			},
+		},
+		{
+			"publish publishes the dist artifacts of multiple products in a single batch",
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
+					"foo": {
+						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
+							MainPkg: new("./foo"),
+						}),
+						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
+									Type: stringPtr(osarchbin.TypeName),
+								}),
+							}),
+						}),
+					},
+					"bar": {
+						Build: distgoconfig.ToBuildConfig(&distgoconfig.BuildConfig{
+							MainPkg: new("./foo"),
+						}),
+						Dist: distgoconfig.ToDistConfig(&distgoconfig.DistConfig{
+							Disters: distgoconfig.ToDistersConfig(&distgoconfig.DistersConfig{
+								osarchbin.TypeName: distgoconfig.ToDisterConfig(distgoconfig.DisterConfig{
+									Type: stringPtr(osarchbin.TypeName),
+								}),
+							}),
+						}),
+					},
+				}),
+			},
+			nil,
+			func(t *testing.T, projectDir string, projectCfg distgoconfig.ProjectConfig) {
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			func(projectDir string) string {
+				return exactMatchRegexp(fmt.Sprintf(`Publish the following dist outputs for product bar:
+os-arch-bin: [%s/out/dist/bar/0.1.0/os-arch-bin/bar-0.1.0-%s.tgz]
+Publish the following dist outputs for product foo:
+os-arch-bin: [%s/out/dist/foo/0.1.0/os-arch-bin/foo-0.1.0-%s.tgz]
+`, projectDir, osarch.Current().String(), projectDir, osarch.Current().String()))
 			},
 		},
 	} {

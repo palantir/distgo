@@ -76,9 +76,13 @@ func (p *artifactoryPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	), nil
 }
 
-func (p *artifactoryPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
-	_, err := p.ArtifactoryRunPublish(productTaskOutputInfo, cfgYML, flagVals, dryRun, stdout)
-	return err
+func (p *artifactoryPublisher) RunPublish(inputs []distgo.PublishInput, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+	for _, input := range inputs {
+		if _, err := p.ArtifactoryRunPublish(input.ProductTaskOutputInfo, input.ConfigYML, flagVals, dryRun, stdout); err != nil {
+			return errors.Wrapf(err, "failed to publish %s", input.ProductTaskOutputInfo.Product.ID)
+		}
+	}
+	return nil
 }
 
 func (p *artifactoryPublisher) ArtifactoryRunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) ([]string, error) {
