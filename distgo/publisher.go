@@ -34,6 +34,13 @@ type Publisher interface {
 	RunPublish(productTaskOutputInfo ProductTaskOutputInfo, cfgYML []byte, flagVals map[PublisherFlagName]any, dryRun bool, stdout io.Writer) error
 }
 
+// FinalizingPublisher is an optional extension of Publisher. If implemented, FinalizePublish is called once for
+// every product that RunPublish successfully published. This lets a publisher defer work, such as finalizing a release shared by multiple products, until
+// every product sharing it has uploaded. FinalizePublish must be idempotent since it is run once for every product.
+type FinalizingPublisher interface {
+	FinalizePublish(productTaskOutputInfo ProductTaskOutputInfo, cfgYML []byte, flagVals map[PublisherFlagName]any, dryRun bool, stdout io.Writer) error
+}
+
 type PublisherFactory interface {
 	Types() []string
 	NewPublisher(typeName string) (Publisher, error)

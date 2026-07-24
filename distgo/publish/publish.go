@@ -35,21 +35,65 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 	if err != nil {
 		return err
 	}
+	var publishedProducts []publishedProduct
 	for _, currProduct := range productParams {
-		if err := Run(projectInfo, currProduct, publisher, flagVals, dryRun, stdout); err != nil {
+		publishedProduct, err := publishProduct(projectInfo, currProduct, publisher, flagVals, dryRun, stdout)
+		if err != nil {
 			return err
+		}
+		if publishedProduct != nil {
+			publishedProducts = append(publishedProducts, *publishedProduct)
+		}
+	}
+
+	// Finalize once every product has uploaded, since some publishers share one release across products.
+	return finalizePublishedProducts(publisher, publishedProducts, flagVals, dryRun, stdout)
+}
+
+type publishedProduct struct {
+	productTaskOutputInfo distgo.ProductTaskOutputInfo
+	cfgYML                []byte
+}
+
+// finalizePublishedProducts calls FinalizePublish once per published product, if publisher implements distgo.FinalizingPublisher.
+// It finalizes per product rather than once for all products since products can have different publish config, e.g. different owner/repo.
+func finalizePublishedProducts(publisher distgo.Publisher, published []publishedProduct, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+	finalizer, ok := publisher.(distgo.FinalizingPublisher)
+	if !ok {
+		return nil
+	}
+	publisherType, err := publisher.TypeName()
+	if err != nil {
+		return errors.Wrapf(err, "failed to determine type of publisher")
+	}
+	for _, currPublished := range published {
+		if err := finalizer.FinalizePublish(currPublished.productTaskOutputInfo, currPublished.cfgYML, flagVals, dryRun, stdout); err != nil {
+			return errors.Wrapf(err, "failed to finalize publish for %s using %s publisher", currPublished.productTaskOutputInfo.Product.ID, publisherType)
 		}
 	}
 	return nil
 }
 
-// Run executes the publish action for the specified product. Produces both the dist output directory and the dist
-// artifacts for the product. The outputs for the dependent products for the provided product must already exist in the
-// proper locations.
+// Run executes the publish action for the specified product, then finalizes it immediately if the publisher supports it.
+// Produces both the dist output directory and the dist artifacts for the product. The outputs for the dependent products for the provided product must already exist in
+// the proper locations.
 func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publisher distgo.Publisher, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+	published, err := publishProduct(projectInfo, productParam, publisher, flagVals, dryRun, stdout)
+	if err != nil {
+		return err
+	}
+	if published == nil {
+		return nil
+	}
+	return finalizePublishedProducts(publisher, []publishedProduct{*published}, flagVals, dryRun, stdout)
+}
+
+// publishProduct runs RunPublish for a single product. It returns a publishedProduct containing the product's output info and publish config if RunPublish actually ran,
+// or nil if the product was skipped if it had no dist outputs.
+func publishProduct(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publisher distgo.Publisher, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) (*publishedProduct, error) {
 	if productParam.Dist == nil {
 		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("%s does not have dist outputs; skipping publish", productParam.ID), dryRun)
-		return nil
+		return nil, nil
 	}
 
 	// verify that dist artifacts to publish exists (dist is skipped in dry-run mode, so the
@@ -57,12 +101,12 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publi
 	if !dryRun {
 		productOutputInfo, err := productParam.ToProductOutputInfo(projectInfo.Version)
 		if err != nil {
-			return errors.Wrapf(err, "failed to compute output info")
+			return nil, errors.Wrapf(err, "failed to compute output info")
 		}
 		for _, currDistID := range productOutputInfo.DistOutputInfos.DistIDs {
 			for _, currArtifactPath := range distgo.ProductDistArtifactPaths(projectInfo, productOutputInfo)[currDistID] {
 				if _, err := os.Stat(currArtifactPath); os.IsNotExist(err) {
-					return errors.Errorf("distribution artifact for product %s with dist %s does not exist at %s", productParam.ID, currDistID, currArtifactPath)
+					return nil, errors.Errorf("distribution artifact for product %s with dist %s does not exist at %s", productParam.ID, currDistID, currArtifactPath)
 				}
 			}
 		}
@@ -71,19 +115,22 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publi
 	// run publish
 	productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, productParam)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	publisherType, err := publisher.TypeName()
 	if err != nil {
-		return errors.Wrapf(err, "failed to determine type of publisher")
+		return nil, errors.Wrapf(err, "failed to determine type of publisher")
 	}
 	var publishCfgBytes []byte
 	if productParam.Publish != nil {
 		publishCfgBytes = productParam.Publish.PublishInfo[distgo.PublisherTypeID(publisherType)].ConfigBytes
 	}
 	if err := publisher.RunPublish(productTaskOutputInfo, publishCfgBytes, flagVals, dryRun, stdout); err != nil {
-		return errors.Wrapf(err, "failed to publish %s using %s publisher", productParam.ID, publisherType)
+		return nil, errors.Wrapf(err, "failed to publish %s using %s publisher", productParam.ID, publisherType)
 	}
 
-	return nil
+	return &publishedProduct{
+		productTaskOutputInfo: productTaskOutputInfo,
+		cfgYML:                publishCfgBytes,
+	}, nil
 }

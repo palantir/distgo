@@ -97,30 +97,6 @@ func (p *githubPublisher) Flags() ([]distgo.PublisherFlag, error) {
 }
 
 func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
-	var cfg config.GitHub
-	if err := yaml.Unmarshal(cfgYML, &cfg); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal configuration")
-	}
-	if err := publisher.SetRequiredStringConfigValues(flagVals,
-		githubPublisherAPIURLFlag, &cfg.APIURL,
-		githubPublisherUserFlag, &cfg.User,
-		githubPublisherTokenFlag, &cfg.Token,
-		githubPublisherRepositoryFlag, &cfg.Repository,
-	); err != nil {
-		return err
-	}
-
-	if err := publisher.SetConfigValue(flagVals, githubPublisherOwnerFlag, &cfg.Owner); err != nil {
-		return err
-	}
-	if cfg.Owner == "" {
-		cfg.Owner = cfg.User
-	}
-
-	if err := publisher.SetConfigValue(flagVals, githubAddVPrefixFlag, &cfg.AddVPrefix); err != nil {
-		return err
-	}
-
 	filterRegexp, err := publisher.GetArtifactNamesFilterFlagValue(flagVals)
 	if err != nil {
 		return err
@@ -130,6 +106,134 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 		return err
 	}
 	publisher.FilterProductTaskOutputInfoArtifactNames(&productTaskOutputInfo, filterRegexp, excludeRegexp)
+
+	target, err := resolveGitHubReleaseTarget(cfgYML, flagVals, productTaskOutputInfo.Project.Version)
+	if err != nil {
+		return err
+	}
+
+	// Reuse an existing draft release for this tag if one already exists.
+	var releaseRes *github.RepositoryRelease
+	if !dryRun {
+		releaseRes, err = findExistingDraftRelease(target.client, target.owner, target.repository, target.releaseVersion)
+		if err != nil {
+			return err
+		}
+	}
+
+	if releaseRes != nil {
+		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Using existing draft GitHub release %s for %s/%s...", target.releaseVersion, target.owner, target.repository), dryRun)
+	} else {
+		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Creating GitHub release %s for %s/%s...", target.releaseVersion, target.owner, target.repository), dryRun)
+		if !dryRun {
+			// create the release as a draft since GitHub's immutable-releases feature rejects asset uploads to a
+			// non-draft release, so uploads must happen before the release is published.
+			releaseRes, _, err = target.client.Repositories.CreateRelease(context.Background(), target.owner, target.repository, &github.RepositoryRelease{
+				TagName: new(target.releaseVersion),
+				Draft:   new(true),
+			})
+			if err != nil {
+				// newline to complement "..." output
+				_, _ = fmt.Fprintln(stdout)
+
+				if ghErr, ok := err.(*github.ErrorResponse); ok && len(ghErr.Errors) > 0 && ghErr.Errors[0].Code == "already_exists" {
+					// release already exists: attempt to get it instead
+					gotRelease, _, err := target.client.Repositories.GetReleaseByTag(context.Background(), target.owner, target.repository, target.releaseVersion)
+					if err != nil {
+						return errors.Errorf("Failed to get GitHub release %s for %s/%s", target.releaseVersion, target.owner, target.repository)
+					}
+					// if release is found, use it and upload to the release
+					releaseRes = gotRelease
+				} else {
+					return errors.Wrapf(err, "failed to create GitHub release %s for %s/%s...", target.releaseVersion, target.owner, target.repository)
+				}
+			}
+		}
+	}
+	// no need for dry run print because beginning of line has already been printed
+	_, _ = fmt.Fprintln(stdout, "done")
+
+	for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
+		for _, currArtifactPath := range productTaskOutputInfo.ProductDistArtifactPaths()[currDistID] {
+			if _, err := p.uploadFileAtPath(target.client, releaseRes, currArtifactPath, dryRun, stdout); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Leave the release as a draft since other products may still need to upload to it and GitHub's
+	// immutable-releases will reject uploads to a published release. FinalizePublish will un-draft the final release.
+	return nil
+}
+
+// FinalizePublish publishes (un-drafts) the release for the product's tag if it's still a draft. RunPublish leaves
+// the release as a draft so other products sharing the same tag can upload assets, working around GitHub's immutable-releases restriction.
+// Calling this again for an already-published release is a no-op.
+func (p *githubPublisher) FinalizePublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+	target, err := resolveGitHubReleaseTarget(cfgYML, flagVals, productTaskOutputInfo.Project.Version)
+	if err != nil {
+		return err
+	}
+
+	var draftRelease *github.RepositoryRelease
+	if !dryRun {
+		draftRelease, err = findExistingDraftRelease(target.client, target.owner, target.repository, target.releaseVersion)
+		if err != nil {
+			return err
+		}
+		if draftRelease == nil {
+			// already published by an earlier call for a sibling product sharing this release
+			return nil
+		}
+	}
+
+	distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Publishing GitHub release %s for %s/%s...", target.releaseVersion, target.owner, target.repository), dryRun)
+	if !dryRun {
+		if _, _, err := target.client.Repositories.EditRelease(context.Background(), target.owner, target.repository, draftRelease.GetID(), &github.RepositoryRelease{
+			Draft: new(false),
+		}); err != nil {
+			_, _ = fmt.Fprintln(stdout)
+			return errors.Wrapf(err, "failed to publish GitHub release %s for %s/%s", target.releaseVersion, target.owner, target.repository)
+		}
+	}
+	_, _ = fmt.Fprintln(stdout, "done")
+	return nil
+}
+
+// githubReleaseTarget identifies the GitHub release that a publish operation should act on.
+type githubReleaseTarget struct {
+	client         *github.Client
+	owner          string
+	repository     string
+	releaseVersion string
+}
+
+// resolveGitHubReleaseTarget resolves the publisher configuration, constructs a GitHub client for it, and computes
+// the release version (tag) for the given project version.
+func resolveGitHubReleaseTarget(cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, projectVersion string) (githubReleaseTarget, error) {
+	var cfg config.GitHub
+	if err := yaml.Unmarshal(cfgYML, &cfg); err != nil {
+		return githubReleaseTarget{}, errors.Wrapf(err, "failed to unmarshal configuration")
+	}
+	if err := publisher.SetRequiredStringConfigValues(flagVals,
+		githubPublisherAPIURLFlag, &cfg.APIURL,
+		githubPublisherUserFlag, &cfg.User,
+		githubPublisherTokenFlag, &cfg.Token,
+		githubPublisherRepositoryFlag, &cfg.Repository,
+	); err != nil {
+		return githubReleaseTarget{}, err
+	}
+
+	if err := publisher.SetConfigValue(flagVals, githubPublisherOwnerFlag, &cfg.Owner); err != nil {
+		return githubReleaseTarget{}, err
+	}
+	if cfg.Owner == "" {
+		cfg.Owner = cfg.User
+	}
+
+	if err := publisher.SetConfigValue(flagVals, githubAddVPrefixFlag, &cfg.AddVPrefix); err != nil {
+		return githubReleaseTarget{}, err
+	}
 
 	client := github.NewClient(oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: cfg.Token},
@@ -142,80 +246,21 @@ func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOut
 	// set base URL (should be of the form "https://api.github.com/")
 	apiURL, err := url.Parse(cfg.APIURL)
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse %s as URL for API calls", cfg.APIURL)
+		return githubReleaseTarget{}, errors.Wrapf(err, "failed to parse %s as URL for API calls", cfg.APIURL)
 	}
 	client.BaseURL = apiURL
 
-	releaseVersion := productTaskOutputInfo.Project.Version
+	releaseVersion := projectVersion
 	if cfg.AddVPrefix {
 		releaseVersion = "v" + releaseVersion
 	}
 
-	// Reuse an existing draft release for this tag if one already exists.
-	var releaseRes *github.RepositoryRelease
-	if !dryRun {
-		releaseRes, err = findExistingDraftRelease(client, cfg.Owner, cfg.Repository, releaseVersion)
-		if err != nil {
-			return err
-		}
-	}
-
-	if releaseRes != nil {
-		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Using existing draft GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository), dryRun)
-	} else {
-		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Creating GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository), dryRun)
-		if !dryRun {
-			// create the release as a draft since GitHub's immutable-releases feature rejects asset uploads to a
-			// non-draft release, so uploads must happen before the release is published.
-			releaseRes, _, err = client.Repositories.CreateRelease(context.Background(), cfg.Owner, cfg.Repository, &github.RepositoryRelease{
-				TagName: new(releaseVersion),
-				Draft:   new(true),
-			})
-			if err != nil {
-				// newline to complement "..." output
-				_, _ = fmt.Fprintln(stdout)
-
-				if ghErr, ok := err.(*github.ErrorResponse); ok && len(ghErr.Errors) > 0 && ghErr.Errors[0].Code == "already_exists" {
-					// release already exists: attempt to get it instead
-					gotRelease, _, err := client.Repositories.GetReleaseByTag(context.Background(), cfg.Owner, cfg.Repository, releaseVersion)
-					if err != nil {
-						return errors.Errorf("Failed to get GitHub release %s for %s/%s", releaseVersion, cfg.Owner, cfg.Repository)
-					}
-					// if release is found, use it and upload to the release
-					releaseRes = gotRelease
-				} else {
-					return errors.Wrapf(err, "failed to create GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository)
-				}
-			}
-		}
-	}
-	// no need for dry run print because beginning of line has already been printed
-	_, _ = fmt.Fprintln(stdout, "done")
-
-	for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
-		for _, currArtifactPath := range productTaskOutputInfo.ProductDistArtifactPaths()[currDistID] {
-			if _, err := p.uploadFileAtPath(client, releaseRes, currArtifactPath, dryRun, stdout); err != nil {
-				return err
-			}
-		}
-	}
-
-	// publish the release now that all assets have been uploaded. This is only necessary when the release is a draft,
-	// which is the case when it was created as a draft above or when an existing draft was reused. A pre-existing,
-	// already published release found via the "already_exists" path above does not need this step.
-	if releaseRes.GetDraft() {
-		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Publishing GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository), dryRun)
-		if !dryRun {
-			if _, _, err := client.Repositories.EditRelease(context.Background(), cfg.Owner, cfg.Repository, releaseRes.GetID(), &github.RepositoryRelease{
-				Draft: new(false),
-			}); err != nil {
-				_, _ = fmt.Fprintln(stdout)
-				return errors.Wrapf(err, "failed to publish GitHub release %s for %s/%s after uploading assets", releaseVersion, cfg.Owner, cfg.Repository)
-			}
-		}
-		_, _ = fmt.Fprintln(stdout, "done")
-	}
-	return nil
+	return githubReleaseTarget{
+		client:         client,
+		owner:          cfg.Owner,
+		repository:     cfg.Repository,
+		releaseVersion: releaseVersion,
+	}, nil
 }
 
 // findExistingDraftRelease returns the first draft release whose tag matches the provided tag, or nil if no such release exists.
