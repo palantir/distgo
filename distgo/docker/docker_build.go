@@ -248,15 +248,13 @@ func runSingleDockerBuild(
 	// level -- rather than inside the builder -- so it works for every builder that leaves an OCI layout, including
 	// re-layering builders (e.g. the chunkah asset) that rewrite the layout after building and would otherwise clobber
 	// a wrapper the builder wrote itself. Builders that produce no OCI layout (daemon-only) leave no index.json and are
-	// skipped: they cannot serve as a local FROM base. ProductDockerOutputDir is empty only when the product declares no
-	// Docker builders, in which case there is nothing to write.
+	// skipped: they cannot serve as a local FROM base.
 	if !dryRun {
-		if ociDir := distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID); ociDir != "" {
-			if _, err := os.Stat(filepath.Join(ociDir, "index.json")); err == nil {
-				renderedTags := productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags
-				if err := distgo.WriteDockerBuildContextLayout(ociDir, renderedTags); err != nil {
-					return errors.Wrapf(err, "failed to write Docker build context layout for %s", dockerID)
-				}
+		ociDir := distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID)
+		if _, err := os.Stat(filepath.Join(ociDir, "index.json")); err == nil {
+			renderedTags := productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags
+			if err := distgo.WriteDockerBuildContextLayout(ociDir, renderedTags); err != nil {
+				return errors.Wrapf(err, "failed to write Docker build context layout for %s", dockerID)
 			}
 		}
 	}
