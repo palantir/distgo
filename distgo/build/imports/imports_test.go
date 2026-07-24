@@ -49,7 +49,7 @@ func TestAllFilesGoModOff(t *testing.T) {
 		name    string
 		pkgPath string
 		filesFn func(projectDir string) []gofiles.GoFileSpec
-		want    func(projectDir string) imports.GoFiles
+		want    func(projectDir string) imports.BuildInputFiles
 	}{
 		{
 			name:    "returns files for primary package",
@@ -66,7 +66,7 @@ func TestAllFilesGoModOff(t *testing.T) {
 					},
 				}
 			},
-			want: func(projectDir string) imports.GoFiles {
+			want: func(projectDir string) imports.BuildInputFiles {
 				absPkgDir, err := filepath.Abs(projectDir)
 				require.NoError(t, err)
 				return map[string][]string{
@@ -96,7 +96,7 @@ func TestAllFilesGoModOff(t *testing.T) {
 					},
 				}
 			},
-			want: func(projectDir string) imports.GoFiles {
+			want: func(projectDir string) imports.BuildInputFiles {
 				absPkgDir, err := filepath.Abs(projectDir)
 				require.NoError(t, err)
 				return map[string][]string{
@@ -126,7 +126,7 @@ func TestAllFilesGoModOff(t *testing.T) {
 					},
 				}
 			},
-			want: func(projectDir string) imports.GoFiles {
+			want: func(projectDir string) imports.BuildInputFiles {
 				absPkgDir, err := filepath.Abs(projectDir)
 				require.NoError(t, err)
 				return map[string][]string{
@@ -159,7 +159,7 @@ func TestAllFilesGoModOff(t *testing.T) {
 					},
 				}
 			},
-			want: func(projectDir string) imports.GoFiles {
+			want: func(projectDir string) imports.BuildInputFiles {
 				absPkgDir, err := filepath.Abs(projectDir)
 				require.NoError(t, err)
 				return map[string][]string{
@@ -212,7 +212,7 @@ func TestAllFilesGoModOn(t *testing.T) {
 		name    string
 		pkgPath string
 		files   []gofiles.GoFileSpec
-		want    func(projectDir string) imports.GoFiles
+		want    func(projectDir string) imports.BuildInputFiles
 	}{
 		{
 			name:    "returns files for primary package",
@@ -231,7 +231,7 @@ func TestAllFilesGoModOn(t *testing.T) {
 					Src:     `package main; func Helper() string { return "helper" }`,
 				},
 			},
-			want: func(projectDir string) imports.GoFiles {
+			want: func(projectDir string) imports.BuildInputFiles {
 				absPkgDir, err := filepath.Abs(projectDir)
 				require.NoError(t, err)
 				return map[string][]string{
@@ -263,7 +263,7 @@ func TestAllFilesGoModOn(t *testing.T) {
 					Src:     `package main_test; import "testing"; func TestMain(t *testing.T) {}`,
 				},
 			},
-			want: func(projectDir string) imports.GoFiles {
+			want: func(projectDir string) imports.BuildInputFiles {
 				absPkgDir, err := filepath.Abs(projectDir)
 				require.NoError(t, err)
 				return map[string][]string{
@@ -294,7 +294,7 @@ func TestAllFilesGoModOn(t *testing.T) {
 					Src:     `package foo`,
 				},
 			},
-			want: func(projectDir string) imports.GoFiles {
+			want: func(projectDir string) imports.BuildInputFiles {
 				absPkgDir, err := filepath.Abs(projectDir)
 				require.NoError(t, err)
 				return map[string][]string{
@@ -329,7 +329,7 @@ func TestAllFilesGoModOn(t *testing.T) {
 					Src:     `package bar`,
 				},
 			},
-			want: func(projectDir string) imports.GoFiles {
+			want: func(projectDir string) imports.BuildInputFiles {
 				absPkgDir, err := filepath.Abs(projectDir)
 				require.NoError(t, err)
 				return map[string][]string{
@@ -338,6 +338,44 @@ func TestAllFilesGoModOn(t *testing.T) {
 					},
 					"github.com/foo": {
 						path.Join(absPkgDir, "vendor/github.com/foo", "foo.go"),
+					},
+				}
+			},
+		},
+		{
+			name:    "embedded and other non-Go files are included",
+			pkgPath: ".",
+			files: []gofiles.GoFileSpec{
+				{
+					RelPath: "go.mod",
+					Src:     `module foo`,
+				},
+				{
+					RelPath: "main.go",
+					Src: `package main
+
+import (
+	_ "embed"
+	"fmt"
+)
+
+//go:embed assets/data.txt
+var data string
+
+func main() { fmt.Println(data) }`,
+				},
+				{
+					RelPath: "assets/data.txt",
+					Src:     "embedded content",
+				},
+			},
+			want: func(projectDir string) imports.BuildInputFiles {
+				absPkgDir, err := filepath.Abs(projectDir)
+				require.NoError(t, err)
+				return map[string][]string{
+					"foo": {
+						path.Join(absPkgDir, "main.go"),
+						path.Join(absPkgDir, "assets", "data.txt"),
 					},
 				}
 			},
@@ -415,4 +453,55 @@ func TestNewerThanFileIsNotNewer(t *testing.T) {
 	newer, err := goFiles.NewerThan(fi)
 	require.NoError(t, err)
 	assert.False(t, newer)
+}
+
+// TestNewerThanEmbedFileIsNewer verifies that a change to only a //go:embed'd asset (no Go file touched) is detected as
+// newer than the build artifact.
+func TestNewerThanEmbedFileIsNewer(t *testing.T) {
+	tmpDir, cleanup, err := dirs.TempDir(".", "")
+	require.NoError(t, err)
+	defer cleanup()
+	err = os.WriteFile(path.Join(tmpDir, ".gitignore"), []byte(`*
+*/
+`), 0644)
+	require.NoError(t, err)
+
+	require.NoError(t, os.WriteFile(path.Join(tmpDir, "go.mod"), []byte("module foo"), 0644))
+	require.NoError(t, os.MkdirAll(path.Join(tmpDir, "assets"), 0755))
+	require.NoError(t, os.WriteFile(path.Join(tmpDir, "assets", "data.txt"), []byte("v1"), 0644))
+	require.NoError(t, os.WriteFile(path.Join(tmpDir, "main.go"), []byte(`package main
+
+import (
+	_ "embed"
+	"fmt"
+)
+
+//go:embed assets/data.txt
+var data string
+
+func main() { fmt.Println(data) }`), 0644))
+
+	buildFiles, err := imports.AllFiles(tmpDir, "", "")
+	require.NoError(t, err)
+
+	// sleep to ensure mtimes differ, then create a baseline file representing the already-built artifact. At this
+	// point every input file is older than the artifact.
+	time.Sleep(time.Second)
+	tmpFile, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	fi, err := tmpFile.Stat()
+	require.NoError(t, err)
+	require.NoError(t, tmpFile.Close())
+
+	newer, err := buildFiles.NewerThan(fi)
+	require.NoError(t, err)
+	require.False(t, newer, "no input should be newer than the artifact before the embedded asset is modified")
+
+	// modify only the embedded asset (not the Go source) and confirm it flips the result
+	time.Sleep(time.Second)
+	require.NoError(t, os.WriteFile(path.Join(tmpDir, "assets", "data.txt"), []byte("v2"), 0644))
+
+	newer, err = buildFiles.NewerThan(fi)
+	require.NoError(t, err)
+	assert.True(t, newer)
 }

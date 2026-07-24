@@ -23,18 +23,18 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-// GoFiles is a map from package paths to the names of the buildable .go source files (.go files excluding Cgo and test
-// files) in the package.
-type GoFiles map[string][]string
+// BuildInputFiles is a map from package paths to the absolute paths of the files required to build the package: buildable
+// .go source files (excluding Cgo and test files), files embedded via //go:embed, and other non-Go source files
+// (assembly, C, etc.).
+type BuildInputFiles map[string][]string
 
-// NewerThan returns true if the modification time of any of the GoFiles is newer than that of the provided file.
-func (g GoFiles) NewerThan(fi os.FileInfo) (bool, error) {
+// NewerThan returns true if the modification time of any of the files is newer than that of the provided file.
+func (g BuildInputFiles) NewerThan(fi os.FileInfo) (bool, error) {
 	for _, files := range g {
-		for _, goFile := range files {
-			currPath := goFile
-			currFi, err := os.Stat(currPath)
+		for _, currFile := range files {
+			currFi, err := os.Stat(currFile)
 			if err != nil {
-				return false, errors.Wrapf(err, "Failed to stat file %v", currPath)
+				return false, errors.Wrapf(err, "Failed to stat file %v", currFile)
 			}
 			if currFi.ModTime().After(fi.ModTime()) {
 				return true, nil
@@ -44,13 +44,14 @@ func (g GoFiles) NewerThan(fi os.FileInfo) (bool, error) {
 	return false, nil
 }
 
-// AllFiles returns a map that contains all of the non-standard library Go files that are imported by (and thus are
+// AllFiles returns a map that contains all of the non-standard library files that are imported by (and thus are
 // required to build) the package at the specified file path (including the package itself) using the specified GOOS and
 // GOARCH. If GOOS or GOARCH is empty, the default value for the current environment is used. The keys in the returned
-// map are the package or module names and the values are a slice of the paths of the .go source files in the package
-// (excluding Cgo and test files).
-func AllFiles(pkgDir, goos, goarch string) (GoFiles, error) {
-	// package or module name to all non-test Go files in the package
+// map are the package or module names and the values are a slice of the paths of the files required to build the
+// package: .go source files (excluding Cgo and test files), files embedded via //go:embed, and other non-Go source
+// files (assembly, C, etc.).
+func AllFiles(pkgDir, goos, goarch string) (BuildInputFiles, error) {
+	// package or module name to all files required to build the package
 	pkgFiles := make(map[string][]string)
 
 	env := os.Environ()
@@ -61,7 +62,7 @@ func AllFiles(pkgDir, goos, goarch string) (GoFiles, error) {
 		env = append(env, fmt.Sprintf("GOARCH=%s", goarch))
 	}
 	cfg := &packages.Config{
-		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles | packages.NeedImports,
+		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles | packages.NeedImports | packages.NeedEmbedFiles,
 		Dir:  pkgDir,
 		Env:  env,
 	}
@@ -78,8 +79,13 @@ func AllFiles(pkgDir, goos, goarch string) (GoFiles, error) {
 			continue
 		}
 
-		// add all files for the current package to output
-		pkgFiles[currPkg.PkgPath] = currPkg.GoFiles
+		// add all files required to build the current package to output: Go source, //go:embed files, and other
+		// non-Go source (assembly, C, etc.)
+		var currFiles []string
+		currFiles = append(currFiles, currPkg.GoFiles...)
+		currFiles = append(currFiles, currPkg.OtherFiles...)
+		currFiles = append(currFiles, currPkg.EmbedFiles...)
+		pkgFiles[currPkg.PkgPath] = currFiles
 
 		// convert all non-built-in imports into packages and add to packages to process
 		for importPath, importPkg := range currPkg.Imports {

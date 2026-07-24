@@ -26,8 +26,8 @@ import (
 
 // RequiresBuild returns a pointer to a distgo.ProductParam that contains only the OS/arch parameters for the outputs
 // that require building. A product is considered to require building if its output executable does not exist or if the
-// output executable's modification date is older than any of the Go files required to build the product. Returns nil if
-// all of the outputs exist and are up-to-date.
+// output executable's modification date is older than any of the files (Go source, embedded, or other non-Go source)
+// required to build the product. Returns nil if all of the outputs exist and are up-to-date.
 func RequiresBuild(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam) (*distgo.ProductParam, error) {
 	if productParam.Build == nil {
 		return nil, nil
@@ -46,9 +46,9 @@ func RequiresBuild(projectInfo distgo.ProjectInfo, productParam distgo.ProductPa
 	var requiresBuildOSArchs []osarch.OSArch
 	for _, currOSArch := range productParam.Build.OSArchs {
 		if fi, err := os.Stat(pathsMap[currOSArch]); err == nil {
-			if goFiles, err := imports.AllFiles(path.Join(projectInfo.ProjectDir, productParam.Build.MainPkg), currOSArch.OS, currOSArch.Arch); err == nil {
-				if newerThan, err := goFiles.NewerThan(fi); err == nil && !newerThan {
-					// if the build artifact for the product already exists and none of the source files for the
+			if buildFiles, err := imports.AllFiles(path.Join(projectInfo.ProjectDir, productParam.Build.MainPkg), currOSArch.OS, currOSArch.Arch); err == nil {
+				if newerThan, err := buildFiles.NewerThan(fi); err == nil && !newerThan {
+					// if the build artifact for the product already exists and none of the input files for the
 					// product are newer than the build artifact, consider spec up-to-date
 					continue
 				}
