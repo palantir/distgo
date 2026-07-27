@@ -54,7 +54,7 @@ func (p *assetPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	return flags, nil
 }
 
-func (p *assetPublisher) RunPublish(inputs []distgo.PublishInput, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+func (p *assetPublisher) RunPublish(inputs []distgo.ProductPublishInfo, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
 	inputsJSON, err := json.Marshal(inputs)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal JSON for inputs")
@@ -64,10 +64,12 @@ func (p *assetPublisher) RunPublish(inputs []distgo.PublishInput, flagVals map[d
 		return errors.Wrapf(err, "failed to marshal JSON for flagVals")
 	}
 
-	args := []string{runPublishV2CmdName}
-	args = append(args, "--"+runPublishV2CmdInputsFlagName, string(inputsJSON))
-	args = append(args, "--"+runPublishCmdFlagValsFlagName, string(flagValsJSON))
-	args = append(args, "--"+runPublishCmdDryRunFlagName+"="+strconv.FormatBool(dryRun))
+	args := []string{
+		runPublishV2CmdName,
+		"--" + runPublishV2CmdInputsFlagName, string(inputsJSON),
+		"--" + runPublishCmdFlagValsFlagName, string(flagValsJSON),
+		"--" + runPublishCmdDryRunFlagName + "=" + strconv.FormatBool(dryRun),
+	}
 
 	runPublishCmd := exec.Command(p.assetPath, args...)
 	runPublishCmd.Stdout = stdout
@@ -90,7 +92,7 @@ type legacyAssetPublisher struct {
 	assetPublisher
 }
 
-func (p *legacyAssetPublisher) RunPublish(inputs []distgo.PublishInput, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+func (p *legacyAssetPublisher) RunPublish(inputs []distgo.ProductPublishInfo, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
 	flagValsJSON, err := json.Marshal(flagVals)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal JSON for flagVals")
@@ -100,7 +102,7 @@ func (p *legacyAssetPublisher) RunPublish(inputs []distgo.PublishInput, flagVals
 		if err != nil {
 			return errors.Wrapf(err, "failed to marshal JSON for productTaskOutputInfo")
 		}
-		cfgYMLString := string(input.ConfigYML)
+		cfgYMLString := string(input.PublisherConfigYML)
 		if cfgYMLString == "" {
 			cfgYMLString = "{}"
 		}

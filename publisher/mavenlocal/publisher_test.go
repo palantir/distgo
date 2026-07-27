@@ -32,7 +32,7 @@ func TestRunPublish_UsesEachInputsOwnConfig(t *testing.T) {
 	fooBaseDir := filepath.Join(t.TempDir(), "foo-repo")
 	barBaseDir := filepath.Join(t.TempDir(), "bar-repo")
 
-	inputs := []distgo.PublishInput{
+	inputs := []distgo.ProductPublishInfo{
 		testProductInput(t, projectDir, "foo", fooBaseDir),
 		testProductInput(t, projectDir, "bar", barBaseDir),
 	}
@@ -56,20 +56,20 @@ func TestRunPublish_StopsOnFirstError(t *testing.T) {
 	goodInput := testProductInput(t, projectDir, "bar", barBaseDir)
 
 	publisher := mavenlocal.PublisherCreator().Publisher()
-	err := publisher.RunPublish([]distgo.PublishInput{badInput, goodInput}, nil, false, io.Discard)
+	err := publisher.RunPublish([]distgo.ProductPublishInfo{badInput, goodInput}, nil, false, io.Discard)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "foo")
 
 	assert.NoFileExists(t, filepath.Join(barBaseDir, "com/test/group/bar/1.0.0/bar-1.0.0-linux-amd64.tgz"))
 }
 
-func testProductInput(t *testing.T, projectDir, productID, baseDir string) distgo.PublishInput {
+func testProductInput(t *testing.T, projectDir, productID, baseDir string) distgo.ProductPublishInfo {
 	artifactName := fmt.Sprintf("%s-1.0.0-linux-amd64.tgz", productID)
 	artifactPath := filepath.Join(projectDir, "out", "dist", productID, "1.0.0", "os-arch-bin", artifactName)
 	require.NoError(t, os.MkdirAll(filepath.Dir(artifactPath), 0755))
 	require.NoError(t, os.WriteFile(artifactPath, []byte("fake tgz content for "+productID), 0644))
 
-	return distgo.PublishInput{
+	return distgo.ProductPublishInfo{
 		ProductTaskOutputInfo: distgo.ProductTaskOutputInfo{
 			Project: distgo.ProjectInfo{
 				ProjectDir: projectDir,
@@ -92,6 +92,6 @@ func testProductInput(t *testing.T, projectDir, productID, baseDir string) distg
 				},
 			},
 		},
-		ConfigYML: fmt.Appendf(nil, "base-dir: %s\nno-pom: true\n", baseDir),
+		PublisherConfigYML: fmt.Appendf(nil, "base-dir: %s\nno-pom: true\n", baseDir),
 	}
 }

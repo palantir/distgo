@@ -45,14 +45,14 @@ func TestAssetPublisher_RunPublish(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "v2", typeName)
 
-	inputs := []distgo.PublishInput{
+	inputs := []distgo.ProductPublishInfo{
 		{ProductTaskOutputInfo: distgo.ProductTaskOutputInfo{Product: distgo.ProductOutputInfo{ID: "foo"}}},
 		{ProductTaskOutputInfo: distgo.ProductTaskOutputInfo{Product: distgo.ProductOutputInfo{ID: "bar"}}},
 	}
 	var stdout bytes.Buffer
 	err = p.RunPublish(inputs, nil, false, &stdout)
 	require.NoError(t, err)
-	assert.Equal(t, "RunPublish:bar,foo\n", stdout.String())
+	assert.Equal(t, "RunPublish:foo,bar\n", stdout.String())
 }
 
 // TestLegacyAssetPublisher_RunPublish verifies that legacyAssetPublisher falls back to invoking the legacy
@@ -66,7 +66,7 @@ func TestLegacyAssetPublisher_RunPublish(t *testing.T) {
 		},
 	}
 
-	inputs := []distgo.PublishInput{
+	inputs := []distgo.ProductPublishInfo{
 		{ProductTaskOutputInfo: distgo.ProductTaskOutputInfo{Product: distgo.ProductOutputInfo{ID: "foo"}}},
 		{ProductTaskOutputInfo: distgo.ProductTaskOutputInfo{Product: distgo.ProductOutputInfo{ID: "bar"}}},
 	}

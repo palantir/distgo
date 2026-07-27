@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/palantir/distgo/distgo"
@@ -38,12 +37,11 @@ func (p *v2Publisher) Flags() ([]distgo.PublisherFlag, error) {
 	return nil, nil
 }
 
-func (p *v2Publisher) RunPublish(inputs []distgo.PublishInput, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+func (p *v2Publisher) RunPublish(inputs []distgo.ProductPublishInfo, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
 	ids := make([]string, 0, len(inputs))
 	for _, input := range inputs {
 		ids = append(ids, string(input.ProductTaskOutputInfo.Product.ID))
 	}
-	sort.Strings(ids)
 	_, _ = fmt.Fprintf(stdout, "RunPublish:%s\n", strings.Join(ids, ","))
 	return nil
 }

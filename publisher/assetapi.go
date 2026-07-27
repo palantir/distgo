@@ -102,7 +102,7 @@ func newRunPublishCmd(publisher distgo.Publisher) *cobra.Command {
 	)
 	runDistCmd := &cobra.Command{
 		Use:   runPublishCmdName,
-		Short: "Runs the publish action for a single product",
+		Short: "Runs the publish action for a single ProductTaskOutputInfo",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var productTaskOutputInfo distgo.ProductTaskOutputInfo
 			if err := json.Unmarshal([]byte(productTaskOutputInfoFlagVal), &productTaskOutputInfo); err != nil {
@@ -112,9 +112,9 @@ func newRunPublishCmd(publisher distgo.Publisher) *cobra.Command {
 			if err := json.Unmarshal([]byte(flagValsFlagVal), &flagVals); err != nil {
 				return errors.Wrapf(err, "failed to unmarshal JSON %s", flagValsFlagVal)
 			}
-			inputs := []distgo.PublishInput{{
+			inputs := []distgo.ProductPublishInfo{{
 				ProductTaskOutputInfo: productTaskOutputInfo,
-				ConfigYML:             []byte(configYMLFlagVal),
+				PublisherConfigYML:    []byte(configYMLFlagVal),
 			}}
 			return publisher.RunPublish(inputs, flagVals, dryRunFlagVal, cmd.OutOrStdout())
 		},
@@ -137,7 +137,7 @@ const (
 	runPublishV2CmdInputsFlagName = "inputs"
 )
 
-// newRunPublishV2Cmd returns the run-publish-v2 command which publishes a batch of products.
+// newRunPublishV2Cmd returns the run-publish-v2 command which publishes the provided []distgo.ProductPublishInfo.
 func newRunPublishV2Cmd(publisher distgo.Publisher) *cobra.Command {
 	var (
 		inputsFlagVal   string
@@ -146,9 +146,9 @@ func newRunPublishV2Cmd(publisher distgo.Publisher) *cobra.Command {
 	)
 	runPublishV2Cmd := &cobra.Command{
 		Use:   runPublishV2CmdName,
-		Short: "Runs the publish action for every product in the batch",
+		Short: "Runs the publish action for the provided products",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var inputs []distgo.PublishInput
+			var inputs []distgo.ProductPublishInfo
 			if err := json.Unmarshal([]byte(inputsFlagVal), &inputs); err != nil {
 				return errors.Wrapf(err, "failed to unmarshal JSON %s", inputsFlagVal)
 			}
@@ -159,10 +159,11 @@ func newRunPublishV2Cmd(publisher distgo.Publisher) *cobra.Command {
 			return publisher.RunPublish(inputs, flagVals, dryRunFlagVal, cmd.OutOrStdout())
 		},
 	}
-	runPublishV2Cmd.Flags().StringVar(&inputsFlagVal, runPublishV2CmdInputsFlagName, "", "JSON representation of []distgo.PublishInput")
+	runPublishV2Cmd.Flags().StringVar(&inputsFlagVal, runPublishV2CmdInputsFlagName, "", "JSON representation of []distgo.ProductPublishInfo")
 	runPublishV2Cmd.Flags().StringVar(&flagValsFlagVal, runPublishCmdFlagValsFlagName, "", "JSON representation of map[distgo.PublisherFlag]any")
 	runPublishV2Cmd.Flags().BoolVar(&dryRunFlagVal, runPublishCmdDryRunFlagName, false, "true if the operation should be run as a dry run")
-	mustMarkFlagsRequired(runPublishV2Cmd,
+	mustMarkFlagsRequired(
+		runPublishV2Cmd,
 		runPublishV2CmdInputsFlagName,
 		runPublishCmdFlagValsFlagName,
 		runPublishCmdDryRunFlagName,

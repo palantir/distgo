@@ -28,17 +28,17 @@ type Publisher interface {
 	// Flags returns the flags provided by this Publisher.
 	Flags() ([]PublisherFlag, error)
 
-	// RunPublish runs the publish task for every product in inputs. When this function is called, the distribution artifacts
-	// for the products should already exist. If dryRun is true, it should print the operations that would occur without
-	// actually executing them.
-	RunPublish(inputs []PublishInput, flagVals map[PublisherFlagName]any, dryRun bool, stdout io.Writer) error
+	// RunPublish runs the publish task to publish the products specified in the provided ProductPublishInfos. When
+	// this function is called, the distribution artifacts for the products should already exist. If dryRun is true,
+	// it should print the operations that would occur without actually executing them.
+	RunPublish(inputs []ProductPublishInfo, flagVals map[PublisherFlagName]any, dryRun bool, stdout io.Writer) error
 }
 
-// PublishInput contains the product output information and product-specific configuration for one product's
-// publish operation.
-type PublishInput struct {
+// ProductPublishInfo contains the product output information and product-specific publisher configuration for one
+// product's publish operation for a particular publisher.
+type ProductPublishInfo struct {
 	ProductTaskOutputInfo ProductTaskOutputInfo
-	ConfigYML             []byte
+	PublisherConfigYML    []byte
 }
 
 type PublisherFactory interface {

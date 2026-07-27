@@ -26,7 +26,7 @@ import (
 )
 
 func TestRunPublish_UsesEachInputsOwnConfig(t *testing.T) {
-	inputs := []distgo.PublishInput{
+	inputs := []distgo.ProductPublishInfo{
 		testProductInput("foo", "fooRepo"),
 		testProductInput("bar", "barRepo"),
 	}
@@ -44,20 +44,20 @@ func TestRunPublish_UsesEachInputsOwnConfig(t *testing.T) {
 
 func TestRunPublish_StopsOnFirstError(t *testing.T) {
 	badInput := testProductInput("foo", "fooRepo")
-	badInput.ConfigYML = []byte("no-pom: true\n") // missing required "url" and "repository"
+	badInput.PublisherConfigYML = []byte("no-pom: true\n") // missing required "url" and "repository"
 	goodInput := testProductInput("bar", "barRepo")
 
 	publisher := artifactory.PublisherCreator().Publisher()
 	var stdout bytes.Buffer
-	err := publisher.RunPublish([]distgo.PublishInput{badInput, goodInput}, nil, true, &stdout)
+	err := publisher.RunPublish([]distgo.ProductPublishInfo{badInput, goodInput}, nil, true, &stdout)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "foo")
 	assert.NotContains(t, stdout.String(), "barRepo")
 }
 
-func testProductInput(productID, repository string) distgo.PublishInput {
+func testProductInput(productID, repository string) distgo.ProductPublishInfo {
 	artifactName := fmt.Sprintf("%s-1.0.0-linux-amd64.tgz", productID)
-	return distgo.PublishInput{
+	return distgo.ProductPublishInfo{
 		ProductTaskOutputInfo: distgo.ProductTaskOutputInfo{
 			Project: distgo.ProjectInfo{
 				Version: "1.0.0",
@@ -79,6 +79,6 @@ func testProductInput(productID, repository string) distgo.PublishInput {
 				},
 			},
 		},
-		ConfigYML: fmt.Appendf(nil, "url: http://artifactory.domain.com\nrepository: %s\nno-pom: true\n", repository),
+		PublisherConfigYML: fmt.Appendf(nil, "url: http://artifactory.domain.com\nrepository: %s\nno-pom: true\n", repository),
 	}
 }

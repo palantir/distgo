@@ -96,9 +96,9 @@ func (p *githubPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	}, nil
 }
 
-func (p *githubPublisher) RunPublish(inputs []distgo.PublishInput, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+func (p *githubPublisher) RunPublish(inputs []distgo.ProductPublishInfo, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
 	for _, input := range inputs {
-		if err := p.runPublish(input.ProductTaskOutputInfo, input.ConfigYML, flagVals, dryRun, stdout); err != nil {
+		if err := p.runPublish(input.ProductTaskOutputInfo, input.PublisherConfigYML, flagVals, dryRun, stdout); err != nil {
 			return errors.Wrapf(err, "failed to publish %s", input.ProductTaskOutputInfo.Product.ID)
 		}
 	}

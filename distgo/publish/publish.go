@@ -41,9 +41,9 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 		return errors.Wrapf(err, "failed to determine type of publisher")
 	}
 
-	var inputs []distgo.PublishInput
+	var inputs []distgo.ProductPublishInfo
 	for _, currProduct := range productParams {
-		input, err := preparePublishInput(projectInfo, currProduct, publisherType, dryRun, stdout)
+		input, err := getProductPublishInfo(projectInfo, currProduct, publisherType, dryRun, stdout)
 		if err != nil {
 			return err
 		}
@@ -61,9 +61,10 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 	return nil
 }
 
-// preparePublishInput computes the [distgo.PublishInput] for the specified product, or nil if it has no dist outputs
-// and should be skipped. The outputs for its dependent products must already exist in their proper locations.
-func preparePublishInput(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publisherType string, dryRun bool, stdout io.Writer) (*distgo.PublishInput, error) {
+// getProductPublishInfo computes and returns the [distgo.ProductPublishInfo] for the specified productParam, or nil
+// if it has no dist outputs and should be skipped. The outputs for any dependent products of the param must already
+// exist in their proper locations.
+func getProductPublishInfo(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, publisherType string, dryRun bool, stdout io.Writer) (*distgo.ProductPublishInfo, error) {
 	if productParam.Dist == nil {
 		distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("%s does not have dist outputs; skipping publish", productParam.ID), dryRun)
 		return nil, nil
@@ -93,8 +94,8 @@ func preparePublishInput(projectInfo distgo.ProjectInfo, productParam distgo.Pro
 	if productParam.Publish != nil {
 		publishCfgBytes = productParam.Publish.PublishInfo[distgo.PublisherTypeID(publisherType)].ConfigBytes
 	}
-	return &distgo.PublishInput{
+	return &distgo.ProductPublishInfo{
 		ProductTaskOutputInfo: productTaskOutputInfo,
-		ConfigYML:             publishCfgBytes,
+		PublisherConfigYML:    publishCfgBytes,
 	}, nil
 }

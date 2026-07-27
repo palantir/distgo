@@ -56,7 +56,7 @@ func (p *testPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	return nil, nil
 }
 
-func (p *testPublisher) RunPublish(inputs []distgo.PublishInput, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+func (p *testPublisher) RunPublish(inputs []distgo.ProductPublishInfo, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
 	for _, input := range inputs {
 		productDistArtifactPaths := input.ProductTaskOutputInfo.ProductDistArtifactPaths()
 		var distIDs []distgo.DistID
