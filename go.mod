@@ -6,7 +6,7 @@ toolchain go1.26.5
 
 require (
 	github.com/google/go-containerregistry v0.21.7
-	github.com/google/go-github/v28 v28.1.1
+	github.com/google/go-github/v89 v89.0.0
 	github.com/jtacoma/uritemplates v1.0.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/nmiyake/pkg/dirs v1.1.0
@@ -27,7 +27,6 @@ require (
 	github.com/termie/go-shutil v0.0.0-20140729215957-bcacb06fecae
 	github.com/whilp/git-urls v1.0.0
 	golang.org/x/exp v0.0.0-20260727155853-b88d891fe743
-	golang.org/x/oauth2 v0.36.0
 	golang.org/x/tools v0.48.0
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gopkg.in/yaml.v2 v2.4.0
@@ -62,7 +61,6 @@ require (
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/ulikunitz/xz v0.5.16 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
