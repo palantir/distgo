@@ -35,6 +35,7 @@ func AssetRootCmd(creator Creator, upgradeConfigFn pluginapi.UpgradeConfigFn, sh
 	rootCmd.AddCommand(assetapi.NewAssetTypeCmd(assetapi.Publisher))
 	rootCmd.AddCommand(newFlagsCmd(publisher))
 	rootCmd.AddCommand(newRunPublishCmd(publisher))
+	rootCmd.AddCommand(newRunPublishV2Cmd(publisher))
 	rootCmd.AddCommand(pluginapi.CobraUpgradeConfigCmd(upgradeConfigFn))
 
 	return rootCmd
@@ -91,6 +92,7 @@ const (
 	runPublishCmdDryRunFlagName                = "dry-run"
 )
 
+// newRunPublishCmd returns the legacy run-publish command that publishes a single product.
 func newRunPublishCmd(publisher distgo.Publisher) *cobra.Command {
 	var (
 		productTaskOutputInfoFlagVal string
@@ -100,7 +102,7 @@ func newRunPublishCmd(publisher distgo.Publisher) *cobra.Command {
 	)
 	runDistCmd := &cobra.Command{
 		Use:   runPublishCmdName,
-		Short: "Runs the publish action",
+		Short: "Runs the publish action for a single ProductTaskOutputInfo",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var productTaskOutputInfo distgo.ProductTaskOutputInfo
 			if err := json.Unmarshal([]byte(productTaskOutputInfoFlagVal), &productTaskOutputInfo); err != nil {
@@ -110,7 +112,11 @@ func newRunPublishCmd(publisher distgo.Publisher) *cobra.Command {
 			if err := json.Unmarshal([]byte(flagValsFlagVal), &flagVals); err != nil {
 				return errors.Wrapf(err, "failed to unmarshal JSON %s", flagValsFlagVal)
 			}
-			return publisher.RunPublish(productTaskOutputInfo, []byte(configYMLFlagVal), flagVals, dryRunFlagVal, cmd.OutOrStdout())
+			inputs := []distgo.ProductPublishInfo{{
+				ProductTaskOutputInfo: productTaskOutputInfo,
+				PublisherConfigYML:    []byte(configYMLFlagVal),
+			}}
+			return publisher.RunPublish(inputs, flagVals, dryRunFlagVal, cmd.OutOrStdout())
 		},
 	}
 	runDistCmd.Flags().StringVar(&productTaskOutputInfoFlagVal, runPublishCmdProductTaskOutputInfoFlagName, "", "JSON representation of distgo.ProductTaskOutputInfo")
@@ -124,6 +130,45 @@ func newRunPublishCmd(publisher distgo.Publisher) *cobra.Command {
 		runPublishCmdDryRunFlagName,
 	)
 	return runDistCmd
+}
+
+const (
+	runPublishV2CmdName           = "run-publish-v2"
+	runPublishV2CmdInputsFlagName = "inputs"
+)
+
+// newRunPublishV2Cmd returns the run-publish-v2 command which publishes the provided []distgo.ProductPublishInfo.
+func newRunPublishV2Cmd(publisher distgo.Publisher) *cobra.Command {
+	var (
+		inputsFlagVal   string
+		flagValsFlagVal string
+		dryRunFlagVal   bool
+	)
+	runPublishV2Cmd := &cobra.Command{
+		Use:   runPublishV2CmdName,
+		Short: "Runs the publish action for the provided products",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var inputs []distgo.ProductPublishInfo
+			if err := json.Unmarshal([]byte(inputsFlagVal), &inputs); err != nil {
+				return errors.Wrapf(err, "failed to unmarshal JSON %s", inputsFlagVal)
+			}
+			var flagVals map[distgo.PublisherFlagName]any
+			if err := json.Unmarshal([]byte(flagValsFlagVal), &flagVals); err != nil {
+				return errors.Wrapf(err, "failed to unmarshal JSON %s", flagValsFlagVal)
+			}
+			return publisher.RunPublish(inputs, flagVals, dryRunFlagVal, cmd.OutOrStdout())
+		},
+	}
+	runPublishV2Cmd.Flags().StringVar(&inputsFlagVal, runPublishV2CmdInputsFlagName, "", "JSON representation of []distgo.ProductPublishInfo")
+	runPublishV2Cmd.Flags().StringVar(&flagValsFlagVal, runPublishCmdFlagValsFlagName, "", "JSON representation of map[distgo.PublisherFlag]any")
+	runPublishV2Cmd.Flags().BoolVar(&dryRunFlagVal, runPublishCmdDryRunFlagName, false, "true if the operation should be run as a dry run")
+	mustMarkFlagsRequired(
+		runPublishV2Cmd,
+		runPublishV2CmdInputsFlagName,
+		runPublishCmdFlagValsFlagName,
+		runPublishCmdDryRunFlagName,
+	)
+	return runPublishV2Cmd
 }
 
 func mustMarkFlagsRequired(cmd *cobra.Command, flagNames ...string) {

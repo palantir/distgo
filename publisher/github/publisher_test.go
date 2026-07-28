@@ -115,7 +115,7 @@ func TestRunPublish_CreatesDraftReleaseThenPublishesAfterUpload(t *testing.T) {
 	}
 
 	publisher := new(githubPublisher)
-	err := publisher.RunPublish(productTaskOutputInfo, []byte("{}\n"), flagVals, false, io.Discard)
+	err := publisher.RunPublish([]distgo.ProductPublishInfo{{ProductTaskOutputInfo: productTaskOutputInfo, PublisherConfigYML: []byte("{}\n")}}, flagVals, false, io.Discard)
 	require.NoError(t, err)
 
 	gotCreateReleaseDraft := createReleaseDraft.Load()
@@ -209,7 +209,7 @@ func TestRunPublish_ReusesExistingDraftRelease(t *testing.T) {
 	}
 
 	publisher := new(githubPublisher)
-	err := publisher.RunPublish(productTaskOutputInfo, []byte("{}\n"), flagVals, false, io.Discard)
+	err := publisher.RunPublish([]distgo.ProductPublishInfo{{ProductTaskOutputInfo: productTaskOutputInfo, PublisherConfigYML: []byte("{}\n")}}, flagVals, false, io.Discard)
 	require.NoError(t, err)
 
 	assert.False(t, createReleaseCalled.Load(), "existing draft release must be reused instead of creating a new release")

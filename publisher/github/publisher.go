@@ -96,7 +96,16 @@ func (p *githubPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	}, nil
 }
 
-func (p *githubPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+func (p *githubPublisher) RunPublish(inputs []distgo.ProductPublishInfo, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+	for _, input := range inputs {
+		if err := p.runPublish(input.ProductTaskOutputInfo, input.PublisherConfigYML, flagVals, dryRun, stdout); err != nil {
+			return errors.Wrapf(err, "failed to publish %s", input.ProductTaskOutputInfo.Product.ID)
+		}
+	}
+	return nil
+}
+
+func (p *githubPublisher) runPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
 	var cfg config.GitHub
 	if err := yaml.Unmarshal(cfgYML, &cfg); err != nil {
 		return errors.Wrapf(err, "failed to unmarshal configuration")

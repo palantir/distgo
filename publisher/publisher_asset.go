@@ -54,25 +54,22 @@ func (p *assetPublisher) Flags() ([]distgo.PublisherFlag, error) {
 	return flags, nil
 }
 
-func (p *assetPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
-	productTaskOutputInfoJSON, err := json.Marshal(productTaskOutputInfo)
+func (p *assetPublisher) RunPublish(inputs []distgo.ProductPublishInfo, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+	inputsJSON, err := json.Marshal(inputs)
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal JSON for productTaskOutputInfo")
+		return errors.Wrapf(err, "failed to marshal JSON for inputs")
 	}
 	flagValsJSON, err := json.Marshal(flagVals)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal JSON for flagVals")
 	}
 
-	args := []string{runPublishCmdName}
-	args = append(args, "--"+runPublishCmdProductTaskOutputInfoFlagName, string(productTaskOutputInfoJSON))
-	cfgYMLString := string(cfgYML)
-	if cfgYMLString == "" {
-		cfgYMLString = "{}"
+	args := []string{
+		runPublishV2CmdName,
+		"--" + runPublishV2CmdInputsFlagName, string(inputsJSON),
+		"--" + runPublishCmdFlagValsFlagName, string(flagValsJSON),
+		"--" + runPublishCmdDryRunFlagName + "=" + strconv.FormatBool(dryRun),
 	}
-	args = append(args, "--"+runPublishCmdConfigYMLFlagName, cfgYMLString)
-	args = append(args, "--"+runPublishCmdFlagValsFlagName, string(flagValsJSON))
-	args = append(args, "--"+runPublishCmdDryRunFlagName+"="+strconv.FormatBool(dryRun))
 
 	runPublishCmd := exec.Command(p.assetPath, args...)
 	runPublishCmd.Stdout = stdout
@@ -80,6 +77,49 @@ func (p *assetPublisher) RunPublish(productTaskOutputInfo distgo.ProductTaskOutp
 
 	if err := runPublishCmd.Run(); err != nil {
 		return errors.Wrapf(err, "command %v failed", runPublishCmd.Args[0])
+	}
+	return nil
+}
+
+// assetSupportsV2Publish reports whether the asset at assetPath registers the run-publish-v2 command.
+func assetSupportsV2Publish(assetPath string) bool {
+	return exec.Command(assetPath, runPublishV2CmdName, "--help").Run() == nil
+}
+
+// legacyAssetPublisher wraps an assetPublisher to support the legacy per-product publishing.
+// This is used for assets that do not yet support the run-publish-v2 command.
+type legacyAssetPublisher struct {
+	assetPublisher
+}
+
+func (p *legacyAssetPublisher) RunPublish(inputs []distgo.ProductPublishInfo, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
+	flagValsJSON, err := json.Marshal(flagVals)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal JSON for flagVals")
+	}
+	for _, input := range inputs {
+		productTaskOutputInfoJSON, err := json.Marshal(input.ProductTaskOutputInfo)
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal JSON for productTaskOutputInfo")
+		}
+		cfgYMLString := string(input.PublisherConfigYML)
+		if cfgYMLString == "" {
+			cfgYMLString = "{}"
+		}
+
+		args := []string{runPublishCmdName}
+		args = append(args, "--"+runPublishCmdProductTaskOutputInfoFlagName, string(productTaskOutputInfoJSON))
+		args = append(args, "--"+runPublishCmdConfigYMLFlagName, cfgYMLString)
+		args = append(args, "--"+runPublishCmdFlagValsFlagName, string(flagValsJSON))
+		args = append(args, "--"+runPublishCmdDryRunFlagName+"="+strconv.FormatBool(dryRun))
+
+		runPublishCmd := exec.Command(p.assetPath, args...)
+		runPublishCmd.Stdout = stdout
+		runPublishCmd.Stderr = stdout
+
+		if err := runPublishCmd.Run(); err != nil {
+			return errors.Wrapf(err, "failed to publish %s", input.ProductTaskOutputInfo.Product.ID)
+		}
 	}
 	return nil
 }
