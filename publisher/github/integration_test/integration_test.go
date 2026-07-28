@@ -83,6 +83,7 @@ products:
 				WantOutput: func(projectDir string) string {
 					return fmt.Sprintf(`[DRY RUN] Creating GitHub release 1.0.0 for testOwner/testRepo...done
 [DRY RUN] Uploading %s/out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to GitHub (destination URL cannot be computed in dry run)
+[DRY RUN] Publishing GitHub release 1.0.0 for testOwner/testRepo...done
 `, projectDir, osarch.Current().String())
 				},
 			},
@@ -127,6 +128,7 @@ products:
 				WantOutput: func(projectDir string) string {
 					return fmt.Sprintf(`[DRY RUN] Creating GitHub release v1.0.0 for testOwner/testRepo...done
 [DRY RUN] Uploading %s/out/dist/foo/1.0.0/os-arch-bin/foo-1.0.0-%s.tgz to GitHub (destination URL cannot be computed in dry run)
+[DRY RUN] Publishing GitHub release v1.0.0 for testOwner/testRepo...done
 `, projectDir, osarch.Current().String())
 				},
 			},

@@ -22,6 +22,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -29,6 +31,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const testArtifactContent = "fake tgz content"
 
 // TestRunPublish_CreatesDraftReleaseThenPublishesAfterUpload verifies that RunPublish creates the release as a draft,
 // uploads all the dist artifacts to it, and only publishes (un-drafts) the release once every upload has succeeded.
@@ -81,41 +85,10 @@ func TestRunPublish_CreatesDraftReleaseThenPublishesAfterUpload(t *testing.T) {
 	defer server.Close()
 
 	projectDir := t.TempDir()
-	artifactPath := filepath.Join(projectDir, "out", "dist", "foo", "1.0.0", "os-arch-bin", "foo-1.0.0-linux-amd64.tgz")
-	require.NoError(t, os.MkdirAll(filepath.Dir(artifactPath), 0755))
-	require.NoError(t, os.WriteFile(artifactPath, []byte("fake tgz content"), 0644))
-
-	productTaskOutputInfo := distgo.ProductTaskOutputInfo{
-		Project: distgo.ProjectInfo{
-			ProjectDir: projectDir,
-			Version:    "1.0.0",
-		},
-		Product: distgo.ProductOutputInfo{
-			ID: "foo",
-			DistOutputInfos: &distgo.DistOutputInfos{
-				DistOutputDir: "out/dist",
-				DistIDs:       []distgo.DistID{"os-arch-bin"},
-				DistInfos: map[distgo.DistID]distgo.DistOutputInfo{
-					"os-arch-bin": {
-						DistNameTemplateRendered: "foo-1.0.0",
-						DistArtifactNames:        []string{"foo-1.0.0-linux-amd64.tgz"},
-						PackagingExtension:       "tgz",
-					},
-				},
-			},
-		},
-	}
-
-	flagVals := map[distgo.PublisherFlagName]any{
-		githubPublisherAPIURLFlag.Name:     server.URL,
-		githubPublisherUserFlag.Name:       "testUser",
-		githubPublisherTokenFlag.Name:      "testToken",
-		githubPublisherRepositoryFlag.Name: "testRepo",
-		githubPublisherOwnerFlag.Name:      "testOwner",
-	}
+	productTaskOutputInfo := writeTestArtifact(t, projectDir, "foo", "foo-1.0.0-linux-amd64.tgz")
 
 	publisher := new(githubPublisher)
-	err := publisher.RunPublish([]distgo.ProductPublishInfo{{ProductTaskOutputInfo: productTaskOutputInfo, PublisherConfigYML: []byte("{}\n")}}, flagVals, false, io.Discard)
+	err := publisher.RunPublish([]distgo.ProductPublishInfo{{ProductTaskOutputInfo: productTaskOutputInfo, PublisherConfigYML: []byte("{}\n")}}, testGitHubFlagValues(server.URL), false, io.Discard)
 	require.NoError(t, err)
 
 	gotCreateReleaseDraft := createReleaseDraft.Load()
@@ -175,41 +148,10 @@ func TestRunPublish_ReusesExistingDraftRelease(t *testing.T) {
 	defer server.Close()
 
 	projectDir := t.TempDir()
-	artifactPath := filepath.Join(projectDir, "out", "dist", "foo", "1.0.0", "os-arch-bin", "foo-1.0.0-linux-amd64.tgz")
-	require.NoError(t, os.MkdirAll(filepath.Dir(artifactPath), 0755))
-	require.NoError(t, os.WriteFile(artifactPath, []byte("fake tgz content"), 0644))
-
-	productTaskOutputInfo := distgo.ProductTaskOutputInfo{
-		Project: distgo.ProjectInfo{
-			ProjectDir: projectDir,
-			Version:    "1.0.0",
-		},
-		Product: distgo.ProductOutputInfo{
-			ID: "foo",
-			DistOutputInfos: &distgo.DistOutputInfos{
-				DistOutputDir: "out/dist",
-				DistIDs:       []distgo.DistID{"os-arch-bin"},
-				DistInfos: map[distgo.DistID]distgo.DistOutputInfo{
-					"os-arch-bin": {
-						DistNameTemplateRendered: "foo-1.0.0",
-						DistArtifactNames:        []string{"foo-1.0.0-linux-amd64.tgz"},
-						PackagingExtension:       "tgz",
-					},
-				},
-			},
-		},
-	}
-
-	flagVals := map[distgo.PublisherFlagName]any{
-		githubPublisherAPIURLFlag.Name:     server.URL,
-		githubPublisherUserFlag.Name:       "testUser",
-		githubPublisherTokenFlag.Name:      "testToken",
-		githubPublisherRepositoryFlag.Name: "testRepo",
-		githubPublisherOwnerFlag.Name:      "testOwner",
-	}
+	productTaskOutputInfo := writeTestArtifact(t, projectDir, "foo", "foo-1.0.0-linux-amd64.tgz")
 
 	publisher := new(githubPublisher)
-	err := publisher.RunPublish([]distgo.ProductPublishInfo{{ProductTaskOutputInfo: productTaskOutputInfo, PublisherConfigYML: []byte("{}\n")}}, flagVals, false, io.Discard)
+	err := publisher.RunPublish([]distgo.ProductPublishInfo{{ProductTaskOutputInfo: productTaskOutputInfo, PublisherConfigYML: []byte("{}\n")}}, testGitHubFlagValues(server.URL), false, io.Discard)
 	require.NoError(t, err)
 
 	assert.False(t, createReleaseCalled.Load(), "existing draft release must be reused instead of creating a new release")
@@ -221,4 +163,366 @@ func TestRunPublish_ReusesExistingDraftRelease(t *testing.T) {
 	gotEditReleaseDraft := editReleaseDraft.Load()
 	require.NotNil(t, gotEditReleaseDraft, "existing draft release must be published (un-drafted) after assets are uploaded")
 	assert.False(t, *gotEditReleaseDraft)
+}
+
+// TestRunPublish_ReRunAfterAlreadyPublishedIsANoop verifies that re-running a publish for a tag that a
+// previous run already fully published will be a noop since the tag is already published. Only looking for existing draft
+// releases would cause the publisher to miss the finalized release and create a second draft release which would
+// ultimately fail to publish since you cannot have 2 releases with the same tag.
+func TestRunPublish_ReRunAfterAlreadyPublishedIsANoop(t *testing.T) {
+	var (
+		createReleaseCalled atomic.Bool
+		editReleaseCalled   atomic.Bool
+		uploadCalled        atomic.Bool
+	)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/repos/testOwner/testRepo/releases", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprintf(w, `[{"id": 123, "draft": false, "tag_name": "1.0.0", "upload_url": "http://%s/upload/123/assets{?name,label}", "assets": [{"id": 1, "name": "foo-1.0.0-linux-amd64.tgz", "size": %d}]}]`, r.Host, len(testArtifactContent))
+		case http.MethodPost:
+			createReleaseCalled.Store(true)
+			http.Error(w, "release creation must not be called when the tag is already published", http.StatusInternalServerError)
+		default:
+			http.Error(w, "unexpected method", http.StatusMethodNotAllowed)
+		}
+	})
+	mux.HandleFunc("/repos/testOwner/testRepo/releases/123", func(w http.ResponseWriter, r *http.Request) {
+		editReleaseCalled.Store(true)
+		http.Error(w, "release must not be re-published when it is already published", http.StatusInternalServerError)
+	})
+	mux.HandleFunc("/upload/123/assets", func(w http.ResponseWriter, r *http.Request) {
+		uploadCalled.Store(true)
+		http.Error(w, "asset must not be re-uploaded when it already matches the existing published release", http.StatusInternalServerError)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	projectDir := t.TempDir()
+	fooOutputInfo := writeTestArtifact(t, projectDir, "foo", "foo-1.0.0-linux-amd64.tgz")
+
+	publisher := new(githubPublisher)
+	err := publisher.RunPublish([]distgo.ProductPublishInfo{{ProductTaskOutputInfo: fooOutputInfo, PublisherConfigYML: []byte("{}\n")}}, testGitHubFlagValues(server.URL), false, io.Discard)
+	require.NoError(t, err, "re-running a publish for an already-published tag must be a no-op, not an error")
+
+	assert.False(t, createReleaseCalled.Load(), "must not create a duplicate release for a tag that is already published")
+	assert.False(t, editReleaseCalled.Load(), "must not attempt to re-publish a release that is already published")
+	assert.False(t, uploadCalled.Load(), "must not re-upload an asset that already matches the existing published release")
+}
+
+// TestRunPublish_UploadsAllProductsBeforePublishingSharedRelease verifies that when multiple products resolve to the
+// same GitHub release, RunPublish uploads every product's assets before publishing (un-drafting) that release once,
+// rather than publishing after each product.
+func TestRunPublish_UploadsAllProductsBeforePublishingSharedRelease(t *testing.T) {
+	var (
+		operationsMu sync.Mutex
+		operations   []string
+		listCount    atomic.Int32
+		isDraft      atomic.Bool
+	)
+	isDraft.Store(true)
+	recordOperation := func(operation string) {
+		operationsMu.Lock()
+		defer operationsMu.Unlock()
+		operations = append(operations, operation)
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/repos/testOwner/testRepo/releases", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodGet, r.Method)
+		listCount.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `[{"id": 123, "draft": %t, "tag_name": "1.0.0", "upload_url": "http://%s/upload/123/assets{?name,label}"}]`, isDraft.Load(), r.Host)
+	})
+	mux.HandleFunc("/repos/testOwner/testRepo/releases/123", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPatch, r.Method)
+		recordOperation("publish")
+		isDraft.Store(false)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprint(w, `{"id": 123, "draft": false}`)
+	})
+	mux.HandleFunc("/upload/123/assets", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPost, r.Method)
+		recordOperation("upload:" + r.URL.Query().Get("name"))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = fmt.Fprint(w, `{"id": 1, "name": "asset"}`)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	projectDir := t.TempDir()
+	fooOutputInfo := writeTestArtifact(t, projectDir, "foo", "foo-1.0.0-linux-amd64.tgz")
+	barOutputInfo := writeTestArtifact(t, projectDir, "bar", "bar-1.0.0-linux-amd64.tgz")
+
+	publisher := new(githubPublisher)
+	err := publisher.RunPublish([]distgo.ProductPublishInfo{
+		{ProductTaskOutputInfo: fooOutputInfo, PublisherConfigYML: []byte("{}\n")},
+		{ProductTaskOutputInfo: barOutputInfo, PublisherConfigYML: []byte("{}\n")},
+	}, testGitHubFlagValues(server.URL), false, io.Discard)
+	require.NoError(t, err)
+
+	assert.Equal(t, int32(1), listCount.Load(), "the shared release should be resolved once")
+	assert.Equal(t, []string{
+		"upload:foo-1.0.0-linux-amd64.tgz",
+		"upload:bar-1.0.0-linux-amd64.tgz",
+		"publish",
+	}, operations)
+}
+
+// TestRunPublish_UploadFailureLeavesSharedReleaseAsDraft verifies that if any product's upload in a shared-release
+// batch fails, the release is left as a draft rather than published, since GitHub's immutable-releases feature would
+// otherwise permanently reject any retry's uploads.
+func TestRunPublish_UploadFailureLeavesSharedReleaseAsDraft(t *testing.T) {
+	var (
+		editReleaseCalled atomic.Bool
+		isDraft           atomic.Bool
+	)
+	isDraft.Store(true)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/repos/testOwner/testRepo/releases", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodGet, r.Method)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `[{"id": 123, "draft": true, "tag_name": "1.0.0", "upload_url": "http://%s/upload/123/assets{?name,label}"}]`, r.Host)
+	})
+	mux.HandleFunc("/repos/testOwner/testRepo/releases/123", func(w http.ResponseWriter, _ *http.Request) {
+		editReleaseCalled.Store(true)
+		isDraft.Store(false)
+		http.Error(w, "release must remain a draft", http.StatusInternalServerError)
+	})
+	mux.HandleFunc("/upload/123/assets", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("name") == "bar-1.0.0-linux-amd64.tgz" {
+			http.Error(w, "upload failed", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = fmt.Fprint(w, `{"id": 1, "name": "asset"}`)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	projectDir := t.TempDir()
+	fooOutputInfo := writeTestArtifact(t, projectDir, "foo", "foo-1.0.0-linux-amd64.tgz")
+	barOutputInfo := writeTestArtifact(t, projectDir, "bar", "bar-1.0.0-linux-amd64.tgz")
+
+	publisher := new(githubPublisher)
+	err := publisher.RunPublish([]distgo.ProductPublishInfo{
+		{ProductTaskOutputInfo: fooOutputInfo, PublisherConfigYML: []byte("{}\n")},
+		{ProductTaskOutputInfo: barOutputInfo, PublisherConfigYML: []byte("{}\n")},
+	}, testGitHubFlagValues(server.URL), false, io.Discard)
+	require.Error(t, err)
+
+	assert.False(t, editReleaseCalled.Load())
+	assert.True(t, isDraft.Load())
+}
+
+// TestRunPublish_RetrySkipsAlreadyUploadedAssets verifies that a retry of a partially failed publish does not
+// re-upload assets that already succeeded, and instead skips straight to the assets that are still missing.
+func TestRunPublish_RetrySkipsAlreadyUploadedAssets(t *testing.T) {
+	var (
+		uploadedAssets   sync.Map
+		barShouldFail    atomic.Bool
+		fooUploadCount   atomic.Int32
+		barUploadCount   atomic.Int32
+		editReleaseCount atomic.Int32
+	)
+	barShouldFail.Store(true)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/repos/testOwner/testRepo/releases", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodGet, r.Method)
+		var assetsJSON []string
+		uploadedAssets.Range(func(key, _ any) bool {
+			assetsJSON = append(assetsJSON, fmt.Sprintf(`{"id": 1, "name": %q, "size": %d}`, key.(string), len(testArtifactContent)))
+			return true
+		})
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `[{"id": 123, "draft": true, "tag_name": "1.0.0", "upload_url": "http://%s/upload/123/assets{?name,label}", "assets": [%s]}]`, r.Host, strings.Join(assetsJSON, ","))
+	})
+	mux.HandleFunc("/repos/testOwner/testRepo/releases/123", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPatch, r.Method)
+		editReleaseCount.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprint(w, `{"id": 123, "draft": false}`)
+	})
+	mux.HandleFunc("/upload/123/assets", func(w http.ResponseWriter, r *http.Request) {
+		name := r.URL.Query().Get("name")
+		switch name {
+		case "foo-1.0.0-linux-amd64.tgz":
+			fooUploadCount.Add(1)
+		case "bar-1.0.0-linux-amd64.tgz":
+			barUploadCount.Add(1)
+			if barShouldFail.Load() {
+				http.Error(w, "upload failed", http.StatusInternalServerError)
+				return
+			}
+		}
+		uploadedAssets.Store(name, struct{}{})
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = fmt.Fprintf(w, `{"id": 1, "name": %q}`, name)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	projectDir := t.TempDir()
+	fooOutputInfo := writeTestArtifact(t, projectDir, "foo", "foo-1.0.0-linux-amd64.tgz")
+	barOutputInfo := writeTestArtifact(t, projectDir, "bar", "bar-1.0.0-linux-amd64.tgz")
+	inputs := []distgo.ProductPublishInfo{
+		{ProductTaskOutputInfo: fooOutputInfo, PublisherConfigYML: []byte("{}\n")},
+		{ProductTaskOutputInfo: barOutputInfo, PublisherConfigYML: []byte("{}\n")},
+	}
+
+	publisher := new(githubPublisher)
+	err := publisher.RunPublish(inputs, testGitHubFlagValues(server.URL), false, io.Discard)
+	require.Error(t, err, "first attempt must fail while bar's upload is failing")
+	assert.Equal(t, int32(1), fooUploadCount.Load(), "foo's asset must be uploaded once by the first attempt")
+	assert.Equal(t, int32(0), editReleaseCount.Load(), "release must not be published while a product's upload is still failing")
+
+	barShouldFail.Store(false)
+	err = publisher.RunPublish(inputs, testGitHubFlagValues(server.URL), false, io.Discard)
+	require.NoError(t, err, "retry must succeed once bar's upload starts succeeding")
+
+	assert.Equal(t, int32(1), fooUploadCount.Load(), "retry must not re-upload foo's asset, since it already succeeded on the first attempt")
+	assert.Equal(t, int32(1), editReleaseCount.Load(), "release must be published exactly once, after the retry completes successfully")
+}
+
+// TestRunPublish_RetryFailsWhenExistingAssetSizeDiffers ensures that a retry fails when the local artifact being
+// uploaded differs in size from the asset of the same name already present on the GitHub release, rather than
+// silently treating a stale or mismatched asset as already uploaded.
+func TestRunPublish_RetryFailsWhenExistingAssetSizeDiffers(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/repos/testOwner/testRepo/releases", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodGet, r.Method)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `[{"id": 123, "draft": true, "tag_name": "1.0.0", "upload_url": "http://%s/upload/123/assets{?name,label}", "assets": [{"id": 1, "name": "foo-1.0.0-linux-amd64.tgz", "size": %d}]}]`, r.Host, len(testArtifactContent))
+	})
+	mux.HandleFunc("/repos/testOwner/testRepo/releases/123", func(w http.ResponseWriter, r *http.Request) {
+		require.Fail(t, "release must not be published when a stale asset is detected")
+	})
+	mux.HandleFunc("/upload/123/assets", func(w http.ResponseWriter, r *http.Request) {
+		require.Fail(t, "asset must not be re-uploaded when a stale asset is detected")
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	projectDir := t.TempDir()
+	fooOutputInfo := writeTestArtifactWithContent(t, projectDir, "foo", "foo-1.0.0-linux-amd64.tgz", "different content for artifact")
+
+	publisher := new(githubPublisher)
+	err := publisher.RunPublish([]distgo.ProductPublishInfo{{ProductTaskOutputInfo: fooOutputInfo, PublisherConfigYML: []byte("{}\n")}}, testGitHubFlagValues(server.URL), false, io.Discard)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "does not match the local artifact")
+}
+
+// TestRunPublish_PublishesEachDistinctReleaseAfterUploadsFinish verifies that releases which do not share any
+// products are published as soon as their own uploads finish, rather than waiting for every release in the batch to
+// finish uploading first.
+func TestRunPublish_PublishesEachDistinctReleaseAfterUploadsFinish(t *testing.T) {
+	var (
+		operationsMu sync.Mutex
+		operations   []string
+	)
+	recordOperation := func(operation string) {
+		operationsMu.Lock()
+		defer operationsMu.Unlock()
+		operations = append(operations, operation)
+	}
+
+	mux := http.NewServeMux()
+	for _, target := range []struct {
+		repository string
+		releaseID  int
+	}{
+		{repository: "fooRepo", releaseID: 123},
+		{repository: "barRepo", releaseID: 456},
+	} {
+		releasesPath := fmt.Sprintf("/repos/testOwner/%s/releases", target.repository)
+		uploadPath := fmt.Sprintf("/upload/%d/assets", target.releaseID)
+		mux.HandleFunc(releasesPath, func(w http.ResponseWriter, r *http.Request) {
+			require.Equal(t, http.MethodGet, r.Method)
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprintf(w, `[{"id": %d, "draft": true, "tag_name": "1.0.0", "upload_url": "http://%s%s{?name,label}"}]`, target.releaseID, r.Host, uploadPath)
+		})
+		mux.HandleFunc(fmt.Sprintf("%s/%d", releasesPath, target.releaseID), func(w http.ResponseWriter, r *http.Request) {
+			require.Equal(t, http.MethodPatch, r.Method)
+			recordOperation("publish:" + target.repository)
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprintf(w, `{"id": %d, "draft": false}`, target.releaseID)
+		})
+		mux.HandleFunc(uploadPath, func(w http.ResponseWriter, r *http.Request) {
+			require.Equal(t, http.MethodPost, r.Method)
+			recordOperation("upload:" + r.URL.Query().Get("name"))
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			_, _ = fmt.Fprint(w, `{"id": 1, "name": "asset"}`)
+		})
+	}
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	projectDir := t.TempDir()
+	fooOutputInfo := writeTestArtifact(t, projectDir, "foo", "foo-1.0.0-linux-amd64.tgz")
+	barOutputInfo := writeTestArtifact(t, projectDir, "bar", "bar-1.0.0-linux-amd64.tgz")
+	configForRepository := func(repository string) []byte {
+		return fmt.Appendf(nil, "api-url: %s\nuser: testUser\ntoken: testToken\nowner: testOwner\nrepository: %s\n", server.URL, repository)
+	}
+
+	publisher := new(githubPublisher)
+	err := publisher.RunPublish([]distgo.ProductPublishInfo{
+		{ProductTaskOutputInfo: fooOutputInfo, PublisherConfigYML: configForRepository("fooRepo")},
+		{ProductTaskOutputInfo: barOutputInfo, PublisherConfigYML: configForRepository("barRepo")},
+	}, nil, false, io.Discard)
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{
+		"upload:foo-1.0.0-linux-amd64.tgz",
+		"publish:fooRepo",
+		"upload:bar-1.0.0-linux-amd64.tgz",
+		"publish:barRepo",
+	}, operations, "each release must be published as soon as its own group finishes uploading, not after the whole batch uploads")
+}
+
+func writeTestArtifact(t *testing.T, projectDir string, productID distgo.ProductID, artifactName string) distgo.ProductTaskOutputInfo {
+	return writeTestArtifactWithContent(t, projectDir, productID, artifactName, testArtifactContent)
+}
+
+func writeTestArtifactWithContent(t *testing.T, projectDir string, productID distgo.ProductID, artifactName string, content string) distgo.ProductTaskOutputInfo {
+	artifactPath := filepath.Join(projectDir, "out", "dist", string(productID), "1.0.0", "os-arch-bin", artifactName)
+	require.NoError(t, os.MkdirAll(filepath.Dir(artifactPath), 0755))
+	require.NoError(t, os.WriteFile(artifactPath, []byte(content), 0644))
+	return distgo.ProductTaskOutputInfo{
+		Project: distgo.ProjectInfo{
+			ProjectDir: projectDir,
+			Version:    "1.0.0",
+		},
+		Product: distgo.ProductOutputInfo{
+			ID: productID,
+			DistOutputInfos: &distgo.DistOutputInfos{
+				DistOutputDir: "out/dist",
+				DistIDs:       []distgo.DistID{"os-arch-bin"},
+				DistInfos: map[distgo.DistID]distgo.DistOutputInfo{
+					"os-arch-bin": {
+						DistNameTemplateRendered: string(productID) + "-1.0.0",
+						DistArtifactNames:        []string{artifactName},
+						PackagingExtension:       "tgz",
+					},
+				},
+			},
+		},
+	}
+}
+
+func testGitHubFlagValues(apiURL string) map[distgo.PublisherFlagName]any {
+	return map[distgo.PublisherFlagName]any{
+		githubPublisherAPIURLFlag.Name:     apiURL,
+		githubPublisherUserFlag.Name:       "testUser",
+		githubPublisherTokenFlag.Name:      "testToken",
+		githubPublisherRepositoryFlag.Name: "testRepo",
+		githubPublisherOwnerFlag.Name:      "testOwner",
+	}
 }
