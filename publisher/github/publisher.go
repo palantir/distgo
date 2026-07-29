@@ -16,6 +16,7 @@ package github
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"mime"
@@ -95,39 +96,6 @@ func (p *githubPublisher) Flags() ([]distgo.PublisherFlag, error) {
 }
 
 func (p *githubPublisher) RunPublish(inputs []distgo.ProductPublishInfo, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
-	for _, input := range inputs {
-		if err := p.runPublish(input.ProductTaskOutputInfo, input.PublisherConfigYML, flagVals, dryRun, stdout); err != nil {
-			return errors.Wrapf(err, "failed to publish %s", input.ProductTaskOutputInfo.Product.ID)
-		}
-	}
-	return nil
-}
-
-func (p *githubPublisher) runPublish(productTaskOutputInfo distgo.ProductTaskOutputInfo, cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
-	var cfg config.GitHub
-	if err := yaml.Unmarshal(cfgYML, &cfg); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal configuration")
-	}
-	if err := publisher.SetRequiredStringConfigValues(flagVals,
-		githubPublisherAPIURLFlag, &cfg.APIURL,
-		githubPublisherUserFlag, &cfg.User,
-		githubPublisherTokenFlag, &cfg.Token,
-		githubPublisherRepositoryFlag, &cfg.Repository,
-	); err != nil {
-		return err
-	}
-
-	if err := publisher.SetConfigValue(flagVals, githubPublisherOwnerFlag, &cfg.Owner); err != nil {
-		return err
-	}
-	if cfg.Owner == "" {
-		cfg.Owner = cfg.User
-	}
-
-	if err := publisher.SetConfigValue(flagVals, githubAddVPrefixFlag, &cfg.AddVPrefix); err != nil {
-		return err
-	}
-
 	filterRegexp, err := publisher.GetArtifactNamesFilterFlagValue(flagVals)
 	if err != nil {
 		return err
@@ -136,43 +104,175 @@ func (p *githubPublisher) runPublish(productTaskOutputInfo distgo.ProductTaskOut
 	if err != nil {
 		return err
 	}
-	publisher.FilterProductTaskOutputInfoArtifactNames(&productTaskOutputInfo, filterRegexp, excludeRegexp)
+
+	// Group inputs by release key so that products sharing a release upload together and publish once, since a
+	// shared release must not be published until all of its products have uploaded.
+	var releases []githubReleaseProducts
+	releaseKeyToIndex := make(map[githubReleaseKey]int)
+	for _, input := range inputs {
+		productTaskOutputInfo := input.ProductTaskOutputInfo
+		publisher.FilterProductTaskOutputInfoArtifactNames(&productTaskOutputInfo, filterRegexp, excludeRegexp)
+
+		cfg, key, err := resolveGitHubReleaseConfig(input.PublisherConfigYML, flagVals, productTaskOutputInfo.Project.Version)
+		if err != nil {
+			return errors.Wrapf(err, "failed to resolve GitHub config for product %s", productTaskOutputInfo.Product.ID)
+		}
+
+		releaseIndex, ok := releaseKeyToIndex[key]
+		if !ok {
+			// if release target does not exist for the key, create it
+			target, err := newGitHubReleaseTarget(cfg, key)
+			if err != nil {
+				return errors.Wrapf(err, "failed to resolve GitHub release target for product %s", productTaskOutputInfo.Product.ID)
+			}
+			releaseIndex = len(releases)
+			releaseKeyToIndex[key] = releaseIndex
+			releases = append(releases, githubReleaseProducts{target: target})
+		} else if existingToken := releases[releaseIndex].target.cfg.Token; existingToken != cfg.Token {
+			// githubReleaseKey does not include the token, so products that otherwise resolve to the same release
+			// but specify different tokens would silently use whichever token belonged to the first product seen.
+			// There's no well-defined choice of token to use for the release as a whole in that case, so fail loudly.
+			return errors.Errorf("product %s resolves to the same GitHub release (%s/%s, tag %s) as an earlier product in this batch, but specifies a different token", productTaskOutputInfo.Product.ID, key.owner, key.repository, key.releaseVersion)
+		}
+		releases[releaseIndex].products = append(releases[releaseIndex].products, productTaskOutputInfo)
+	}
+
+	// With grouping done, run the core prepare/upload/publish workflow once per release. For each release, create or
+	// reuse the release, upload every product's assets to the release, then publish it.
+	for _, releaseProducts := range releases {
+		release, err := prepareGitHubRelease(releaseProducts.target, dryRun, stdout)
+		if err != nil {
+			return err
+		}
+
+		for _, productTaskOutputInfo := range releaseProducts.products {
+			for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
+				for _, currArtifactPath := range productTaskOutputInfo.ProductDistArtifactPaths()[currDistID] {
+					if _, err := p.uploadFileAtPath(releaseProducts.target.client, release, currArtifactPath, dryRun, stdout); err != nil {
+						return errors.Wrapf(err, "failed to publish product %s", productTaskOutputInfo.Product.ID)
+					}
+				}
+			}
+		}
+
+		// Nothing left to do if the release is already live. Dry-run's release is always nil, so this never skips there.
+		if !dryRun && !release.GetDraft() {
+			continue
+		}
+		if err := publishGitHubRelease(releaseProducts.target, release, dryRun, stdout); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// githubReleaseProducts stores the products that should be published for a particular GitHub release.
+type githubReleaseProducts struct {
+	target   githubReleaseTarget
+	products []distgo.ProductTaskOutputInfo
+}
+
+// githubReleaseKey identifies a distinct GitHub release so that products resolving to the same one are grouped and
+// published together instead of once per product.
+type githubReleaseKey struct {
+	apiURL         string
+	owner          string
+	repository     string
+	releaseVersion string
+}
+
+// githubReleaseTarget bundles the client and resolved config needed for a single GitHub release.
+type githubReleaseTarget struct {
+	key    githubReleaseKey
+	client *github.Client
+	cfg    config.GitHub
+}
+
+// resolveGitHubReleaseConfig resolves a product's publish configuration and the release key used to group it with
+// other products publishing to the same release.
+func resolveGitHubReleaseConfig(cfgYML []byte, flagVals map[distgo.PublisherFlagName]any, projectVersion string) (config.GitHub, githubReleaseKey, error) {
+	var cfg config.GitHub
+	if err := yaml.Unmarshal(cfgYML, &cfg); err != nil {
+		return config.GitHub{}, githubReleaseKey{}, errors.Wrapf(err, "failed to unmarshal configuration")
+	}
+	if err := publisher.SetRequiredStringConfigValues(flagVals,
+		githubPublisherAPIURLFlag, &cfg.APIURL,
+		githubPublisherUserFlag, &cfg.User,
+		githubPublisherTokenFlag, &cfg.Token,
+		githubPublisherRepositoryFlag, &cfg.Repository,
+	); err != nil {
+		return config.GitHub{}, githubReleaseKey{}, err
+	}
+
+	if err := publisher.SetConfigValue(flagVals, githubPublisherOwnerFlag, &cfg.Owner); err != nil {
+		return config.GitHub{}, githubReleaseKey{}, err
+	}
+	if cfg.Owner == "" {
+		cfg.Owner = cfg.User
+	}
+
+	if err := publisher.SetConfigValue(flagVals, githubAddVPrefixFlag, &cfg.AddVPrefix); err != nil {
+		return config.GitHub{}, githubReleaseKey{}, err
+	}
 
 	// if base URL does not end in "/", append it (trailing slash is required)
 	if !strings.HasSuffix(cfg.APIURL, "/") {
 		cfg.APIURL += "/"
 	}
+
+	releaseVersion := projectVersion
+	if cfg.AddVPrefix {
+		releaseVersion = "v" + releaseVersion
+	}
+	return cfg, githubReleaseKey{
+		apiURL:         cfg.APIURL,
+		owner:          cfg.Owner,
+		repository:     cfg.Repository,
+		releaseVersion: releaseVersion,
+	}, nil
+}
+
+// newGitHubReleaseTarget builds the GitHub client for the given configuration and bundles it with the release key.
+func newGitHubReleaseTarget(cfg config.GitHub, key githubReleaseKey) (githubReleaseTarget, error) {
 	client, err := github.NewClient(
 		github.WithAuthToken(cfg.Token),
 		github.WithURLs(&cfg.APIURL, &cfg.APIURL),
 	)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create GitHub client for %s", cfg.APIURL)
+		return githubReleaseTarget{}, errors.Wrapf(err, "failed to create GitHub client for %s", cfg.APIURL)
 	}
 
-	releaseVersion := productTaskOutputInfo.Project.Version
-	if cfg.AddVPrefix {
-		releaseVersion = "v" + releaseVersion
-	}
+	return githubReleaseTarget{
+		key:    key,
+		client: client,
+		cfg:    cfg,
+	}, nil
+}
 
-	// Reuse an existing draft release for this tag if one already exists.
+// prepareGitHubRelease creates or reuses the GitHub release for the given target, returning it as a draft so that
+// GitHub's immutable-releases feature does not reject the asset uploads that follow.
+func prepareGitHubRelease(target githubReleaseTarget, dryRun bool, stdout io.Writer) (*github.RepositoryRelease, error) {
 	var releaseRes *github.RepositoryRelease
 	if !dryRun {
-		releaseRes, err = findExistingDraftRelease(client, cfg.Owner, cfg.Repository, releaseVersion)
+		var err error
+		releaseRes, err = findExistingRelease(target.client, target.cfg.Owner, target.cfg.Repository, target.key.releaseVersion)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	if releaseRes != nil {
-		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Using existing draft GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository), dryRun)
+	if releaseRes != nil && releaseRes.GetDraft() {
+		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Using existing draft GitHub release %s for %s/%s...", target.key.releaseVersion, target.cfg.Owner, target.cfg.Repository), dryRun)
+	} else if releaseRes != nil {
+		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("GitHub release %s for %s/%s is already published...", target.key.releaseVersion, target.cfg.Owner, target.cfg.Repository), dryRun)
 	} else {
-		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Creating GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository), dryRun)
+		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Creating GitHub release %s for %s/%s...", target.key.releaseVersion, target.cfg.Owner, target.cfg.Repository), dryRun)
 		if !dryRun {
 			// create the release as a draft since GitHub's immutable-releases feature rejects asset uploads to a
 			// non-draft release, so uploads must happen before the release is published.
-			releaseRes, _, err = client.Repositories.CreateRelease(context.Background(), cfg.Owner, cfg.Repository, github.CreateReleaseRequest{
-				TagName: releaseVersion,
+			var err error
+			releaseRes, _, err = target.client.Repositories.CreateRelease(context.Background(), target.cfg.Owner, target.cfg.Repository, github.CreateReleaseRequest{
+				TagName: target.key.releaseVersion,
 				Draft:   new(true),
 			})
 			if err != nil {
@@ -181,49 +281,41 @@ func (p *githubPublisher) runPublish(productTaskOutputInfo distgo.ProductTaskOut
 
 				if ghErr, ok := err.(*github.ErrorResponse); ok && len(ghErr.Errors) > 0 && ghErr.Errors[0].Code == "already_exists" {
 					// release already exists: attempt to get it instead
-					gotRelease, _, err := client.Repositories.GetReleaseByTag(context.Background(), cfg.Owner, cfg.Repository, releaseVersion)
+					gotRelease, _, err := target.client.Repositories.GetReleaseByTag(context.Background(), target.cfg.Owner, target.cfg.Repository, target.key.releaseVersion)
 					if err != nil {
-						return errors.Errorf("Failed to get GitHub release %s for %s/%s", releaseVersion, cfg.Owner, cfg.Repository)
+						return nil, errors.Errorf("Failed to get GitHub release %s for %s/%s", target.key.releaseVersion, target.cfg.Owner, target.cfg.Repository)
 					}
 					// if release is found, use it and upload to the release
 					releaseRes = gotRelease
 				} else {
-					return errors.Wrapf(err, "failed to create GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository)
+					return nil, errors.Wrapf(err, "failed to create GitHub release %s for %s/%s...", target.key.releaseVersion, target.cfg.Owner, target.cfg.Repository)
 				}
 			}
 		}
 	}
 	// no need for dry run print because beginning of line has already been printed
 	_, _ = fmt.Fprintln(stdout, "done")
+	return releaseRes, nil
+}
 
-	for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
-		for _, currArtifactPath := range productTaskOutputInfo.ProductDistArtifactPaths()[currDistID] {
-			if _, err := p.uploadFileAtPath(client, releaseRes, currArtifactPath, dryRun, stdout); err != nil {
-				return err
-			}
+// publishGitHubRelease un-drafts the given release now that all of its batch's assets have been uploaded.
+func publishGitHubRelease(target githubReleaseTarget, release *github.RepositoryRelease, dryRun bool, stdout io.Writer) error {
+	distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Publishing GitHub release %s for %s/%s...", target.key.releaseVersion, target.cfg.Owner, target.cfg.Repository), dryRun)
+	if !dryRun {
+		if _, _, err := target.client.Repositories.UpdateRelease(context.Background(), target.cfg.Owner, target.cfg.Repository, release.GetID(), github.UpdateReleaseRequest{
+			Draft: new(false),
+		}); err != nil {
+			_, _ = fmt.Fprintln(stdout)
+			return errors.Wrapf(err, "failed to publish GitHub release %s for %s/%s after uploading assets", target.key.releaseVersion, target.cfg.Owner, target.cfg.Repository)
 		}
 	}
-
-	// publish the release now that all assets have been uploaded. This is only necessary when the release is a draft,
-	// which is the case when it was created as a draft above or when an existing draft was reused. A pre-existing,
-	// already published release found via the "already_exists" path above does not need this step.
-	if releaseRes.GetDraft() {
-		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Publishing GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository), dryRun)
-		if !dryRun {
-			if _, _, err := client.Repositories.UpdateRelease(context.Background(), cfg.Owner, cfg.Repository, releaseRes.GetID(), github.UpdateReleaseRequest{
-				Draft: new(false),
-			}); err != nil {
-				_, _ = fmt.Fprintln(stdout)
-				return errors.Wrapf(err, "failed to publish GitHub release %s for %s/%s after uploading assets", releaseVersion, cfg.Owner, cfg.Repository)
-			}
-		}
-		_, _ = fmt.Fprintln(stdout, "done")
-	}
+	_, _ = fmt.Fprintln(stdout, "done")
 	return nil
 }
 
-// findExistingDraftRelease returns the first draft release whose tag matches the provided tag, or nil if no such release exists.
-func findExistingDraftRelease(client *github.Client, owner, repo, tag string) (*github.RepositoryRelease, error) {
+// findExistingRelease returns the first release (draft or already published) whose tag matches the provided tag, or
+// nil if no such release exists.
+func findExistingRelease(client *github.Client, owner, repo, tag string) (*github.RepositoryRelease, error) {
 	opt := &github.ListOptions{PerPage: 100}
 	for {
 		releases, resp, err := client.Repositories.ListReleases(context.Background(), owner, repo, opt)
@@ -231,7 +323,7 @@ func findExistingDraftRelease(client *github.Client, owner, repo, tag string) (*
 			return nil, errors.Wrapf(err, "failed to list existing GitHub releases for %s/%s", owner, repo)
 		}
 		for _, release := range releases {
-			if release.GetDraft() && release.GetTagName() == tag {
+			if release.GetTagName() == tag {
 				return release, nil
 			}
 		}
@@ -256,7 +348,20 @@ func (p *githubPublisher) uploadFileAtPath(client *github.Client, release *githu
 		return "", nil
 	}
 
-	uploadURI, err := uploadURIForProduct(release.GetUploadURL(), path.Base(filePath))
+	assetName := path.Base(filePath)
+	if existingAsset := findReleaseAsset(release, assetName); existingAsset != nil {
+		matches, err := existingAssetMatchesLocalFile(existingAsset, f)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to compare existing GitHub asset %s to local artifact %s", assetName, filePath)
+		}
+		if !matches {
+			return "", errors.Errorf("GitHub release already has an asset named %s that does not match the local artifact %s", assetName, filePath)
+		}
+		_, _ = fmt.Fprintf(stdout, "%s already uploaded to GitHub, skipping\n", f.Name())
+		return existingAsset.GetBrowserDownloadURL(), nil
+	}
+
+	uploadURI, err := uploadURIForProduct(release.GetUploadURL(), assetName)
 	if err != nil {
 		return "", err
 	}
@@ -266,6 +371,40 @@ func (p *githubPublisher) uploadFileAtPath(client *github.Client, release *githu
 		return "", errors.Wrapf(err, "failed to upload artifact %s", filePath)
 	}
 	return uploadRes.GetBrowserDownloadURL(), nil
+}
+
+// findReleaseAsset returns the asset in release.Assets with the given name, or nil if there is no match.
+func findReleaseAsset(release *github.RepositoryRelease, name string) *github.ReleaseAsset {
+	for i := range release.Assets {
+		if release.Assets[i].GetName() == name {
+			return release.Assets[i]
+		}
+	}
+	return nil
+}
+
+// existingAssetMatchesLocalFile reports whether existingAsset's content matches the local file, read from f. GitHub
+// populates the digest of uploaded release assets, so prefer comparing SHA-256 digests when one is present; fall
+// back to comparing size only for assets that predate digest support. f must be positioned at the start, and its
+// position is restored to the start before returning so it can still be used for the upload afterward.
+func existingAssetMatchesLocalFile(existingAsset *github.ReleaseAsset, f *os.File) (bool, error) {
+	defer func() {
+		_, _ = f.Seek(0, io.SeekStart)
+	}()
+
+	if digest := existingAsset.GetDigest(); digest != "" {
+		h := sha256.New()
+		if _, err := io.Copy(h, f); err != nil {
+			return false, err
+		}
+		return fmt.Sprintf("sha256:%x", h.Sum(nil)) == digest, nil
+	}
+
+	stat, err := f.Stat()
+	if err != nil {
+		return false, err
+	}
+	return int64(existingAsset.GetSize()) == stat.Size(), nil
 }
 
 // uploadURIForProduct returns an asset upload URI using the provided upload template from the release creation
