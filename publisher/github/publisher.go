@@ -19,19 +19,17 @@ import (
 	"fmt"
 	"io"
 	"mime"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/google/go-github/v28/github"
+	"github.com/google/go-github/v89/github"
 	"github.com/jtacoma/uritemplates"
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/publisher"
 	"github.com/palantir/distgo/publisher/github/config"
 	"github.com/pkg/errors"
-	"golang.org/x/oauth2"
 	"gopkg.in/cheggaaa/pb.v1"
 	"gopkg.in/yaml.v2"
 )
@@ -140,20 +138,17 @@ func (p *githubPublisher) runPublish(productTaskOutputInfo distgo.ProductTaskOut
 	}
 	publisher.FilterProductTaskOutputInfoArtifactNames(&productTaskOutputInfo, filterRegexp, excludeRegexp)
 
-	client := github.NewClient(oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: cfg.Token},
-	)))
-
 	// if base URL does not end in "/", append it (trailing slash is required)
 	if !strings.HasSuffix(cfg.APIURL, "/") {
 		cfg.APIURL += "/"
 	}
-	// set base URL (should be of the form "https://api.github.com/")
-	apiURL, err := url.Parse(cfg.APIURL)
+	client, err := github.NewClient(
+		github.WithAuthToken(cfg.Token),
+		github.WithURLs(&cfg.APIURL, &cfg.APIURL),
+	)
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse %s as URL for API calls", cfg.APIURL)
+		return errors.Wrapf(err, "failed to create GitHub client for %s", cfg.APIURL)
 	}
-	client.BaseURL = apiURL
 
 	releaseVersion := productTaskOutputInfo.Project.Version
 	if cfg.AddVPrefix {
@@ -176,8 +171,8 @@ func (p *githubPublisher) runPublish(productTaskOutputInfo distgo.ProductTaskOut
 		if !dryRun {
 			// create the release as a draft since GitHub's immutable-releases feature rejects asset uploads to a
 			// non-draft release, so uploads must happen before the release is published.
-			releaseRes, _, err = client.Repositories.CreateRelease(context.Background(), cfg.Owner, cfg.Repository, &github.RepositoryRelease{
-				TagName: new(releaseVersion),
+			releaseRes, _, err = client.Repositories.CreateRelease(context.Background(), cfg.Owner, cfg.Repository, github.CreateReleaseRequest{
+				TagName: releaseVersion,
 				Draft:   new(true),
 			})
 			if err != nil {
@@ -215,7 +210,7 @@ func (p *githubPublisher) runPublish(productTaskOutputInfo distgo.ProductTaskOut
 	if releaseRes.GetDraft() {
 		distgo.PrintOrDryRunPrint(stdout, fmt.Sprintf("Publishing GitHub release %s for %s/%s...", releaseVersion, cfg.Owner, cfg.Repository), dryRun)
 		if !dryRun {
-			if _, _, err := client.Repositories.EditRelease(context.Background(), cfg.Owner, cfg.Repository, releaseRes.GetID(), &github.RepositoryRelease{
+			if _, _, err := client.Repositories.UpdateRelease(context.Background(), cfg.Owner, cfg.Repository, releaseRes.GetID(), github.UpdateReleaseRequest{
 				Draft: new(false),
 			}); err != nil {
 				_, _ = fmt.Fprintln(stdout)
@@ -310,13 +305,13 @@ func githubUploadReleaseAssetWithProgress(ctx context.Context, client *github.Cl
 	reader := bar.NewProxyReader(file)
 
 	mediaType := mime.TypeByExtension(filepath.Ext(file.Name()))
-	req, err := client.NewUploadRequest(uploadURI, reader, stat.Size(), mediaType)
+	req, err := client.NewUploadRequest(ctx, uploadURI, reader, stat.Size(), mediaType)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	asset := new(github.ReleaseAsset)
-	resp, err := client.Do(ctx, req, asset)
+	resp, err := client.Do(req, asset)
 	if err != nil {
 		return nil, resp, err
 	}
