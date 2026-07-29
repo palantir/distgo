@@ -16,6 +16,7 @@ package github
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"mime"
@@ -106,8 +107,8 @@ func (p *githubPublisher) RunPublish(inputs []distgo.ProductPublishInfo, flagVal
 
 	// Group inputs by release key so that products sharing a release upload together and publish once, since a
 	// shared release must not be published until all of its products have uploaded.
-	var batches []githubReleaseBatch
-	batchIndexByKey := make(map[githubReleaseKey]int)
+	var releases []githubReleaseProducts
+	releaseKeyToIndex := make(map[githubReleaseKey]int)
 	for _, input := range inputs {
 		productTaskOutputInfo := input.ProductTaskOutputInfo
 		publisher.FilterProductTaskOutputInfoArtifactNames(&productTaskOutputInfo, filterRegexp, excludeRegexp)
@@ -117,33 +118,37 @@ func (p *githubPublisher) RunPublish(inputs []distgo.ProductPublishInfo, flagVal
 			return errors.Wrapf(err, "failed to resolve GitHub config for product %s", productTaskOutputInfo.Product.ID)
 		}
 
-		batchIndex, ok := batchIndexByKey[key]
+		releaseIndex, ok := releaseKeyToIndex[key]
 		if !ok {
-			// Only the first product seen for a given release key needs a client. Every other product in the
-			// batch reuses this target instead of re-resolving.
+			// if release target does not exist for the key, create it
 			target, err := newGitHubReleaseTarget(cfg, key)
 			if err != nil {
 				return errors.Wrapf(err, "failed to resolve GitHub release target for product %s", productTaskOutputInfo.Product.ID)
 			}
-			batchIndex = len(batches)
-			batchIndexByKey[key] = batchIndex
-			batches = append(batches, githubReleaseBatch{target: target})
+			releaseIndex = len(releases)
+			releaseKeyToIndex[key] = releaseIndex
+			releases = append(releases, githubReleaseProducts{target: target})
+		} else if existingToken := releases[releaseIndex].target.cfg.Token; existingToken != cfg.Token {
+			// githubReleaseKey does not include the token, so products that otherwise resolve to the same release
+			// but specify different tokens would silently use whichever token belonged to the first product seen.
+			// There's no well-defined choice of token to use for the release as a whole in that case, so fail loudly.
+			return errors.Errorf("product %s resolves to the same GitHub release (%s/%s, tag %s) as an earlier product in this batch, but specifies a different token", productTaskOutputInfo.Product.ID, key.owner, key.repository, key.releaseVersion)
 		}
-		batches[batchIndex].products = append(batches[batchIndex].products, productTaskOutputInfo)
+		releases[releaseIndex].products = append(releases[releaseIndex].products, productTaskOutputInfo)
 	}
 
-	// With grouping done, run the core prepare/upload/publish workflow once per batch. For each batch, create or
-	// reuse the release, upload every product's assets in the batch, then publish it for the whole batch at once.
-	for _, batch := range batches {
-		release, err := prepareGitHubRelease(batch.target, dryRun, stdout)
+	// With grouping done, run the core prepare/upload/publish workflow once per release. For each release, create or
+	// reuse the release, upload every product's assets to the release, then publish it.
+	for _, releaseProducts := range releases {
+		release, err := prepareGitHubRelease(releaseProducts.target, dryRun, stdout)
 		if err != nil {
 			return err
 		}
 
-		for _, productTaskOutputInfo := range batch.products {
+		for _, productTaskOutputInfo := range releaseProducts.products {
 			for _, currDistID := range productTaskOutputInfo.Product.DistOutputInfos.DistIDs {
 				for _, currArtifactPath := range productTaskOutputInfo.ProductDistArtifactPaths()[currDistID] {
-					if _, err := p.uploadFileAtPath(batch.target.client, release, currArtifactPath, dryRun, stdout); err != nil {
+					if _, err := p.uploadFileAtPath(releaseProducts.target.client, release, currArtifactPath, dryRun, stdout); err != nil {
 						return errors.Wrapf(err, "failed to publish product %s", productTaskOutputInfo.Product.ID)
 					}
 				}
@@ -154,16 +159,15 @@ func (p *githubPublisher) RunPublish(inputs []distgo.ProductPublishInfo, flagVal
 		if !dryRun && !release.GetDraft() {
 			continue
 		}
-		if err := publishGitHubRelease(batch.target, release, dryRun, stdout); err != nil {
+		if err := publishGitHubRelease(releaseProducts.target, release, dryRun, stdout); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// githubReleaseBatch groups the products that resolve to the same GitHub release so they can be uploaded together
-// and published once.
-type githubReleaseBatch struct {
+// githubReleaseProducts stores the products that should be published for a particular GitHub release.
+type githubReleaseProducts struct {
 	target   githubReleaseTarget
 	products []distgo.ProductTaskOutputInfo
 }
@@ -346,12 +350,12 @@ func (p *githubPublisher) uploadFileAtPath(client *github.Client, release *githu
 
 	assetName := path.Base(filePath)
 	if existingAsset := findReleaseAsset(release, assetName); existingAsset != nil {
-		stat, err := f.Stat()
+		matches, err := existingAssetMatchesLocalFile(existingAsset, f)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to stat artifact %s", filePath)
+			return "", errors.Wrapf(err, "failed to compare existing GitHub asset %s to local artifact %s", assetName, filePath)
 		}
-		if int64(existingAsset.GetSize()) != stat.Size() {
-			return "", errors.Errorf("GitHub release already has an asset named %s (%d bytes) that does not match the local artifact %s (%d bytes)", assetName, existingAsset.GetSize(), filePath, stat.Size())
+		if !matches {
+			return "", errors.Errorf("GitHub release already has an asset named %s that does not match the local artifact %s", assetName, filePath)
 		}
 		_, _ = fmt.Fprintf(stdout, "%s already uploaded to GitHub, skipping\n", f.Name())
 		return existingAsset.GetBrowserDownloadURL(), nil
@@ -377,6 +381,30 @@ func findReleaseAsset(release *github.RepositoryRelease, name string) *github.Re
 		}
 	}
 	return nil
+}
+
+// existingAssetMatchesLocalFile reports whether existingAsset's content matches the local file, read from f. GitHub
+// populates the digest of uploaded release assets, so prefer comparing SHA-256 digests when one is present; fall
+// back to comparing size only for assets that predate digest support. f must be positioned at the start, and its
+// position is restored to the start before returning so it can still be used for the upload afterward.
+func existingAssetMatchesLocalFile(existingAsset *github.ReleaseAsset, f *os.File) (bool, error) {
+	defer func() {
+		_, _ = f.Seek(0, io.SeekStart)
+	}()
+
+	if digest := existingAsset.GetDigest(); digest != "" {
+		h := sha256.New()
+		if _, err := io.Copy(h, f); err != nil {
+			return false, err
+		}
+		return fmt.Sprintf("sha256:%x", h.Sum(nil)) == digest, nil
+	}
+
+	stat, err := f.Stat()
+	if err != nil {
+		return false, err
+	}
+	return int64(existingAsset.GetSize()) == stat.Size(), nil
 }
 
 // uploadURIForProduct returns an asset upload URI using the provided upload template from the release creation

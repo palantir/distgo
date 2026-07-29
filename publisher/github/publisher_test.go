@@ -15,6 +15,7 @@
 package github
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -272,6 +273,35 @@ func TestRunPublish_UploadsAllProductsBeforePublishingSharedRelease(t *testing.T
 	}, operations)
 }
 
+// TestRunPublish_DifferentTokensForSameReleaseFails verifies that RunPublish reports an error when two products
+// resolve to the same GitHub release but specify different tokens via their own PublisherConfigYML, since
+// githubReleaseKey does not include the token and there is no well-defined choice of token to use for the release
+// as a whole in that case.
+func TestRunPublish_DifferentTokensForSameReleaseFails(t *testing.T) {
+	projectDir := t.TempDir()
+	fooOutputInfo := writeTestArtifact(t, projectDir, "foo", "foo-1.0.0-linux-amd64.tgz")
+	barOutputInfo := writeTestArtifact(t, projectDir, "bar", "bar-1.0.0-linux-amd64.tgz")
+
+	flagVals := map[distgo.PublisherFlagName]any{
+		githubPublisherAPIURLFlag.Name:     "http://ignored.invalid",
+		githubPublisherUserFlag.Name:       "testUser",
+		githubPublisherRepositoryFlag.Name: "testRepo",
+		githubPublisherOwnerFlag.Name:      "testOwner",
+	}
+	configWithToken := func(token string) []byte {
+		return fmt.Appendf(nil, "api-url: http://ignored.invalid\nuser: testUser\nrepository: testRepo\nowner: testOwner\ntoken: %s\n", token)
+	}
+
+	publisher := new(githubPublisher)
+	err := publisher.RunPublish([]distgo.ProductPublishInfo{
+		{ProductTaskOutputInfo: fooOutputInfo, PublisherConfigYML: configWithToken("tokenA")},
+		{ProductTaskOutputInfo: barOutputInfo, PublisherConfigYML: configWithToken("tokenB")},
+	}, flagVals, false, io.Discard)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "bar")
+	assert.Contains(t, err.Error(), "different token")
+}
+
 // TestRunPublish_UploadFailureLeavesSharedReleaseAsDraft verifies that if any product's upload in a shared-release
 // batch fails, the release is left as a draft rather than published, since GitHub's immutable-releases feature would
 // otherwise permanently reject any retry's uploads.
@@ -389,6 +419,69 @@ func TestRunPublish_RetrySkipsAlreadyUploadedAssets(t *testing.T) {
 
 	assert.Equal(t, int32(1), fooUploadCount.Load(), "retry must not re-upload foo's asset, since it already succeeded on the first attempt")
 	assert.Equal(t, int32(1), editReleaseCount.Load(), "release must be published exactly once, after the retry completes successfully")
+}
+
+// TestRunPublish_RetrySkipsWhenDigestMatches verifies that a retry skips re-uploading an asset whose digest matches
+// the local artifact's SHA-256 digest, even when the mocked response also includes a size (digest takes priority).
+func TestRunPublish_RetrySkipsWhenDigestMatches(t *testing.T) {
+	testArtifactDigest := fmt.Sprintf("sha256:%x", sha256.Sum256([]byte(testArtifactContent)))
+
+	uploadCalled := false
+	mux := http.NewServeMux()
+	mux.HandleFunc("/repos/testOwner/testRepo/releases", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodGet, r.Method)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `[{"id": 123, "draft": true, "tag_name": "1.0.0", "upload_url": "http://%s/upload/123/assets{?name,label}", "assets": [{"id": 1, "name": "foo-1.0.0-linux-amd64.tgz", "size": %d, "digest": %q}]}]`, r.Host, len(testArtifactContent), testArtifactDigest)
+	})
+	mux.HandleFunc("/repos/testOwner/testRepo/releases/123", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPatch, r.Method)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprint(w, `{"id": 123, "draft": false}`)
+	})
+	mux.HandleFunc("/upload/123/assets", func(w http.ResponseWriter, r *http.Request) {
+		uploadCalled = true
+		w.WriteHeader(http.StatusInternalServerError)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	projectDir := t.TempDir()
+	fooOutputInfo := writeTestArtifact(t, projectDir, "foo", "foo-1.0.0-linux-amd64.tgz")
+
+	publisher := new(githubPublisher)
+	err := publisher.RunPublish([]distgo.ProductPublishInfo{{ProductTaskOutputInfo: fooOutputInfo, PublisherConfigYML: []byte("{}\n")}}, testGitHubFlagValues(server.URL), false, io.Discard)
+	require.NoError(t, err)
+	assert.False(t, uploadCalled, "asset must not be re-uploaded when its digest matches the local artifact")
+}
+
+// TestRunPublish_RetryFailsWhenExistingAssetDigestDiffers ensures that a retry fails when the existing asset's
+// digest does not match the local artifact, even if the sizes is equal.
+func TestRunPublish_RetryFailsWhenExistingAssetDigestDiffers(t *testing.T) {
+	const wrongDigest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/repos/testOwner/testRepo/releases", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodGet, r.Method)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `[{"id": 123, "draft": true, "tag_name": "1.0.0", "upload_url": "http://%s/upload/123/assets{?name,label}", "assets": [{"id": 1, "name": "foo-1.0.0-linux-amd64.tgz", "size": %d, "digest": %q}]}]`, r.Host, len(testArtifactContent), wrongDigest)
+	})
+	mux.HandleFunc("/repos/testOwner/testRepo/releases/123", func(w http.ResponseWriter, r *http.Request) {
+		require.Fail(t, "release must not be published when a stale asset is detected")
+	})
+	mux.HandleFunc("/upload/123/assets", func(w http.ResponseWriter, r *http.Request) {
+		require.Fail(t, "asset must not be re-uploaded when a stale asset is detected")
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	projectDir := t.TempDir()
+	// same size as testArtifactContent, but different content (and therefore a different digest)
+	fooOutputInfo := writeTestArtifactWithContent(t, projectDir, "foo", "foo-1.0.0-linux-amd64.tgz", "fake tgz CONTENT")
+
+	publisher := new(githubPublisher)
+	err := publisher.RunPublish([]distgo.ProductPublishInfo{{ProductTaskOutputInfo: fooOutputInfo, PublisherConfigYML: []byte("{}\n")}}, testGitHubFlagValues(server.URL), false, io.Discard)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "does not match the local artifact")
 }
 
 // TestRunPublish_RetryFailsWhenExistingAssetSizeDiffers ensures that a retry fails when the local artifact being
