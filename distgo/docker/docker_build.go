@@ -250,12 +250,15 @@ func runSingleDockerBuild(
 	// a wrapper the builder wrote itself. Builders that produce no OCI layout (daemon-only) leave no index.json and are
 	// skipped: they cannot serve as a local FROM base.
 	if !dryRun {
-		ociDir := distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID)
-		if _, err := os.Stat(filepath.Join(ociDir, "index.json")); err == nil {
+		for _, ociDir := range distgo.ProductDockerOutputDirCandidates(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID) {
+			if _, err := os.Stat(filepath.Join(ociDir, "index.json")); err != nil {
+				continue
+			}
 			renderedTags := productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags
 			if err := distgo.WriteDockerBuildContextLayout(ociDir, renderedTags); err != nil {
 				return errors.Wrapf(err, "failed to write Docker build context layout for %s", dockerID)
 			}
+			break
 		}
 	}
 	return nil

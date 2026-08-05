@@ -67,6 +67,27 @@ func TestDependencyImageBuildContextArgs(t *testing.T) {
 	assert.Equal(t, pinnedArgs, dependencyImageBuildContextArgs(info, false))
 	assert.Equal(t, pinnedArgs, dependencyImageBuildContextArgs(info, true))
 
+	// assets compiled against older distgo versions write the wrapper under the dist output tree.
+	info.Deps["base"] = distgo.ProductOutputInfo{
+		ID:              "base",
+		DistOutputInfos: &distgo.DistOutputInfos{DistOutputDir: "out/dist"},
+		DockerOutputInfos: &distgo.DockerOutputInfos{
+			DockerOutputDir: "out/docker",
+			DockerIDs:       []distgo.DockerID{"base-docker"},
+			DockerBuilderOutputInfos: map[distgo.DockerID]distgo.DockerBuilderOutputInfo{
+				"base-docker": {RenderedTags: []string{"registry/base:1.0.0", "registry/base:latest"}},
+			},
+		},
+	}
+	require.NoError(t, os.RemoveAll(filepath.Join(projectDir, "out", "docker")))
+	legacyLayoutDir := filepath.Join(projectDir, "out", "dist", "base", "1.0.0", "oci-base-docker", distgo.DockerBuildContextLayoutSubdir)
+	writeWrapperIndex(t, legacyLayoutDir, digest, "registry/base:1.0.0", "registry/base:latest")
+	legacyPinnedArgs := []string{
+		"--build-context", "registry/base:1.0.0=oci-layout://" + legacyLayoutDir + "@" + digest,
+		"--build-context", "registry/base:latest=oci-layout://" + legacyLayoutDir + "@" + digest,
+	}
+	assert.Equal(t, legacyPinnedArgs, dependencyImageBuildContextArgs(info, false))
+
 	// no dependencies: no args
 	assert.Nil(t, dependencyImageBuildContextArgs(distgo.ProductTaskOutputInfo{
 		Project: distgo.ProjectInfo{ProjectDir: projectDir, Version: "1.0.0"},

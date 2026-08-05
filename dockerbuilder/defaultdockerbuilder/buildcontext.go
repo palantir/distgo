@@ -49,16 +49,24 @@ func dependencyImageBuildContextArgs(productTaskOutputInfo distgo.ProductTaskOut
 			if !ok || len(builderOutputInfo.RenderedTags) == 0 {
 				continue
 			}
-			ociDir := distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, depOutputInfo, dockerID)
-			if ociDir == "" {
+			outputDirs := distgo.ProductDockerOutputDirCandidates(productTaskOutputInfo.Project, depOutputInfo, dockerID)
+			if len(outputDirs) == 0 {
 				continue
 			}
-			layoutDir := filepath.Join(ociDir, distgo.DockerBuildContextLayoutSubdir)
+			ociDir := outputDirs[0]
 			if !dryRun {
-				if _, err := os.Stat(filepath.Join(layoutDir, "index.json")); err != nil {
+				ociDir = ""
+				for _, candidate := range outputDirs {
+					if _, err := os.Stat(filepath.Join(candidate, distgo.DockerBuildContextLayoutSubdir, "index.json")); err == nil {
+						ociDir = candidate
+						break
+					}
+				}
+				if ociDir == "" {
 					continue
 				}
 			}
+			layoutDir := filepath.Join(ociDir, distgo.DockerBuildContextLayoutSubdir)
 			refDigests := buildxContextRefDigests(layoutDir)
 			for _, tag := range builderOutputInfo.RenderedTags {
 				ref := fmt.Sprintf("%s=oci-layout://%s", tag, layoutDir)

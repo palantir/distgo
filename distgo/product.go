@@ -15,6 +15,7 @@
 package distgo
 
 import (
+	"fmt"
 	"maps"
 	"path"
 
@@ -150,13 +151,28 @@ func ProductDockerOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOu
 	return path.Join(projectInfo.ProjectDir, productOutputInfo.DockerOutputInfos.DockerOutputDir, string(productOutputInfo.ID), projectInfo.Version, string(dockerID))
 }
 
-// ProductDockerOCIDistOutputDir returns the Docker output directory for the given DockerID.
+// ProductDockerOutputDirCandidates returns the output directories in which a Docker builder may have written output.
+// The configured Docker output directory is first, followed by the legacy OCI dist output directory when the product
+// has dist configuration. The legacy directory supports DockerBuilder assets compiled against older distgo versions.
+func ProductDockerOutputDirCandidates(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo, dockerID DockerID) []string {
+	dockerOutputDir := ProductDockerOutputDir(projectInfo, productOutputInfo, dockerID)
+	if dockerOutputDir == "" {
+		return nil
+	}
+	outputDirs := []string{dockerOutputDir}
+	legacyOutputDir := ProductDistOutputDir(projectInfo, productOutputInfo, DistID(fmt.Sprintf("oci-%s", dockerID)))
+	if legacyOutputDir != "" && legacyOutputDir != dockerOutputDir {
+		outputDirs = append(outputDirs, legacyOutputDir)
+	}
+	return outputDirs
+}
+
+// ProductDockerOCIDistOutputDir returns the legacy Docker OCI dist output directory for the given DockerID.
 //
-// Deprecated: use ProductDockerOutputDir. This method is retained so assets that vendored the previous API keep
-// compiling. Its result now comes from ProductDockerOutputDir (the "{{DockerOutputDir}}" namespace), superseding the
-// former "{{DistOutputDir}}/.../oci-{{DockerID}}" location.
+// Deprecated: use ProductDockerOutputDir. This method retains its old result so DockerBuilder assets compiled against
+// older distgo versions continue to interoperate with the host during migration to the Docker output directory.
 func (p *ProductTaskOutputInfo) ProductDockerOCIDistOutputDir(dockerID DockerID) string {
-	return ProductDockerOutputDir(p.Project, p.Product, dockerID)
+	return ProductDistOutputDir(p.Project, p.Product, DistID(fmt.Sprintf("oci-%s", dockerID)))
 }
 
 // ProductDistWorkDirs returns a map from DistID to the directory used to prepare the distribution for that DistID,

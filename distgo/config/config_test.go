@@ -917,6 +917,11 @@ products:
 	}
 }
 
+func TestDockerConfigRejectsAbsoluteOutputDir(t *testing.T) {
+	_, err := (&distgoconfig.DockerConfig{OutputDir: new("/tmp/docker")}).ToParam("", distgoconfig.DockerConfig{}, nil)
+	require.EqualError(t, err, "output-dir cannot be specified as an absolute path")
+}
+
 func TestProjectConfig_DefaultProducts(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir("", "")
 	require.NoError(t, err)

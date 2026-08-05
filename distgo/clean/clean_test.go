@@ -31,6 +31,7 @@ import (
 	distgoconfig "github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/distgo/dist"
 	"github.com/palantir/distgo/distgo/testfuncs"
+	"github.com/palantir/distgo/dockerbuilder/defaultdockerbuilder"
 	"github.com/palantir/distgo/internal/files"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/gittest"
@@ -314,6 +315,41 @@ func TestClean(t *testing.T) {
 
 				outputDir := path.Join(projectInfo.ProjectDir, "out")
 				_, err = os.Stat(outputDir)
+				assert.True(t, os.IsNotExist(err))
+			},
+		},
+		{
+			"cleans Docker output",
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
+					"foo": {
+						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
+							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
+								defaultdockerbuilder.TypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
+									Type:       new(defaultdockerbuilder.TypeName),
+									ContextDir: new("docker"),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+										Templates:   map[distgo.DockerTagID]string{"default": "foo:latest"},
+										OrderedKeys: []distgo.DockerTagID{"default"},
+									}),
+								}),
+							}),
+						}),
+					},
+				}),
+			},
+			func(t *testing.T, projectDir string) {
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			func(t *testing.T, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+				productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
+				require.NoError(t, err)
+				dockerOutput := distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, productTaskOutputInfo.Product, defaultdockerbuilder.TypeName)
+				require.NoError(t, os.MkdirAll(dockerOutput, 0755))
+				require.NoError(t, os.WriteFile(path.Join(dockerOutput, "index.json"), []byte("{}"), 0644))
+			},
+			func(t *testing.T, caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+				_, err := os.Stat(path.Join(projectInfo.ProjectDir, "out", "docker", "foo"))
 				assert.True(t, os.IsNotExist(err))
 			},
 		},
