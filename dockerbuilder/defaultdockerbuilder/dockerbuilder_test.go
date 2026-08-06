@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/layout"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
+	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/mholt/archiver/v3"
 	"github.com/stretchr/testify/require"
 )
@@ -51,4 +52,46 @@ func TestExtractToOCILayoutIsRerunnable(t *testing.T) {
 	// The source tarball must be preserved across re-extraction (it is the input, not stale output).
 	_, err = os.Stat(tarball)
 	require.NoError(t, err)
+}
+
+// TestExtractToOCILayout_ProducesConformantIndexForSinglePlatformBuild verifies that a single-platform build's OCI
+// layout gets a conformant image index at the top-level index.json, not a bare image manifest.
+func TestExtractToOCILayout_ProducesConformantIndexForSinglePlatformBuild(t *testing.T) {
+	// Build a minimal OCI image layout shaped like buildx's raw "--output=type=oci" output for a single-platform/single-tag build.
+	srcLayoutDir := filepath.Join(t.TempDir(), "src")
+	srcPath, err := layout.Write(srcLayoutDir, mutate.AppendManifests(empty.Index, mutate.IndexAddendum{Add: empty.Image}))
+	require.NoError(t, err)
+
+	srcIndex, err := srcPath.ImageIndex()
+	require.NoError(t, err)
+	srcIdxManifest, err := srcIndex.IndexManifest()
+	require.NoError(t, err)
+	require.Len(t, srcIdxManifest.Manifests, 1)
+	wantDigest := srcIdxManifest.Manifests[0].Digest
+
+	destDir := t.TempDir()
+	tarball := filepath.Join(destDir, "image.tar")
+	require.NoError(t, archiver.DefaultTar.Archive([]string{
+		filepath.Join(srcLayoutDir, "oci-layout"),
+		filepath.Join(srcLayoutDir, "index.json"),
+		filepath.Join(srcLayoutDir, "blobs"),
+	}, tarball))
+
+	b := &DefaultDockerBuilder{}
+	require.NoError(t, b.extractToOCILayout(destDir, tarball))
+
+	destIndex, err := layout.ImageIndexFromPath(destDir)
+	require.NoError(t, err, "resulting OCI layout must remain readable as an image index")
+	destIdxManifest, err := destIndex.IndexManifest()
+	require.NoError(t, err)
+	require.Equal(t, types.OCIImageIndex, destIdxManifest.MediaType, "top-level index.json must always be an image index, never a bare manifest")
+	require.Len(t, destIdxManifest.Manifests, 1)
+	require.Equal(t, wantDigest, destIdxManifest.Manifests[0].Digest)
+
+	// The referenced manifest's blob must still be resolvable by digest, not just inlined into index.json.
+	image, err := destIndex.Image(wantDigest)
+	require.NoError(t, err, "manifest blob must remain addressable under blobs/ after extraction")
+	gotDigest, err := image.Digest()
+	require.NoError(t, err)
+	require.Equal(t, wantDigest, gotDigest)
 }

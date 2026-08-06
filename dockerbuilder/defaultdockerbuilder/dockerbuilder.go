@@ -16,6 +16,7 @@ package defaultdockerbuilder
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -24,7 +25,9 @@ import (
 	"slices"
 	"strings"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/layout"
+	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/mholt/archiver/v3"
 	"github.com/palantir/distgo/distgo"
 	"github.com/pkg/errors"
@@ -179,9 +182,21 @@ func (d *DefaultDockerBuilder) extractToOCILayout(destOCILayoutDir, sourceOCITar
 	if len(idxManifest.Manifests) == 0 {
 		return errors.New("top-level OCI image index does not contain any manifests. While this is a valid image index, it is unexpected and likely means something erroneous happened earlier in the build")
 	}
+	// Replace the top-level index with one containing only the "actual" per-tag descriptor, rather than promoting its
+	// blob to be index.json directly. A conformant OCI image layout's index.json must always be an image index (never
+	// a bare manifest), and the descriptor's blob must stay in blobs/ addressable by digest so the docker publish
+	// path and any OCI-layout consumer can resolve it.
 	indexDesc := idxManifest.Manifests[0]
-	if err := os.Rename(filepath.Join(destOCILayoutDir, "blobs", indexDesc.Digest.Algorithm, indexDesc.Digest.Hex), filepath.Join(destOCILayoutDir, "index.json")); err != nil {
-		return err
+	newIndexBytes, err := json.Marshal(v1.IndexManifest{
+		SchemaVersion: 2,
+		MediaType:     types.OCIImageIndex,
+		Manifests:     []v1.Descriptor{indexDesc},
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal top-level OCI image index")
+	}
+	if err := os.WriteFile(filepath.Join(destOCILayoutDir, "index.json"), newIndexBytes, 0644); err != nil {
+		return errors.Wrap(err, "failed to write top-level OCI image index")
 	}
 	// The buildx-consumable wrapper layout that lets a dependent's "FROM" resolve this image from disk is written by
 	// the Docker build task after the builder runs (distgo.WriteDockerBuildContextLayout), not here, so it survives
