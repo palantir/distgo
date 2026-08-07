@@ -490,6 +490,7 @@ products:
 						ID:   "test-1",
 						Name: "test-1",
 						Docker: &distgo.DockerParam{
+							OutputDir: "out/docker",
 							DockerBuilderParams: map[distgo.DockerID]distgo.DockerBuilderParam{
 								"default": {
 									DockerBuilder:  defaultdockerbuilder.NewDefaultDockerBuilder(nil, ""),
@@ -634,6 +635,7 @@ products:
 						ID:   "test-1",
 						Name: "test-1",
 						Docker: &distgo.DockerParam{
+							OutputDir: "out/docker",
 							DockerBuilderParams: map[distgo.DockerID]distgo.DockerBuilderParam{
 								"default": {
 									DockerBuilder:  defaultdockerbuilder.NewDefaultDockerBuilder(nil, ""),
@@ -788,6 +790,7 @@ products:
 						ID:   "test-1",
 						Name: "test-1",
 						Docker: &distgo.DockerParam{
+							OutputDir: "out/docker",
 							DockerBuilderParams: map[distgo.DockerID]distgo.DockerBuilderParam{
 								"default": {
 									DockerBuilder:  defaultdockerbuilder.NewDefaultDockerBuilder(nil, ""),
@@ -914,6 +917,11 @@ products:
 	}
 }
 
+func TestDockerConfigRejectsAbsoluteOutputDir(t *testing.T) {
+	_, err := (&distgoconfig.DockerConfig{OutputDir: new("/tmp/docker")}).ToParam("", distgoconfig.DockerConfig{}, nil)
+	require.EqualError(t, err, "output-dir cannot be specified as an absolute path")
+}
+
 func TestProjectConfig_DefaultProducts(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir("", "")
 	require.NoError(t, err)
@@ -943,6 +951,7 @@ func TestProjectConfig_DefaultProducts(t *testing.T) {
 				},
 			},
 			Docker: &distgo.DockerParam{
+				OutputDir:           "out/docker",
 				DockerBuilderParams: map[distgo.DockerID]distgo.DockerBuilderParam{},
 			},
 		}

@@ -73,6 +73,14 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, dryRu
 				}
 			}
 		}
+
+		// add Docker directory for product for removal
+		if currProductParam.Docker != nil {
+			removePaths[path.Join(projectInfo.ProjectDir, currProductParam.Docker.OutputDir, string(currProductParam.ID))] = pathInfo{
+				rootDir: projectInfo.ProjectDir,
+				isDir:   true,
+			}
+		}
 	}
 
 	var sortedPaths []string

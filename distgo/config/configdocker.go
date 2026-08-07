@@ -15,6 +15,8 @@
 package config
 
 import (
+	"path"
+
 	"github.com/palantir/distgo/distgo"
 	v0 "github.com/palantir/distgo/distgo/config/internal/v0"
 	"github.com/pkg/errors"
@@ -28,11 +30,17 @@ func ToDockerConfig(in *DockerConfig) *v0.DockerConfig {
 }
 
 func (cfg *DockerConfig) ToParam(scriptIncludes string, defaultCfg DockerConfig, dockerBuilderFactory distgo.DockerBuilderFactory) (distgo.DockerParam, error) {
+	outputDir := getConfigStringValue(cfg.OutputDir, defaultCfg.OutputDir, "out/docker")
+	if path.IsAbs(outputDir) {
+		return distgo.DockerParam{}, errors.Errorf("output-dir cannot be specified as an absolute path")
+	}
+
 	dockerBuilderParams, err := (*DockerBuildersConfig)(cfg.DockerBuildersConfig).ToParam(scriptIncludes, (*DockerBuildersConfig)(cfg.DockerBuildersConfig), dockerBuilderFactory)
 	if err != nil {
 		return distgo.DockerParam{}, err
 	}
 	return distgo.DockerParam{
+		OutputDir:           outputDir,
 		Repository:          getConfigStringValue(cfg.Repository, defaultCfg.Repository, ""),
 		DockerBuilderParams: dockerBuilderParams,
 	}, nil
