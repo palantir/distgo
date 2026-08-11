@@ -15,70 +15,36 @@
 package defaultdockerbuilder
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/layout"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/types"
-	"github.com/mholt/archiver/v3"
 	"github.com/stretchr/testify/require"
 )
 
-// TestExtractToOCILayoutIsRerunnable verifies that extracting into an output directory that already contains the
-// artifacts of a previous extraction succeeds. This guards against the failure seen when re-running "docker build" at
-// the same version (e.g. a "-dirty" version, whose output directory name does not change between runs), where the tar
-// extractor would otherwise refuse to overwrite the existing OCI layout files.
-func TestExtractToOCILayoutIsRerunnable(t *testing.T) {
-	// Build a minimal but valid OCI image layout and pack it into a tarball shaped like buildx's OCI output.
-	srcLayoutDir := filepath.Join(t.TempDir(), "src")
-	_, err := layout.Write(srcLayoutDir, mutate.AppendManifests(empty.Index, mutate.IndexAddendum{Add: empty.Image}))
-	require.NoError(t, err)
+// TestFinalizeOCILayoutIsRerunnable verifies that finalizing a layout that has already been finalized succeeds. Output
+// directory names do not change between runs at an unchanged version (e.g. a "-dirty" version), so re-running
+// "docker build" finalizes over the previous run's output.
+func TestFinalizeOCILayoutIsRerunnable(t *testing.T) {
+	destDir := writeBuildxOCILayout(t, 1)
 
-	destDir := t.TempDir()
-	tarball := filepath.Join(destDir, "image.tar")
-	require.NoError(t, archiver.DefaultTar.Archive([]string{
-		filepath.Join(srcLayoutDir, "oci-layout"),
-		filepath.Join(srcLayoutDir, "index.json"),
-		filepath.Join(srcLayoutDir, "blobs"),
-	}, tarball))
-
-	b := &DefaultDockerBuilder{}
-	require.NoError(t, b.extractToOCILayout(destDir, tarball), "first extraction should succeed")
-	require.NoError(t, b.extractToOCILayout(destDir, tarball), "re-extraction into a populated directory should succeed")
-
-	// The source tarball must be preserved across re-extraction (it is the input, not stale output).
-	_, err = os.Stat(tarball)
-	require.NoError(t, err)
+	require.NoError(t, finalizeOCILayout(destDir), "first finalize should succeed")
+	require.NoError(t, finalizeOCILayout(destDir), "finalizing an already-finalized layout should succeed")
 }
 
-// TestExtractToOCILayout_ProducesConformantIndexForSinglePlatformBuild verifies that a single-platform build's OCI
-// layout gets a conformant image index at the top-level index.json, not a bare image manifest.
-func TestExtractToOCILayout_ProducesConformantIndexForSinglePlatformBuild(t *testing.T) {
-	// Build a minimal OCI image layout shaped like buildx's raw "--output=type=oci" output for a single-platform/single-tag build.
-	srcLayoutDir := filepath.Join(t.TempDir(), "src")
-	srcPath, err := layout.Write(srcLayoutDir, mutate.AppendManifests(empty.Index, mutate.IndexAddendum{Add: empty.Image}))
-	require.NoError(t, err)
+// TestFinalizeOCILayout_ProducesConformantIndexForSinglePlatformBuild verifies that a single-platform build's OCI layout
+// gets a conformant image index at the top-level index.json, not a bare image manifest.
+func TestFinalizeOCILayout_ProducesConformantIndexForSinglePlatformBuild(t *testing.T) {
+	destDir := writeBuildxOCILayout(t, 1)
+	wantDigest := topLevelDescriptors(t, destDir)[0].Digest
 
-	srcIndex, err := srcPath.ImageIndex()
-	require.NoError(t, err)
-	srcIdxManifest, err := srcIndex.IndexManifest()
-	require.NoError(t, err)
-	require.Len(t, srcIdxManifest.Manifests, 1)
-	wantDigest := srcIdxManifest.Manifests[0].Digest
-
-	destDir := t.TempDir()
-	tarball := filepath.Join(destDir, "image.tar")
-	require.NoError(t, archiver.DefaultTar.Archive([]string{
-		filepath.Join(srcLayoutDir, "oci-layout"),
-		filepath.Join(srcLayoutDir, "index.json"),
-		filepath.Join(srcLayoutDir, "blobs"),
-	}, tarball))
-
-	b := &DefaultDockerBuilder{}
-	require.NoError(t, b.extractToOCILayout(destDir, tarball))
+	require.NoError(t, finalizeOCILayout(destDir))
 
 	destIndex, err := layout.ImageIndexFromPath(destDir)
 	require.NoError(t, err, "resulting OCI layout must remain readable as an image index")
@@ -90,8 +56,62 @@ func TestExtractToOCILayout_ProducesConformantIndexForSinglePlatformBuild(t *tes
 
 	// The referenced manifest's blob must still be resolvable by digest, not just inlined into index.json.
 	image, err := destIndex.Image(wantDigest)
-	require.NoError(t, err, "manifest blob must remain addressable under blobs/ after extraction")
+	require.NoError(t, err, "manifest blob must remain addressable under blobs/ after finalizing")
 	gotDigest, err := image.Digest()
 	require.NoError(t, err)
 	require.Equal(t, wantDigest, gotDigest)
+}
+
+// TestFinalizeOCILayout_CollapsesPerTagDescriptors verifies that the one-descriptor-per-tag index buildx writes for a
+// multi-tag build is reduced to a single descriptor, so publishing it cannot produce a manifest list whose entries are
+// all the same image.
+func TestFinalizeOCILayout_CollapsesPerTagDescriptors(t *testing.T) {
+	destDir := writeBuildxOCILayout(t, 3)
+	srcDescriptors := topLevelDescriptors(t, destDir)
+	require.Len(t, srcDescriptors, 3, "fixture must reproduce buildx's per-tag descriptors")
+
+	require.NoError(t, finalizeOCILayout(destDir))
+
+	require.Len(t, topLevelDescriptors(t, destDir), 1)
+	require.Equal(t, srcDescriptors[0].Digest, topLevelDescriptors(t, destDir)[0].Digest)
+}
+
+// TestFinalizeOCILayout_RemovesStagingDir verifies that buildx's content-store staging directory does not survive into
+// the published layout.
+func TestFinalizeOCILayout_RemovesStagingDir(t *testing.T) {
+	destDir := writeBuildxOCILayout(t, 1)
+	require.NoError(t, os.MkdirAll(filepath.Join(destDir, "ingest"), 0755))
+
+	require.NoError(t, finalizeOCILayout(destDir))
+
+	_, err := os.Stat(filepath.Join(destDir, "ingest"))
+	require.True(t, os.IsNotExist(err), "staging directory must be removed")
+}
+
+// writeBuildxOCILayout writes a minimal OCI layout shaped like buildx's "--output=type=oci,tar=false" output: one
+// top-level descriptor per tag, each pointing at the same image manifest.
+func writeBuildxOCILayout(t *testing.T, tags int) string {
+	t.Helper()
+	addenda := make([]mutate.IndexAddendum, 0, tags)
+	for i := range tags {
+		addenda = append(addenda, mutate.IndexAddendum{
+			Add: empty.Image,
+			Descriptor: v1.Descriptor{
+				Annotations: map[string]string{"org.opencontainers.image.ref.name": fmt.Sprintf("tag-%d", i)},
+			},
+		})
+	}
+	destDir := filepath.Join(t.TempDir(), "oci")
+	_, err := layout.Write(destDir, mutate.AppendManifests(empty.Index, addenda...))
+	require.NoError(t, err)
+	return destDir
+}
+
+func topLevelDescriptors(t *testing.T, layoutDir string) []v1.Descriptor {
+	t.Helper()
+	index, err := layout.ImageIndexFromPath(layoutDir)
+	require.NoError(t, err)
+	idxManifest, err := index.IndexManifest()
+	require.NoError(t, err)
+	return idxManifest.Manifests
 }
