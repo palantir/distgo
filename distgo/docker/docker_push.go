@@ -95,14 +95,22 @@ func runSingleDockerPush(
 	stdout io.Writer) (rErr error) {
 
 	// if an OCI artifact exists, push that. Otherwise, default to pushing the artifact in the docker daemon
-	if _, err := layout.FromPath(distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID)); err == nil {
-		return runOCIPush(productID, dockerID, productTaskOutputInfo, dryRun, insecure, stdout)
+	if outputDir := dockerOCIOutputDir(productTaskOutputInfo, dockerID); outputDir != "" {
+		return runOCIPush(productID, dockerID, productTaskOutputInfo, outputDir, dryRun, insecure, stdout)
 	}
 	return runDockerDaemonPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
 }
 
-func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, insecure bool, stdout io.Writer) error {
-	outputDir := distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID)
+func dockerOCIOutputDir(productTaskOutputInfo distgo.ProductTaskOutputInfo, dockerID distgo.DockerID) string {
+	for _, outputDir := range distgo.ProductDockerOutputDirCandidates(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID) {
+		if _, err := layout.FromPath(outputDir); err == nil {
+			return outputDir
+		}
+	}
+	return ""
+}
+
+func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, outputDir string, dryRun bool, insecure bool, stdout io.Writer) error {
 	index, err := layout.ImageIndexFromPath(outputDir)
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct image index from OCI layout at path %s", outputDir)
@@ -133,7 +141,7 @@ func runOCIPush(productID distgo.ProductID, dockerID distgo.DockerID, productTas
 				return errors.Wrapf(err, "failed to publish image index for configuration %s for product %s", dockerID, productID)
 			}
 		case types.OCIManifestSchema1:
-			if err := handleImageManifest(ref, productID, dockerID, productTaskOutputInfo, dryRun, stdout); err != nil {
+			if err := handleImageManifest(ref, productID, dockerID, outputDir, dryRun, stdout); err != nil {
 				return errors.Wrapf(err, "failed to image manifest for configuration %s for product %s", dockerID, productID)
 			}
 		default:
@@ -185,8 +193,8 @@ func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref na
 	}
 }
 
-func handleImageManifest(ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, stdout io.Writer) error {
-	path := filepath.Join(distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID), "image.tar")
+func handleImageManifest(ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, outputDir string, dryRun bool, stdout io.Writer) error {
+	path := filepath.Join(outputDir, "image.tar")
 	image, err := tarball.ImageFromPath(path, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read image from path %s", path)

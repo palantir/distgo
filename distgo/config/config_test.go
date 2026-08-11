@@ -917,6 +917,26 @@ products:
 	}
 }
 
+// "clean" removes "{{OutputDir}}/{{ProductID}}" wholesale, so anything wider takes content distgo never created
+func TestDockerConfigRejectsOutputDirOutsideProject(t *testing.T) {
+	for _, tc := range []struct {
+		outputDir string
+		wantErr   string
+	}{
+		{"/tmp/docker", "output-dir cannot be specified as an absolute path"},
+		{".", "output-dir cannot be the project directory"},
+		{"out/../", "output-dir cannot be the project directory"},
+		{"..", "output-dir cannot be outside of the project directory"},
+		{"../shared", "output-dir cannot be outside of the project directory"},
+		{"out/../../shared", "output-dir cannot be outside of the project directory"},
+	} {
+		t.Run(tc.outputDir, func(t *testing.T) {
+			_, err := (&distgoconfig.DockerConfig{OutputDir: new(tc.outputDir)}).ToParam("", distgoconfig.DockerConfig{}, nil)
+			require.EqualError(t, err, tc.wantErr)
+		})
+	}
+}
+
 func TestProjectConfig_DefaultProducts(t *testing.T) {
 	tmpDir, cleanup, err := dirs.TempDir("", "")
 	require.NoError(t, err)

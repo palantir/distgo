@@ -17,6 +17,7 @@ package distgo
 import (
 	"maps"
 	"path"
+	"slices"
 
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/pkg/errors"
@@ -147,7 +148,60 @@ func ProductDockerOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOu
 	if productOutputInfo.DockerOutputInfos == nil {
 		return ""
 	}
-	return path.Join(projectInfo.ProjectDir, productOutputInfo.DockerOutputInfos.DockerOutputDir, string(productOutputInfo.ID), projectInfo.Version, string(dockerID))
+	relDir := ProductDockerOutputRelDir(productOutputInfo.DockerOutputInfos.DockerOutputDir, productOutputInfo.ID, projectInfo.Version, dockerID)
+	if relDir == "" {
+		return ""
+	}
+	return path.Join(projectInfo.ProjectDir, relDir)
+}
+
+// ProductDockerOutputRelDir returns the Docker output directory for the given DockerID relative to the project
+// directory, which is "{{DockerOutputDir}}/{{ProductID}}/{{Version}}/{{DockerID}}". An empty dockerOutputDir yields an
+// empty result rather than a path that would resolve into the source tree.
+func ProductDockerOutputRelDir(dockerOutputDir string, productID ProductID, version string, dockerID DockerID) string {
+	if dockerOutputDir == "" {
+		return ""
+	}
+	return path.Join(dockerOutputDir, string(productID), version, string(dockerID))
+}
+
+// ProductDockerOutputDirCandidates returns the directories a Docker builder may have written output for the given
+// DockerID to, most authoritative first: the directory resolved by the distgo that produced the output info, the one
+// derived from its Docker output directory, then the legacy OCI dist output directory. The trailing entries cover
+// DockerBuilder assets and hosts that predate each of those.
+//
+// A DockerBuilder should write to the first entry: it is the location every distgo that could be driving the build
+// agrees on.
+func ProductDockerOutputDirCandidates(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo, dockerID DockerID) []string {
+	if productOutputInfo.DockerOutputInfos == nil {
+		return nil
+	}
+	var outputDirs []string
+	addDir := func(outputDir string) {
+		if outputDir != "" && !slices.Contains(outputDirs, outputDir) {
+			outputDirs = append(outputDirs, outputDir)
+		}
+	}
+	if relDir := productOutputInfo.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].OutputDir; relDir != "" {
+		addDir(path.Join(projectInfo.ProjectDir, relDir))
+	}
+	addDir(ProductDockerOutputDir(projectInfo, productOutputInfo, dockerID))
+	addDir(productDockerLegacyOutputDir(projectInfo, productOutputInfo, dockerID))
+	return outputDirs
+}
+
+// productDockerLegacyOutputDir returns the dist output directory Docker OCI output was written to before Docker had an
+// output directory of its own.
+func productDockerLegacyOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo, dockerID DockerID) string {
+	return ProductDistOutputDir(projectInfo, productOutputInfo, DistID("oci-"+dockerID))
+}
+
+// ProductDockerOCIDistOutputDir returns the legacy Docker OCI dist output directory for the given DockerID.
+//
+// Deprecated: use ProductDockerOutputDirCandidates. This method retains its old result so DockerBuilder assets compiled
+// against older distgo versions continue to interoperate with the host during migration to the Docker output directory.
+func (p *ProductTaskOutputInfo) ProductDockerOCIDistOutputDir(dockerID DockerID) string {
+	return productDockerLegacyOutputDir(p.Project, p.Product, dockerID)
 }
 
 // ProductDistWorkDirs returns a map from DistID to the directory used to prepare the distribution for that DistID,

@@ -49,13 +49,13 @@ func dependencyImageBuildContextArgs(productTaskOutputInfo distgo.ProductTaskOut
 			if !ok || len(builderOutputInfo.RenderedTags) == 0 {
 				continue
 			}
-			ociDir := distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, depOutputInfo, dockerID)
-			if ociDir == "" {
+			outputDirs := distgo.ProductDockerOutputDirCandidates(productTaskOutputInfo.Project, depOutputInfo, dockerID)
+			if len(outputDirs) == 0 {
 				continue
 			}
-			layoutDir := filepath.Join(ociDir, distgo.DockerBuildContextLayoutSubdir)
+			layoutDir := filepath.Join(outputDirs[0], distgo.DockerBuildContextLayoutSubdir)
 			if !dryRun {
-				if _, err := os.Stat(filepath.Join(layoutDir, "index.json")); err != nil {
+				if layoutDir = existingLayoutDir(outputDirs); layoutDir == "" {
 					continue
 				}
 			}
@@ -70,6 +70,18 @@ func dependencyImageBuildContextArgs(productTaskOutputInfo distgo.ProductTaskOut
 		}
 	}
 	return args
+}
+
+// existingLayoutDir returns the build-context wrapper layout in the first of the given output directories that has one
+// on disk, or "" when none does.
+func existingLayoutDir(outputDirs []string) string {
+	for _, outputDir := range outputDirs {
+		layoutDir := filepath.Join(outputDir, distgo.DockerBuildContextLayoutSubdir)
+		if _, err := os.Stat(filepath.Join(layoutDir, "index.json")); err == nil {
+			return layoutDir
+		}
+	}
+	return ""
 }
 
 // buildxContextRefDigests reads the wrapper layout's index.json and maps each rendered tag to the digest of its

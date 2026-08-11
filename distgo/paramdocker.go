@@ -45,8 +45,7 @@ type DockerParam struct {
 	// for example, OCI image layouts, metadata, etc. Different from the ContextDir in that the ContextDir is used as
 	// the location in which inputs are placed and where images are built, whereas the OutputDir dictates where any
 	// output may be written. Not all Docker build tasks have output, so the output directory may not be created or may
-	// be empty even on successful executions. The docker output directory is written to
-	// "{{OutputDir}}/{{ID}}/{{Version}}/{{DockerID}}/{{NameTemplate}}", and the artifacts are written to
+	// be empty even on successful executions. The artifacts for a Docker configuration are written to
 	// "{{OutputDir}}/{{ID}}/{{Version}}/{{DockerID}}".
 	OutputDir string
 
@@ -70,6 +69,10 @@ func (a ByOSArchID) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByOSArchID) Less(i, j int) bool { return a[i] < a[j] }
 
 type DockerBuilderOutputInfo struct {
+	// OutputDir is where on-disk output for this Docker configuration is written, relative to ProjectDir. The distgo
+	// running the task resolves it so that a DockerBuilder built from a different version of distgo does not have to
+	// derive it. Empty when the output info came from a distgo that predates the field.
+	OutputDir             string                              `json:"outputDir"`
 	ContextDir            string                              `json:"contextDir"`
 	DockerfilePath        string                              `json:"dockerfilePath"`
 	InputProductsDir      string                              `json:"inputProductsDir"`

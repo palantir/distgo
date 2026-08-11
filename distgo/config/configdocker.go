@@ -15,6 +15,9 @@
 package config
 
 import (
+	"path"
+	"strings"
+
 	"github.com/palantir/distgo/distgo"
 	v0 "github.com/palantir/distgo/distgo/config/internal/v0"
 	"github.com/pkg/errors"
@@ -29,6 +32,9 @@ func ToDockerConfig(in *DockerConfig) *v0.DockerConfig {
 
 func (cfg *DockerConfig) ToParam(scriptIncludes string, defaultCfg DockerConfig, dockerBuilderFactory distgo.DockerBuilderFactory) (distgo.DockerParam, error) {
 	outputDir := getConfigStringValue(cfg.OutputDir, defaultCfg.OutputDir, "out/docker")
+	if err := validateDockerOutputDir(outputDir); err != nil {
+		return distgo.DockerParam{}, err
+	}
 
 	dockerBuilderParams, err := (*DockerBuildersConfig)(cfg.DockerBuildersConfig).ToParam(scriptIncludes, (*DockerBuildersConfig)(cfg.DockerBuildersConfig), dockerBuilderFactory)
 	if err != nil {
@@ -39,6 +45,21 @@ func (cfg *DockerConfig) ToParam(scriptIncludes string, defaultCfg DockerConfig,
 		Repository:          getConfigStringValue(cfg.Repository, defaultCfg.Repository, ""),
 		DockerBuilderParams: dockerBuilderParams,
 	}, nil
+}
+
+// validateDockerOutputDir verifies that the Docker output directory is inside the project directory: "clean" removes
+// "{{OutputDir}}/{{ProductID}}" wholesale, so anything wider takes content distgo never created with it.
+func validateDockerOutputDir(outputDir string) error {
+	if path.IsAbs(outputDir) {
+		return errors.Errorf("output-dir cannot be specified as an absolute path")
+	}
+	switch cleaned := path.Clean(outputDir); {
+	case cleaned == ".":
+		return errors.Errorf("output-dir cannot be the project directory")
+	case cleaned == ".." || strings.HasPrefix(cleaned, "../"):
+		return errors.Errorf("output-dir cannot be outside of the project directory")
+	}
+	return nil
 }
 
 type DockerBuildersConfig v0.DockerBuildersConfig

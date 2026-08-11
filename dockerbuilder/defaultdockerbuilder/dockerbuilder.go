@@ -114,8 +114,11 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		return err
 	}
 
-	// ProductDockerOutputDir is empty only when the product declares no Docker builders; guard so we never MkdirAll("").
-	if destDir := distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID); d.OutputType&OCILayout != 0 && destDir != "" {
+	if d.OutputType&OCILayout != 0 {
+		destDir, err := ociOutputDir(productTaskOutputInfo, dockerID)
+		if err != nil {
+			return err
+		}
 		if err := os.MkdirAll(destDir, 0755); err != nil {
 			return errors.Wrapf(err, "failed to create directory %s for OCI output", destDir)
 		}
@@ -144,6 +147,16 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		}
 	}
 	return nil
+}
+
+// ociOutputDir returns the directory this build should write its OCI layout to: the most authoritative location the
+// distgo running the task provided, so the two agree even when they vendor different versions of distgo.
+func ociOutputDir(productTaskOutputInfo distgo.ProductTaskOutputInfo, dockerID distgo.DockerID) (string, error) {
+	candidates := distgo.ProductDockerOutputDirCandidates(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID)
+	if len(candidates) == 0 {
+		return "", errors.Errorf("no output directory is available for OCI output for configuration %s: the product declares neither a Docker nor a dist output directory", dockerID)
+	}
+	return candidates[0], nil
 }
 
 // extractToOCILayout is responsible for converting the buildx OCI tarball output to a compatible OCI layout on disk.

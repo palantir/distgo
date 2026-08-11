@@ -19,6 +19,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/nmiyake/pkg/dirs"
@@ -31,6 +32,7 @@ import (
 	distgoconfig "github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/distgo/dist"
 	"github.com/palantir/distgo/distgo/testfuncs"
+	"github.com/palantir/distgo/dockerbuilder/defaultdockerbuilder"
 	"github.com/palantir/distgo/internal/files"
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/palantir/pkg/gittest"
@@ -318,6 +320,41 @@ func TestClean(t *testing.T) {
 			},
 		},
 		{
+			"cleans Docker output",
+			distgoconfig.ProjectConfig{
+				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
+					"foo": {
+						Docker: distgoconfig.ToDockerConfig(&distgoconfig.DockerConfig{
+							DockerBuildersConfig: distgoconfig.ToDockerBuildersConfig(&distgoconfig.DockerBuildersConfig{
+								defaultdockerbuilder.TypeName: distgoconfig.ToDockerBuilderConfig(distgoconfig.DockerBuilderConfig{
+									Type:       new(defaultdockerbuilder.TypeName),
+									ContextDir: new("docker"),
+									TagTemplates: distgoconfig.ToTagTemplatesMap(&distgoconfig.TagTemplatesMap{
+										Templates:   map[distgo.DockerTagID]string{"default": "foo:latest"},
+										OrderedKeys: []distgo.DockerTagID{"default"},
+									}),
+								}),
+							}),
+						}),
+					},
+				}),
+			},
+			func(t *testing.T, projectDir string) {
+				gittest.CreateGitTag(t, projectDir, "0.1.0")
+			},
+			func(t *testing.T, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+				productTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, projectParam.Products["foo"])
+				require.NoError(t, err)
+				dockerOutput := distgo.ProductDockerOutputDir(productTaskOutputInfo.Project, productTaskOutputInfo.Product, defaultdockerbuilder.TypeName)
+				require.NoError(t, os.MkdirAll(dockerOutput, 0755))
+				require.NoError(t, os.WriteFile(path.Join(dockerOutput, "index.json"), []byte("{}"), 0644))
+			},
+			func(t *testing.T, caseNum int, name string, projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam) {
+				_, err := os.Stat(path.Join(projectInfo.ProjectDir, "out", "docker", "foo"))
+				assert.True(t, os.IsNotExist(err))
+			},
+		},
+		{
 			"clean works even if output does not exist",
 			distgoconfig.ProjectConfig{
 				Products: distgoconfig.ToProductsMap(map[distgo.ProductID]distgoconfig.ProductConfig{
@@ -391,4 +428,33 @@ func TestClean(t *testing.T) {
 			tc.validate(t, i, tc.name, projectInfo, projectParam)
 		})
 	}
+}
+
+// an output directory that escapes the project directory must be rejected before anything is removed
+func TestCleanRejectsPathOutsideProject(t *testing.T) {
+	projectDir := t.TempDir()
+	outsideDir := t.TempDir()
+	require.NoError(t, os.MkdirAll(path.Join(outsideDir, "foo"), 0755))
+
+	relToOutside, err := filepath.Rel(projectDir, outsideDir)
+	require.NoError(t, err)
+
+	productParam := distgo.ProductParam{
+		ID:   "foo",
+		Name: "foo",
+		Dist: &distgo.DistParam{
+			OutputDir: relToOutside,
+			DistParams: map[distgo.DistID]distgo.DisterParam{
+				osarchbin.TypeName: {
+					NameTemplate: "{{Product}}-{{Version}}",
+					Dister:       distgo.NewDisterWithConfig(osarchbin.New(osarch.Current()), nil),
+				},
+			},
+		},
+	}
+	projectInfo := distgo.ProjectInfo{ProjectDir: projectDir, Version: "1.0.0"}
+
+	err = clean.Run(projectInfo, productParam, false, io.Discard)
+	require.EqualError(t, err, fmt.Sprintf("path %s is not within root dir path %s", path.Join(outsideDir, "foo"), projectDir))
+	assert.DirExists(t, path.Join(outsideDir, "foo"))
 }
