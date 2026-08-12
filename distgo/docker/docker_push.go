@@ -101,6 +101,9 @@ func runSingleDockerPush(
 	return runDockerDaemonPush(productID, dockerID, productTaskOutputInfo, dryRun, stdout)
 }
 
+// dockerOCIOutputDir returns the output directory that holds the OCI layout for the given Docker configuration, or an
+// empty string if none of its candidate output directories does. A DockerBuilder that only loads the built image into
+// the Docker daemon writes no layout, so an empty result means the image exists in the daemon rather than on disk.
 func dockerOCIOutputDir(productTaskOutputInfo distgo.ProductTaskOutputInfo, dockerID distgo.DockerID) string {
 	for _, outputDir := range distgo.ProductDockerOutputDirCandidates(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID) {
 		if _, err := layout.FromPath(outputDir); err == nil {

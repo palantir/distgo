@@ -46,7 +46,12 @@ type DockerParam struct {
 	// the location in which inputs are placed and where images are built, whereas the OutputDir dictates where any
 	// output may be written. Not all Docker build tasks have output, so the output directory may not be created or may
 	// be empty even on successful executions. The artifacts for a Docker configuration are written to
-	// "{{OutputDir}}/{{ID}}/{{Version}}/{{DockerID}}".
+	// "{{OutputDir}}/{{ProductID}}/{{Version}}/{{DockerID}}".
+	//
+	// Configuration defaults this to "out/docker". An empty value (possible for a Param built in memory) means the
+	// product has no Docker output directory: a DockerBuilder that writes on-disk output falls back to the legacy
+	// dist-based location "{{DistOutputDir}}/{{ProductID}}/{{Version}}/oci-{{DockerID}}", and has nowhere to write if
+	// the product configures no dists either.
 	OutputDir string
 
 	// DockerBuilderParams contains the Docker params for this distribution.
@@ -71,7 +76,8 @@ func (a ByOSArchID) Less(i, j int) bool { return a[i] < a[j] }
 type DockerBuilderOutputInfo struct {
 	// OutputDir is where on-disk output for this Docker configuration is written, relative to ProjectDir. The distgo
 	// running the task resolves it so that a DockerBuilder built from a different version of distgo does not have to
-	// derive it. Empty when the output info came from a distgo that predates the field.
+	// derive it. Empty if the output info came from a distgo that predates the field or if the product has no Docker
+	// output directory.
 	OutputDir             string                              `json:"outputDir"`
 	ContextDir            string                              `json:"contextDir"`
 	DockerfilePath        string                              `json:"dockerfilePath"`

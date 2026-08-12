@@ -143,7 +143,9 @@ func ProductDistOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutp
 }
 
 // ProductDockerOutputDir returns the output directory for the docker outputs for the docker builder with the given
-// DockerID, which is "{{ProjectDir}}/{{DockerOutputDir}}/{{ProductID}}/{{Version}}/{{DockerID}}".
+// DockerID, which is "{{ProjectDir}}/{{DockerOutputDir}}/{{ProductID}}/{{Version}}/{{DockerID}}". Returns an empty
+// string if the product has no Docker output directory (see DockerParam.OutputDir), since joining an empty directory
+// would resolve output into the source tree.
 func ProductDockerOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo, dockerID DockerID) string {
 	if productOutputInfo.DockerOutputInfos == nil {
 		return ""
@@ -182,6 +184,7 @@ func ProductDockerOutputDirCandidates(projectInfo ProjectInfo, productOutputInfo
 			outputDirs = append(outputDirs, outputDir)
 		}
 	}
+	// empty if the output info came from a distgo that predates the field, in which case the entries below stand in
 	if relDir := productOutputInfo.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].OutputDir; relDir != "" {
 		addDir(path.Join(projectInfo.ProjectDir, relDir))
 	}
@@ -196,7 +199,8 @@ func productDockerLegacyOutputDir(projectInfo ProjectInfo, productOutputInfo Pro
 	return ProductDistOutputDir(projectInfo, productOutputInfo, DistID("oci-"+dockerID))
 }
 
-// ProductDockerOCIDistOutputDir returns the legacy Docker OCI dist output directory for the given DockerID.
+// ProductDockerOCIDistOutputDir returns the legacy Docker OCI dist output directory for the given DockerID, which is
+// "{{ProjectDir}}/{{DistOutputDir}}/{{ProductID}}/{{Version}}/oci-{{DockerID}}".
 //
 // Deprecated: use ProductDockerOutputDirCandidates. This method retains its old result so DockerBuilder assets compiled
 // against older distgo versions continue to interoperate with the host during migration to the Docker output directory.

@@ -53,11 +53,14 @@ func dependencyImageBuildContextArgs(productTaskOutputInfo distgo.ProductTaskOut
 			if len(outputDirs) == 0 {
 				continue
 			}
-			layoutDir := filepath.Join(outputDirs[0], distgo.DockerBuildContextLayoutSubdir)
-			if !dryRun {
-				if layoutDir = existingLayoutDir(outputDirs); layoutDir == "" {
+			// prefer the layout that is on disk, so that a dry run reports the location the real build would use. With
+			// none on disk only a dry run continues, against the location the dependency's build will write.
+			layoutDir := existingLayoutDir(outputDirs)
+			if layoutDir == "" {
+				if !dryRun {
 					continue
 				}
+				layoutDir = filepath.Join(outputDirs[0], distgo.DockerBuildContextLayoutSubdir)
 			}
 			refDigests := buildxContextRefDigests(layoutDir)
 			for _, tag := range builderOutputInfo.RenderedTags {
