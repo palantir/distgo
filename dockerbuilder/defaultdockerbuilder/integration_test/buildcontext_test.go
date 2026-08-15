@@ -71,9 +71,7 @@ func TestCrossProductBuildContextRegistryFree(t *testing.T) {
 		Deps: map[distgo.ProductID]distgo.ProductOutputInfo{"base": baseProduct},
 	}
 
-	// OCI-layout output (as the managed builder uses) produces the layout the wrapper is written into.
 	builder := defaultdockerbuilder.NewDefaultDockerBuilderWithOptions(
-		defaultdockerbuilder.WithBuildxOutput(defaultdockerbuilder.OCILayout),
 		defaultdockerbuilder.WithBuildxPlatforms([]string{"linux/amd64", "linux/arm64"}),
 	)
 	require.NoError(t, builder.RunDockerBuild("base-docker", baseInfo, false, false, io.Discard))

@@ -96,9 +96,8 @@ products:
 [DRY RUN] Run [docker buildx create tester --bootstrap --use --driver docker-container]
 `
 					}
-					return wantOutput + fmt.Sprintf(`[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile --build-arg SOURCE_DATE_EPOCH=0 -t tester-tag:latest-and-greatest --output=type=oci,rewrite-timestamp=true,dest=%s/out/dist/foo/1.0.0/oci-tester/image.tar %s/testContextDir]
-[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile --build-arg SOURCE_DATE_EPOCH=0 -t tester-tag:latest-and-greatest --output=type=docker,rewrite-timestamp=true %s/testContextDir]
-`, projectDir, projectDir, projectDir, projectDir, projectDir)
+					return wantOutput + fmt.Sprintf(`[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile --build-arg SOURCE_DATE_EPOCH=0 -t tester-tag:latest-and-greatest --output=type=oci,rewrite-timestamp=true,tar=false,dest=%s/out/dist/foo/1.0.0/oci-tester --output=type=docker,rewrite-timestamp=true %s/testContextDir]
+`, projectDir, projectDir, projectDir)
 				},
 			},
 			{
@@ -159,9 +158,8 @@ products:
 [DRY RUN] Run [docker buildx create tester --bootstrap --use --driver docker-container]
 `
 					}
-					return wantOutput + fmt.Sprintf(`[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile --build-arg SOURCE_DATE_EPOCH=0 -t tester-tag:latest-and-greatest --rm --build-arg arg=2.3 --output=type=oci,rewrite-timestamp=true,dest=%s/out/dist/foo/1.0.0/oci-tester/image.tar %s/testContextDir]
-[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile --build-arg SOURCE_DATE_EPOCH=0 -t tester-tag:latest-and-greatest --rm --build-arg arg=2.3 --output=type=docker,rewrite-timestamp=true %s/testContextDir]
-`, projectDir, projectDir, projectDir, projectDir, projectDir)
+					return wantOutput + fmt.Sprintf(`[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile --build-arg SOURCE_DATE_EPOCH=0 -t tester-tag:latest-and-greatest --rm --build-arg arg=2.3 --output=type=oci,rewrite-timestamp=true,tar=false,dest=%s/out/dist/foo/1.0.0/oci-tester --output=type=docker,rewrite-timestamp=true %s/testContextDir]
+`, projectDir, projectDir, projectDir)
 				},
 			},
 			{
@@ -217,9 +215,8 @@ products:
 [DRY RUN] Run [docker buildx create tester --bootstrap --use --driver docker-container]
 `
 					}
-					return wantOutput + fmt.Sprintf(`[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile --build-arg SOURCE_DATE_EPOCH=0 -t tester-tag:1.0.0 --output=type=oci,rewrite-timestamp=true,dest=%s/out/dist/foo/1.0.0/oci-tester/image.tar %s/testContextDir]
-[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile --build-arg SOURCE_DATE_EPOCH=0 -t tester-tag:1.0.0 --output=type=docker,rewrite-timestamp=true %s/testContextDir]
-`, projectDir, projectDir, projectDir, projectDir, projectDir)
+					return wantOutput + fmt.Sprintf(`[DRY RUN] Run [docker buildx build --file %s/testContextDir/Dockerfile --build-arg SOURCE_DATE_EPOCH=0 -t tester-tag:1.0.0 --output=type=oci,rewrite-timestamp=true,tar=false,dest=%s/out/dist/foo/1.0.0/oci-tester --output=type=docker,rewrite-timestamp=true %s/testContextDir]
+`, projectDir, projectDir, projectDir)
 				},
 			},
 		},

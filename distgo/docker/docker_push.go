@@ -184,6 +184,12 @@ func handleImageIndex(index v1.ImageIndex, idxManifest *v1.IndexManifest, ref na
 	}
 }
 
+// handleImageManifest pushes a layout whose index.json is a bare image manifest rather than an image index, by reading
+// the image back out of the tarball the builder left beside it.
+//
+// The default builder produces neither shape: it always writes a conformant image index, and no tarball. This serves
+// DockerBuilder assets that vendor a distgo predating those two changes -- such an asset writes a bare manifest for a
+// single-platform build, alongside the image.tar this reads. Remove once those assets have re-vendored.
 func handleImageManifest(ref name.Reference, productID distgo.ProductID, dockerID distgo.DockerID, productTaskOutputInfo distgo.ProductTaskOutputInfo, dryRun bool, stdout io.Writer) error {
 	path := filepath.Join(productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID), "image.tar")
 	image, err := tarball.ImageFromPath(path, nil)
