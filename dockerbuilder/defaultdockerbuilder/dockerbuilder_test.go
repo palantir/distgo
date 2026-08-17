@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/mholt/archiver/v3"
+	"github.com/palantir/distgo/distgo"
 	"github.com/stretchr/testify/require"
 )
 
@@ -94,4 +95,43 @@ func TestExtractToOCILayout_ProducesConformantIndexForSinglePlatformBuild(t *tes
 	gotDigest, err := image.Digest()
 	require.NoError(t, err)
 	require.Equal(t, wantDigest, gotDigest)
+}
+
+// the distgo running the task resolves the output directory; one that predates either that field or the Docker output
+// directory sends less, and the location is derived from what it did send
+func TestOCIOutputDir(t *testing.T) {
+	projectDir := t.TempDir()
+	info := func(resolvedDir, dockerOutputDir string, dist *distgo.DistOutputInfos) distgo.ProductTaskOutputInfo {
+		return distgo.ProductTaskOutputInfo{
+			Project: distgo.ProjectInfo{ProjectDir: projectDir, Version: "1.0.0"},
+			Product: distgo.ProductOutputInfo{
+				ID:              "product",
+				DistOutputInfos: dist,
+				DockerOutputInfos: &distgo.DockerOutputInfos{
+					DockerOutputDir: dockerOutputDir,
+					DockerBuilderOutputInfos: map[distgo.DockerID]distgo.DockerBuilderOutputInfo{
+						"builder": {OutputDir: resolvedDir},
+					},
+				},
+			},
+		}
+	}
+	distOutputInfos := &distgo.DistOutputInfos{DistOutputDir: "out/dist"}
+
+	// the resolved directory wins over anything this builder would derive
+	dir, err := ociOutputDir(info("elsewhere/product/1.0.0/builder", "out/docker", distOutputInfos), "builder")
+	require.NoError(t, err)
+	require.Equal(t, filepath.Join(projectDir, "elsewhere", "product", "1.0.0", "builder"), dir)
+
+	dir, err = ociOutputDir(info("", "out/docker", distOutputInfos), "builder")
+	require.NoError(t, err)
+	require.Equal(t, filepath.Join(projectDir, "out", "docker", "product", "1.0.0", "builder"), dir)
+
+	// a distgo that predates the Docker output directory looks only in the legacy dist-based location
+	dir, err = ociOutputDir(info("", "", distOutputInfos), "builder")
+	require.NoError(t, err)
+	require.Equal(t, filepath.Join(projectDir, "out", "dist", "product", "1.0.0", "oci-builder"), dir)
+
+	_, err = ociOutputDir(info("", "", nil), "builder")
+	require.EqualError(t, err, "no output directory is available for OCI output for configuration builder: the product declares neither a Docker nor a dist output directory")
 }

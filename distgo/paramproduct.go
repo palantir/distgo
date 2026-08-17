@@ -124,6 +124,12 @@ func (p *ProductParam) ToProductOutputInfo(version string) (ProductOutputInfo, e
 		if err != nil {
 			return ProductOutputInfo{}, err
 		}
+		// resolve the output directories here, where the product ID is known: a DockerBuilder is a separate binary
+		// that may vendor a different version of distgo, so deriving the location on both sides invites disagreement
+		for dockerID, builderOutputInfo := range dockerOutputInfosVar.DockerBuilderOutputInfos {
+			builderOutputInfo.OutputDir = ProductDockerOutputRelDir(dockerOutputInfosVar.DockerOutputDir, p.ID, version, dockerID)
+			dockerOutputInfosVar.DockerBuilderOutputInfos[dockerID] = builderOutputInfo
+		}
 		dockerOutputInfos = &dockerOutputInfosVar
 	}
 	return ProductOutputInfo{

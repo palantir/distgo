@@ -49,15 +49,18 @@ func dependencyImageBuildContextArgs(productTaskOutputInfo distgo.ProductTaskOut
 			if !ok || len(builderOutputInfo.RenderedTags) == 0 {
 				continue
 			}
-			ociDir := distgo.ProductDistOutputDir(productTaskOutputInfo.Project, depOutputInfo, distgo.DistID(fmt.Sprintf("oci-%s", dockerID)))
-			if ociDir == "" {
+			outputDirs := distgo.ProductDockerOutputDirCandidates(productTaskOutputInfo.Project, depOutputInfo, dockerID)
+			if len(outputDirs) == 0 {
 				continue
 			}
-			layoutDir := filepath.Join(ociDir, distgo.DockerBuildContextLayoutSubdir)
-			if !dryRun {
-				if _, err := os.Stat(filepath.Join(layoutDir, "index.json")); err != nil {
+			// prefer the layout that is on disk, so that a dry run reports the location the real build would use. With
+			// none on disk only a dry run continues, against the location the dependency's build will write.
+			layoutDir := existingLayoutDir(outputDirs)
+			if layoutDir == "" {
+				if !dryRun {
 					continue
 				}
+				layoutDir = filepath.Join(outputDirs[0], distgo.DockerBuildContextLayoutSubdir)
 			}
 			refDigests := buildxContextRefDigests(layoutDir)
 			for _, tag := range builderOutputInfo.RenderedTags {
@@ -70,6 +73,18 @@ func dependencyImageBuildContextArgs(productTaskOutputInfo distgo.ProductTaskOut
 		}
 	}
 	return args
+}
+
+// existingLayoutDir returns the build-context wrapper layout in the first of the given output directories that has one
+// on disk, or "" when none does.
+func existingLayoutDir(outputDirs []string) string {
+	for _, outputDir := range outputDirs {
+		layoutDir := filepath.Join(outputDir, distgo.DockerBuildContextLayoutSubdir)
+		if _, err := os.Stat(filepath.Join(layoutDir, "index.json")); err == nil {
+			return layoutDir
+		}
+	}
+	return ""
 }
 
 // buildxContextRefDigests reads the wrapper layout's index.json and maps each rendered tag to the digest of its

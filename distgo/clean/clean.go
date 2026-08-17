@@ -73,6 +73,20 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, dryRu
 				}
 			}
 		}
+
+		// add Docker directory for product for removal
+		if currProductParam.Docker != nil {
+			for dockerID := range currProductParam.Docker.DockerBuilderParams {
+				dockerOutputDir := distgo.ProductDockerOutputDir(projectInfo, outputInfo.Product, dockerID)
+				if dockerOutputDir == "" {
+					continue
+				}
+				removePaths[path.Dir(path.Dir(dockerOutputDir))] = pathInfo{
+					rootDir: projectInfo.ProjectDir,
+					isDir:   true,
+				}
+			}
+		}
 	}
 
 	var sortedPaths []string
@@ -89,6 +103,12 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, dryRu
 	removedPaths := make(map[string]struct{})
 	for _, currPath := range sortedPaths {
 		pathInfo := removePaths[currPath]
+
+		// an output directory that escapes the project (say "../shared") must be rejected before it is removed
+		if currPath != pathInfo.rootDir && !strings.HasPrefix(currPath, pathInfo.rootDir+"/") {
+			return errors.Errorf("path %s is not within root dir path %s", currPath, pathInfo.rootDir)
+		}
+
 		if dryRun {
 			distgo.DryRunPrintln(stdout, fmt.Sprintf("    %s", currPath))
 		} else {
@@ -106,11 +126,6 @@ func Run(projectInfo distgo.ProjectInfo, productParam distgo.ProductParam, dryRu
 			}
 		}
 		removedPaths[currPath] = struct{}{}
-
-		// verify that current path is direct descendant of root directory
-		if !strings.Contains(currPath, pathInfo.rootDir) {
-			return errors.Errorf("root dir path %s does not occur in %s", pathInfo.rootDir, currPath)
-		}
 
 		// for each parent directory between the removed path and the root, check if removal caused it to become empty.
 		// If so, remove it and continue the process.

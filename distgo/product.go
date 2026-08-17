@@ -15,9 +15,9 @@
 package distgo
 
 import (
-	"fmt"
 	"maps"
 	"path"
+	"slices"
 
 	"github.com/palantir/godel/v2/pkg/osarch"
 	"github.com/pkg/errors"
@@ -108,7 +108,7 @@ func ExecutableName(productName, goos string) string {
 }
 
 // ProductBuildOutputDir returns the output directory for the build outputs, which is
-// "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}".
+// "{{ProjectDir}}/{{BuildOutputDir}}/{{ProductID}}/{{Version}}".
 func ProductBuildOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) string {
 	if productOutputInfo.BuildOutputInfo == nil {
 		return ""
@@ -119,7 +119,7 @@ func ProductBuildOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOut
 // ProductBuildArtifactPaths returns a map that contains the paths to the executables created by the provided product
 // for the provided project. The keys in the map are the OS/architecture of the executable and the values are the
 // executable output paths for that OS/architecture. The output paths are of the form
-// "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}/{{OSArch}}/{{NameTemplateRendered}}" (and if the OS is
+// "{{ProjectDir}}/{{BuildOutputDir}}/{{ProductID}}/{{Version}}/{{OSArch}}/{{NameTemplateRendered}}" (and if the OS is
 // Windows, the ".exe" extension is appended).
 func ProductBuildArtifactPaths(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) map[osarch.OSArch]string {
 	if productOutputInfo.BuildOutputInfo == nil {
@@ -134,7 +134,7 @@ func ProductBuildArtifactPaths(projectInfo ProjectInfo, productOutputInfo Produc
 }
 
 // ProductDistOutputDir returns the output directory for the dist outputs for the dist with the given DistID, which is
-// "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}/{{DistID}}".
+// "{{ProjectDir}}/{{DistOutputDir}}/{{ProductID}}/{{Version}}/{{DistID}}".
 func ProductDistOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo, distID DistID) string {
 	if productOutputInfo.DistOutputInfos == nil {
 		return ""
@@ -142,19 +142,74 @@ func ProductDistOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutp
 	return path.Join(projectInfo.ProjectDir, productOutputInfo.DistOutputInfos.DistOutputDir, string(productOutputInfo.ID), projectInfo.Version, string(distID))
 }
 
-// ProductDockerOCIDistOutputDir returns the output directory for the Docker OCI dist outputs, which is
-// "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}/oci-{{DockerID}}". If the builder for a given DockerID
-// uses the buildx builder for multi-architecture images, the output is written to this directory.
+// ProductDockerOutputDir returns the output directory for the docker outputs for the docker builder with the given
+// DockerID, which is "{{ProjectDir}}/{{DockerOutputDir}}/{{ProductID}}/{{Version}}/{{DockerID}}". Returns an empty
+// string if the product has no Docker output directory (see DockerParam.OutputDir), since joining an empty directory
+// would resolve output into the source tree.
+func ProductDockerOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo, dockerID DockerID) string {
+	if productOutputInfo.DockerOutputInfos == nil {
+		return ""
+	}
+	relDir := ProductDockerOutputRelDir(productOutputInfo.DockerOutputInfos.DockerOutputDir, productOutputInfo.ID, projectInfo.Version, dockerID)
+	if relDir == "" {
+		return ""
+	}
+	return path.Join(projectInfo.ProjectDir, relDir)
+}
+
+// ProductDockerOutputRelDir returns the Docker output directory for the given DockerID relative to the project
+// directory, which is "{{DockerOutputDir}}/{{ProductID}}/{{Version}}/{{DockerID}}". An empty dockerOutputDir yields an
+// empty result rather than a path that would resolve into the source tree.
+func ProductDockerOutputRelDir(dockerOutputDir string, productID ProductID, version string, dockerID DockerID) string {
+	if dockerOutputDir == "" {
+		return ""
+	}
+	return path.Join(dockerOutputDir, string(productID), version, string(dockerID))
+}
+
+// ProductDockerOutputDirCandidates returns the directories a Docker builder may have written output for the given
+// DockerID to, most authoritative first: the directory resolved by the distgo that produced the output info, the one
+// derived from its Docker output directory, then the legacy OCI dist output directory. The trailing entries cover
+// DockerBuilder assets and hosts that predate each of those.
 //
-// Note that this scheme uses the namespace for dist outputs, so if a product has a DockerID "X" and a dist with
-// DistID "oci-X", then the output directories will be the same and the behavior will be undefined -- this is a
-// known issue/risk that we are accepting as part of the design.
+// A DockerBuilder should write to the first entry: it is the location every distgo that could be driving the build
+// agrees on.
+func ProductDockerOutputDirCandidates(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo, dockerID DockerID) []string {
+	if productOutputInfo.DockerOutputInfos == nil {
+		return nil
+	}
+	var outputDirs []string
+	addDir := func(outputDir string) {
+		if outputDir != "" && !slices.Contains(outputDirs, outputDir) {
+			outputDirs = append(outputDirs, outputDir)
+		}
+	}
+	// empty if the output info came from a distgo that predates the field, in which case the entries below stand in
+	if relDir := productOutputInfo.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].OutputDir; relDir != "" {
+		addDir(path.Join(projectInfo.ProjectDir, relDir))
+	}
+	addDir(ProductDockerOutputDir(projectInfo, productOutputInfo, dockerID))
+	addDir(productDockerLegacyOutputDir(projectInfo, productOutputInfo, dockerID))
+	return outputDirs
+}
+
+// productDockerLegacyOutputDir returns the dist output directory Docker OCI output was written to before Docker had an
+// output directory of its own.
+func productDockerLegacyOutputDir(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo, dockerID DockerID) string {
+	return ProductDistOutputDir(projectInfo, productOutputInfo, DistID("oci-"+dockerID))
+}
+
+// ProductDockerOCIDistOutputDir returns the legacy Docker OCI dist output directory for the given DockerID, which is
+// "{{ProjectDir}}/{{DistOutputDir}}/{{ProductID}}/{{Version}}/oci-{{DockerID}}".
+//
+// Deprecated: use ProductDockerOutputDirCandidates. This method retains its old result so DockerBuilder assets compiled
+// against older distgo versions continue to interoperate with the host during migration to the Docker output directory.
 func (p *ProductTaskOutputInfo) ProductDockerOCIDistOutputDir(dockerID DockerID) string {
-	return ProductDistOutputDir(p.Project, p.Product, DistID(fmt.Sprintf("oci-%s", dockerID)))
+	return productDockerLegacyOutputDir(p.Project, p.Product, dockerID)
 }
 
 // ProductDistWorkDirs returns a map from DistID to the directory used to prepare the distribution for that DistID,
-// which is "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}/{{DistID}}/{{NameTemplateRendered}}".
+// which is "{{ProjectDir}}/{{DistOutputDir}}/{{ProductID}}/{{Version}}/{{DistID}}/{{NameTemplateRendered}}".
 func ProductDistWorkDirs(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) map[DistID]string {
 	if productOutputInfo.DistOutputInfos == nil {
 		return nil
@@ -167,7 +222,7 @@ func ProductDistWorkDirs(projectInfo ProjectInfo, productOutputInfo ProductOutpu
 }
 
 // ProductDistArtifactPaths returns a map from DistID to the output paths for the dist, which is
-// "{{ProjectDir}}/{{OutputDir}}/{{ProductID}}/{{Version}}/{{DistID}}/{{Artifacts}}".
+// "{{ProjectDir}}/{{DistOutputDir}}/{{ProductID}}/{{Version}}/{{DistID}}/{{Artifacts}}".
 func ProductDistArtifactPaths(projectInfo ProjectInfo, productOutputInfo ProductOutputInfo) map[DistID][]string {
 	if productOutputInfo.DistOutputInfos == nil {
 		return nil

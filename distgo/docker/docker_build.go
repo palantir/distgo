@@ -237,6 +237,12 @@ func runSingleDockerBuild(
 		}
 	}
 
+	if !dryRun {
+		if err := removeLegacyOCIOutput(productTaskOutputInfo, dockerID); err != nil {
+			return err
+		}
+	}
+
 	distgo.PrintlnOrDryRunPrintln(stdout, fmt.Sprintf("Running Docker build for configuration %s of product %s...", dockerID, productID), dryRun)
 	// run the Docker build task
 	if err := dockerBuilderParam.DockerBuilder.RunDockerBuild(dockerID, productTaskOutputInfo, verbose, dryRun, stdout); err != nil {
@@ -244,20 +250,36 @@ func runSingleDockerBuild(
 	}
 
 	// If the builder produced an OCI layout, write the buildx build-context wrapper so a dependent product's
-	// "FROM <this image's tag>" can resolve from the on-disk layout with no registry. This is done here at the task
-	// level -- rather than inside the builder -- so it works for every builder that leaves an OCI layout, including
-	// re-layering builders (e.g. the chunkah asset) that rewrite the layout after building and would otherwise clobber
-	// a wrapper the builder wrote itself. Builders that produce no OCI layout (daemon-only) leave no index.json and are
-	// skipped: they cannot serve as a local FROM base. A product with no dist has no OCI dist output dir ("") and is
-	// likewise skipped.
+	// "FROM <this image's tag>" resolves from the on-disk layout with no registry. Written at the task level rather
+	// than inside the builder so it survives re-layering builders (e.g. the chunkah asset), which rewrite the layout
+	// after building and would clobber a wrapper the builder wrote itself.
 	if !dryRun {
-		if ociDir := productTaskOutputInfo.ProductDockerOCIDistOutputDir(dockerID); ociDir != "" {
-			if _, err := os.Stat(filepath.Join(ociDir, "index.json")); err == nil {
-				renderedTags := productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags
-				if err := distgo.WriteDockerBuildContextLayout(ociDir, renderedTags); err != nil {
-					return errors.Wrapf(err, "failed to write Docker build context layout for %s", dockerID)
-				}
+		if ociDir := dockerOCIOutputDir(productTaskOutputInfo, dockerID); ociDir != "" {
+			renderedTags := productTaskOutputInfo.Product.DockerOutputInfos.DockerBuilderOutputInfos[dockerID].RenderedTags
+			if err := distgo.WriteDockerBuildContextLayout(ociDir, renderedTags); err != nil {
+				return errors.Wrapf(err, "failed to write Docker build context layout for %s", dockerID)
 			}
+		}
+	}
+	return nil
+}
+
+// removeLegacyOCIOutput removes any OCI layout left in an output location this build will not write to. Nothing
+// migrated those layouts when the Docker output directory was introduced, so leaving one in place lets "docker push"
+// publish an image from an earlier build at the same version. Only a directory holding an OCI layout is removed, so a
+// dist output that happens to share the name is left alone.
+func removeLegacyOCIOutput(productTaskOutputInfo distgo.ProductTaskOutputInfo, dockerID distgo.DockerID) error {
+	// the first candidate is where the builder writes; a build cannot refresh any of the others
+	candidates := distgo.ProductDockerOutputDirCandidates(productTaskOutputInfo.Project, productTaskOutputInfo.Product, dockerID)
+	if len(candidates) == 0 {
+		return nil
+	}
+	for _, legacyDir := range candidates[1:] {
+		if _, err := os.Stat(filepath.Join(legacyDir, "oci-layout")); err != nil {
+			continue
+		}
+		if err := os.RemoveAll(legacyDir); err != nil {
+			return errors.Wrapf(err, "failed to remove OCI layout from legacy output directory %s", legacyDir)
 		}
 	}
 	return nil
