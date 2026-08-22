@@ -1,6 +1,0 @@
-type: improvement
-improvement:
-  description: |
-    Add mainPkg to BuildOutputInfo
-  links:
-  - https://github.com/palantir/distgo/pull/192

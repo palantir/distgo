@@ -1,5 +1,0 @@
-type: fix
-fix:
-  description: Revert "Pass the --platform arg with docker output type."
-  links:
-  - https://github.com/palantir/distgo/pull/594
