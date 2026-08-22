@@ -1,5 +1,0 @@
-type: improvement
-improvement:
-  description: Removes the Bintray publisher.
-  links:
-  - https://github.com/palantir/distgo/pull/573
