@@ -1,5 +1,0 @@
-type: improvement
-improvement:
-  description: Use go1.21.1
-  links:
-  - https://github.com/palantir/distgo/pull/409

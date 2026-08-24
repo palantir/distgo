@@ -1,5 +1,0 @@
-type: improvement
-improvement:
-  description: Updates module dependencies
-  links:
-  - https://github.com/palantir/distgo/pull/217
