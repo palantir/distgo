@@ -15,10 +15,11 @@ executors:
       - image: *image-version
     working_directory: /home/circleci/go/src/github.com/palantir/distgo
     resource_class: medium
-  standard-executor-pkg-git-verify-test:
+  standard-executor-pkg-git:
     docker:
       - image: *image-version
     working_directory: /home/circleci/go/src/github.com/palantir/distgo/pkg/git
+    resource_class: medium
 
 # Filter that matches all tags (will run on every build).
 all-tags-filter: &all-tags-filter
@@ -41,7 +42,7 @@ requires_jobs: &requires_jobs
   - test
   - dist
   - integration-test
-  - pkg-git-verify-test
+  - pkg-git-verify
 
 workflows:
   version: 2
@@ -73,8 +74,8 @@ workflows:
             - build
           <<: *all-tags-filter
       - go-jobs/godel_verify:
-          name: "pkg-git-verify-test"
-          executor: "standard-executor-pkg-git-verify-test"
+          name: "pkg-git-verify"
+          executor: "standard-executor-pkg-git"
           setup_steps:
             - go-jobs/default_setup_steps:
                 checkout_steps:
