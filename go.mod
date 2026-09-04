@@ -3,7 +3,7 @@ module github.com/palantir/distgo
 go 1.27.0
 
 require (
-	github.com/google/go-containerregistry v0.22.0
+	github.com/google/go-containerregistry v0.22.1
 	github.com/google/go-github/v89 v89.0.0
 	github.com/jtacoma/uritemplates v1.0.0
 	github.com/mholt/archiver/v3 v3.5.1
