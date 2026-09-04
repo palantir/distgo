@@ -14,7 +14,7 @@ require (
 	github.com/palantir/distgo/pkg/git v1.0.0
 	github.com/palantir/godel/pkg/products/v2 v2.0.0
 	github.com/palantir/godel/v2 v2.178.0
-	github.com/palantir/pkg/cobracli v1.3.0
+	github.com/palantir/pkg/cobracli v1.4.0
 	github.com/palantir/pkg/gittest v1.3.0
 	github.com/palantir/pkg/matcher v1.3.0
 	github.com/palantir/pkg/pkgpath v1.4.0
@@ -54,6 +54,8 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/palantir/pkg v1.1.0 // indirect
+	github.com/palantir/witchcraft-go-error v1.42.0 // indirect
+	github.com/palantir/witchcraft-go-params v1.38.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.29 // indirect
 	github.com/rogpeppe/go-internal v1.16.0 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect
