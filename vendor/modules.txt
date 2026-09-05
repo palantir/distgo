@@ -158,8 +158,8 @@ github.com/palantir/godel/v2/godelgetter
 github.com/palantir/godel/v2/pkg/osarch
 github.com/palantir/godel/v2/pkg/products
 github.com/palantir/godel/v2/pkg/versionedconfig
-# github.com/palantir/pkg v1.1.0
-## explicit; go 1.19
+# github.com/palantir/pkg v1.2.0
+## explicit; go 1.26.0
 github.com/palantir/pkg
 # github.com/palantir/pkg/cobracli v1.4.0
 ## explicit; go 1.26.0

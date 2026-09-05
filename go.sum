@@ -73,8 +73,8 @@ github.com/palantir/godel/pkg/products/v2 v2.0.0 h1:E3DuAEA1yotLLDQt7vIrYRapRwXR
 github.com/palantir/godel/pkg/products/v2 v2.0.0/go.mod h1:SaLUycZLVP5qV6mL9MWG3jkX4dS23lJnzpubTGAV4FU=
 github.com/palantir/godel/v2 v2.180.0 h1:xJ193lkvD7nx7Y0jh3gtb4mcPOEQuMQdnh6wfl3voyU=
 github.com/palantir/godel/v2 v2.180.0/go.mod h1:pRr7LqZSGxZ8IOQ/QzBBDj3dtGUa47VshNMUx74IqZM=
-github.com/palantir/pkg v1.1.0 h1:0EhrSUP8oeeh3MUvk7V/UU7WmsN1UiJNTvNj0sN9Cpo=
-github.com/palantir/pkg v1.1.0/go.mod h1:KC9srP/9ssWRxBxFCIqhUGC4Jt7OJkWRz0Iqehup1/c=
+github.com/palantir/pkg v1.2.0 h1:GxXiXLcayV/JNptEyBIDvUrd1NRzI+TwpsL64sufrd8=
+github.com/palantir/pkg v1.2.0/go.mod h1:y8Dt3/qSZjq+0pLBeCsxXDqzby3G08bw85gZmJm5mwA=
 github.com/palantir/pkg/cobracli v1.4.0 h1:pMSAaz3rzfkVuaGgOmrgqMkDefizoHdcXtzUroFf5u8=
 github.com/palantir/pkg/cobracli v1.4.0/go.mod h1:F3PqaAXFuDoH16b6aorTDb1pcQPTw9aZOJ8cWnBmALs=
 github.com/palantir/pkg/gittest v1.0.0/go.mod h1:M49S4TsX5sh7lYJmOF+pFzcB4fJNOylzN8tOdpSq958=
