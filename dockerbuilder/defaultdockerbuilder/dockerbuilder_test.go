@@ -16,8 +16,11 @@ package defaultdockerbuilder
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/layout"
@@ -27,6 +30,35 @@ import (
 	"github.com/palantir/distgo/distgo"
 	"github.com/stretchr/testify/require"
 )
+
+func TestTimestampArgsFromGitCommit(t *testing.T) {
+	projectDir := t.TempDir()
+	commitTime := "2026-08-17T12:34:56Z"
+	for _, args := range [][]string{
+		{"init"},
+		{"config", "commit.gpgsign", "false"},
+		{"config", "user.email", "distgo@example.com"},
+		{"config", "user.name", "distgo test"},
+		{"commit", "--allow-empty", "-m", "test"},
+	} {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = projectDir
+		cmd.Env = append(os.Environ(), "GIT_AUTHOR_DATE="+commitTime, "GIT_COMMITTER_DATE="+commitTime)
+		require.NoError(t, cmd.Run())
+	}
+
+	args, err := (&DefaultDockerBuilder{SourceDateEpoch: SourceDateEpochGitCommit}).timestampArgs(projectDir)
+	require.NoError(t, err)
+	require.Equal(t, []string{
+		"--build-arg", "SOURCE_DATE_EPOCH=" + strconv.FormatInt(time.Date(2026, 8, 17, 12, 34, 56, 0, time.UTC).Unix(), 10),
+		"--label", "org.opencontainers.image.created=" + commitTime,
+	}, args)
+}
+
+func TestTimestampArgsRejectsUnknownStrategy(t *testing.T) {
+	_, err := (&DefaultDockerBuilder{SourceDateEpoch: "unknown"}).timestampArgs(t.TempDir())
+	require.EqualError(t, err, `unsupported source date epoch strategy "unknown"`)
+}
 
 // TestExtractToOCILayoutIsRerunnable verifies that extracting into an output directory that already contains the
 // artifacts of a previous extraction succeeds. This guards against the failure seen when re-running "docker build" at

@@ -22,6 +22,11 @@ import (
 type Config struct {
 	BuildArgs []string `yaml:"build-args,omitempty"`
 
+	// SourceDateEpoch controls the timestamp ceiling applied by BuildKit's rewrite-timestamp exporter option. The
+	// "git-commit" strategy uses the committer timestamp of HEAD and also sets the standard OCI created label to that
+	// time. The empty value retains the historical Unix epoch behavior.
+	SourceDateEpoch string `yaml:"source-date-epoch,omitempty"`
+
 	// BuildArgsScript is the content of a script that is written to a file and run before this image is built to
 	// provide supplemental "docker build" arguments for the image. The content of this value is written to a file and
 	// executed. The script process uses the project directory as its working directory and inherits the environment

@@ -23,7 +23,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/layout"
@@ -34,6 +36,16 @@ import (
 )
 
 const TypeName = "default"
+
+// SourceDateEpoch selects the timestamp BuildKit uses when rewriting image-layer mtimes.
+type SourceDateEpoch string
+
+const (
+	// SourceDateEpochUnixEpoch preserves distgo's historical behavior of rewriting timestamps to the Unix epoch.
+	SourceDateEpochUnixEpoch SourceDateEpoch = ""
+	// SourceDateEpochGitCommit uses the committer timestamp of the project's HEAD commit.
+	SourceDateEpochGitCommit SourceDateEpoch = "git-commit"
+)
 
 // OutputType is a bitmask which specifies which artifacts to produce as part of the docker build. At least one build
 // type must be specified, but multiple build types can be combined
@@ -56,6 +68,7 @@ type DefaultDockerBuilder struct {
 	BuildxDriverOpts  []string
 	BuildxPlatformArg string
 	OutputType        OutputType
+	SourceDateEpoch   SourceDateEpoch
 }
 
 func NewDefaultDockerBuilder(buildArgs []string, buildArgsScript string) distgo.DockerBuilder {
@@ -90,12 +103,16 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 
 	// baseArgs are common to every output type. Each output below builds its "docker buildx build" invocation by
 	// cloning baseArgs and appending its own "--output=..." plus the context dir.
+	timestampArgs, err := d.timestampArgs(productTaskOutputInfo.Project.ProjectDir)
+	if err != nil {
+		return err
+	}
 	baseArgs := []string{
 		"buildx",
 		"build",
 		"--file", filepath.Join(contextDirPath, dockerBuilderOutputInfo.DockerfilePath),
-		"--build-arg", "SOURCE_DATE_EPOCH=0",
 	}
+	baseArgs = append(baseArgs, timestampArgs...)
 	for _, tag := range dockerBuilderOutputInfo.RenderedTags {
 		baseArgs = append(baseArgs, "-t", tag)
 	}
@@ -147,6 +164,30 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		}
 	}
 	return nil
+}
+
+func (d *DefaultDockerBuilder) timestampArgs(projectDir string) ([]string, error) {
+	if d.SourceDateEpoch == SourceDateEpochUnixEpoch {
+		return []string{"--build-arg", "SOURCE_DATE_EPOCH=0"}, nil
+	}
+	if d.SourceDateEpoch != SourceDateEpochGitCommit {
+		return nil, errors.Errorf("unsupported source date epoch strategy %q", d.SourceDateEpoch)
+	}
+
+	out, err := exec.Command("git", "-C", projectDir, "show", "-s", "--format=%ct", "HEAD").Output()
+	if err != nil {
+		return nil, errors.Wrap(err, "determining source date epoch from Git commit")
+	}
+	epochString := strings.TrimSpace(string(out))
+	epoch, err := strconv.ParseInt(epochString, 10, 64)
+	if err != nil {
+		return nil, errors.Wrapf(err, "parsing Git commit timestamp %q", epochString)
+	}
+	created := time.Unix(epoch, 0).UTC().Format(time.RFC3339)
+	return []string{
+		"--build-arg", "SOURCE_DATE_EPOCH=" + epochString,
+		"--label", "org.opencontainers.image.created=" + created,
+	}, nil
 }
 
 // ociOutputDir returns the directory this build should write its OCI layout to: the most authoritative location the
@@ -266,6 +307,13 @@ func WithBuildArgs(buildArgs []string) Option {
 func WithBuildArgsScript(buildArgsScript string) Option {
 	return func(d *DefaultDockerBuilder) {
 		d.BuildArgsScript = buildArgsScript
+	}
+}
+
+// WithSourceDateEpoch configures the timestamp used for BuildKit's layer-mtime rewriting.
+func WithSourceDateEpoch(sourceDateEpoch SourceDateEpoch) Option {
+	return func(d *DefaultDockerBuilder) {
+		d.SourceDateEpoch = sourceDateEpoch
 	}
 }
 

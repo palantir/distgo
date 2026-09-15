@@ -27,5 +27,10 @@ func (cfg *Default) ToDockerBuilder() distgo.DockerBuilder {
 	if cfg.BuildArgsScript != nil {
 		buildArgsScript = *cfg.BuildArgsScript
 	}
-	return defaultdockerbuilder.NewDefaultDockerBuilder(cfg.BuildArgs, buildArgsScript)
+	return defaultdockerbuilder.NewDefaultDockerBuilderWithOptions(
+		defaultdockerbuilder.WithBuildArgs(cfg.BuildArgs),
+		defaultdockerbuilder.WithBuildArgsScript(buildArgsScript),
+		defaultdockerbuilder.WithBuildxOutput(defaultdockerbuilder.OCILayout|defaultdockerbuilder.DockerDaemon),
+		defaultdockerbuilder.WithSourceDateEpoch(defaultdockerbuilder.SourceDateEpoch(cfg.SourceDateEpoch)),
+	)
 }
