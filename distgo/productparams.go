@@ -112,13 +112,17 @@ func ToProductBuildIDs(in []string) []ProductBuildID {
 // and the productBuildID is "foo.darwin-amd64", the returned ProductParam will only contain "darwin-amd64" in the build
 // configuration. Returns an error if any of the productBuildID values cannot be resolved to a configuration in the
 // provided inputProducts.
+//
+// A nil productBuildIDs means none were specified, and returns the project's productBuildIDs unmodified. A non-nil
+// but empty productBuildIDs is a valid, distinct request for zero builds and returns an empty result.
 func ProductParamsForBuildProductArgs(inputProducts map[ProductID]ProductParam, osArchs []osarch.OSArch, productBuildIDs ...ProductBuildID) ([]ProductParam, error) {
 	// error if project does not contain any productBuildIDs
 	if len(inputProducts) == 0 {
 		return nil, errors.Errorf("project does not contain any products")
 	}
-	// if no productBuildIDs were specified, return project's productBuildIDs unmodified
-	if len(productBuildIDs) == 0 {
+	// if productBuildIDs is nil, none were specified, so return the project's productBuildIDs unmodified. A non-nil,
+	// empty slice means the caller explicitly requested zero builds, which is handled by the logic below.
+	if productBuildIDs == nil {
 		return filterProductParamsToOSArch(toSortedProductParams(inputProducts), osArchs), nil
 	}
 
@@ -271,13 +275,17 @@ func ToProductDistIDs(in []string) []ProductDistID {
 // example, if the project defines a product "foo" with DistParams "os-arch-bin" and "manual" and the productDistID is
 // "foo.os-arch-bin", the returned ProductParam will only contain "os-arch-bin" in the dist configuration. Returns an
 // error if any of the productDistID values cannot be resolved to a configuration in the provided inputProducts.
+//
+// A nil productDistIDs means none were specified, and returns the project's productDistIDs unmodified. A non-nil but
+// empty productDistIDs is a valid, distinct request for zero dists and returns an empty result.
 func ProductParamsForDistProductArgs(inputProducts map[ProductID]ProductParam, productDistIDs ...ProductDistID) ([]ProductParam, error) {
 	// error if project does not contain any productDistIDs
 	if len(inputProducts) == 0 {
 		return nil, errors.Errorf("project does not contain any products")
 	}
-	// if no productDistIDs were specified, return project's productDistIDs unmodified
-	if len(productDistIDs) == 0 {
+	// if productDistIDs is nil, none were specified, so return the project's productDistIDs unmodified. A non-nil,
+	// empty slice means the caller explicitly requested zero dists, which is handled by the logic below.
+	if productDistIDs == nil {
 		return toSortedProductParams(inputProducts), nil
 	}
 

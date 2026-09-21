@@ -277,6 +277,23 @@ func TestProductParamsForBuildProductArgs(t *testing.T) {
 			},
 			wantError: "build product(s) [bar.linux-amd64] not valid -- valid values are [bar bar.darwin-amd64 foo foo.darwin-amd64 foo.linux-amd64]",
 		},
+		{
+			// a non-nil but empty productBuildIDs is a distinct request for zero builds, not "unspecified"
+			projectParam: distgo.ProjectParam{
+				Products: map[distgo.ProductID]distgo.ProductParam{
+					"foo": {
+						ID: "foo",
+						Build: &distgo.BuildParam{
+							OSArchs: []osarch.OSArch{
+								mustOSArch("darwin-amd64"),
+							},
+						},
+					},
+				},
+			},
+			productBuildIDs: []distgo.ProductBuildID{},
+			want:            nil,
+		},
 	} {
 		products, err := distgo.ProductParamsForBuildProductArgs(tc.projectParam.Products, tc.osArchs, tc.productBuildIDs...)
 		if tc.wantError == "" {
@@ -463,6 +480,25 @@ func TestProductParamsForDistProductArgs(t *testing.T) {
 				"bar.bad-dister",
 			},
 			wantError: "dist product(s) [bar.bad-dister] not valid -- valid values are [bar bar.os-arch-bin foo foo.dister-1 foo.dister-2]",
+		},
+		{
+			// a non-nil but empty productDistIDs is a distinct request for zero dists, not "unspecified"
+			projectParam: distgo.ProjectParam{
+				Products: map[distgo.ProductID]distgo.ProductParam{
+					"foo": {
+						ID: "foo",
+						Dist: &distgo.DistParam{
+							DistParams: map[distgo.DistID]distgo.DisterParam{
+								osarchbin.TypeName: {
+									Dister: osarchbin.New(),
+								},
+							},
+						},
+					},
+				},
+			},
+			productDistIDs: []distgo.ProductDistID{},
+			want:           nil,
 		},
 	} {
 		products, err := distgo.ProductParamsForDistProductArgs(tc.projectParam.Products, tc.productDistIDs...)
