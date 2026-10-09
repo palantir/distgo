@@ -30,6 +30,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/mholt/archiver/v3"
 	"github.com/palantir/distgo/distgo"
+	"github.com/palantir/distgo/pkg/git"
 	"github.com/pkg/errors"
 )
 
@@ -51,11 +52,12 @@ const (
 type Option func(*DefaultDockerBuilder)
 
 type DefaultDockerBuilder struct {
-	BuildArgs         []string
-	BuildArgsScript   string
-	BuildxDriverOpts  []string
-	BuildxPlatformArg string
-	OutputType        OutputType
+	BuildArgs        []string
+	BuildArgsScript  string
+	BuildxDriverOpts []string
+	BuildxPlatforms  []string
+	OutputType       OutputType
+	OCIImageMetadata bool
 }
 
 func NewDefaultDockerBuilder(buildArgs []string, buildArgsScript string) distgo.DockerBuilder {
@@ -99,16 +101,37 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 	for _, tag := range dockerBuilderOutputInfo.RenderedTags {
 		baseArgs = append(baseArgs, "-t", tag)
 	}
-	baseArgs = append(baseArgs, d.BuildArgs...)
+
+	var annotationArgs []string
+	if d.OCIImageMetadata {
+		_, source := git.RepoOrigin(productTaskOutputInfo.Project.ProjectDir)
+		version := productTaskOutputInfo.Project.Version
+		baseArgs = append(baseArgs,
+			"--label", distgo.OCIImageSourceAnnotation+"="+source,
+			"--label", distgo.OCIImageVersionAnnotation+"="+version,
+		)
+
+		scope := "manifest"
+		if len(d.BuildxPlatforms) > 1 {
+			scope = "index,manifest,manifest-descriptor"
+		}
+		if source != "" {
+			annotationArgs = append(annotationArgs, "--annotation", scope+":"+distgo.OCIImageSourceAnnotation+"="+source)
+		}
+		annotationArgs = append(annotationArgs, "--annotation", scope+":"+distgo.OCIImageVersionAnnotation+"="+version)
+	}
+
+	// User arguments follow generated metadata so buildx's last-wins behavior allows overrides.
+	buildArgs := slices.Clone(d.BuildArgs)
 	if d.BuildArgsScript != "" {
 		buildArgsFromScript, err := distgo.DockerBuildArgsFromScript(dockerID, productTaskOutputInfo, d.BuildArgsScript)
 		if err != nil {
 			return err
 		}
-		baseArgs = append(baseArgs, buildArgsFromScript...)
+		buildArgs = append(buildArgs, buildArgsFromScript...)
 	}
 	// Resolve a "FROM <dependency image tag>" from the dependency's on-disk OCI layout instead of a registry.
-	baseArgs = append(baseArgs, dependencyImageBuildContextArgs(productTaskOutputInfo, dryRun)...)
+	buildArgs = append(buildArgs, dependencyImageBuildContextArgs(productTaskOutputInfo, dryRun)...)
 
 	if err := d.ensureDockerContainerDriver(dockerID, verbose, dryRun, stdout); err != nil {
 		return err
@@ -125,10 +148,10 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		destFile := filepath.Join(destDir, "image.tar")
 
 		ociArgs := slices.Clone(baseArgs)
-		// BuildxPlatformArg is empty in the default "host arch only" mode; appending it then would pass an empty
-		// positional argument, which `docker buildx build` rejects.
-		if d.BuildxPlatformArg != "" {
-			ociArgs = append(ociArgs, d.BuildxPlatformArg)
+		ociArgs = append(ociArgs, annotationArgs...)
+		ociArgs = append(ociArgs, buildArgs...)
+		if len(d.BuildxPlatforms) != 0 {
+			ociArgs = append(ociArgs, "--platform="+strings.Join(d.BuildxPlatforms, ","))
 		}
 		ociArgs = append(ociArgs, fmt.Sprintf("--output=type=oci,rewrite-timestamp=true,dest=%s", destFile), contextDirPath)
 		if err := distgo.RunCommandWithVerboseOption(exec.Command("docker", ociArgs...), verbose, dryRun, stdout); err != nil {
@@ -141,7 +164,8 @@ func (d *DefaultDockerBuilder) RunDockerBuild(dockerID distgo.DockerID, productT
 		}
 	}
 	if d.OutputType&DockerDaemon != 0 {
-		daemonArgs := append(slices.Clone(baseArgs), "--output=type=docker,rewrite-timestamp=true", contextDirPath)
+		daemonArgs := append(slices.Clone(baseArgs), buildArgs...)
+		daemonArgs = append(daemonArgs, "--output=type=docker,rewrite-timestamp=true", contextDirPath)
 		if err := distgo.RunCommandWithVerboseOption(exec.Command("docker", daemonArgs...), verbose, dryRun, stdout); err != nil {
 			return err
 		}
@@ -286,8 +310,17 @@ func WithBuildxOutput(output OutputType) Option {
 // https://github.com/containerd/containerd/blob/v1.4.3/platforms/platforms.go#L63
 func WithBuildxPlatforms(buildxPlatforms []string) Option {
 	return func(d *DefaultDockerBuilder) {
-		if len(buildxPlatforms) != 0 {
-			d.BuildxPlatformArg = fmt.Sprintf("--platform=%s", strings.Join(buildxPlatforms, ","))
-		}
+		d.BuildxPlatforms = slices.Clone(buildxPlatforms)
+	}
+}
+
+// WithOCIImageMetadata adds OCI source and version labels to all build outputs and annotations to OCI layouts.
+// The source is the project's Git origin converted to an HTTPS URL, or empty if unavailable; the version is the
+// project version. An empty source still overrides inherited labels, but is omitted from annotations.
+// Multi-platform layouts annotate the index, manifests and manifest descriptors; other layouts annotate manifests.
+// User build arguments and build-args-script output can override the generated metadata.
+func WithOCIImageMetadata() Option {
+	return func(d *DefaultDockerBuilder) {
+		d.OCIImageMetadata = true
 	}
 }

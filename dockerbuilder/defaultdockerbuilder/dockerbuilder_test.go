@@ -15,8 +15,11 @@
 package defaultdockerbuilder
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-containerregistry/pkg/v1/empty"
@@ -25,6 +28,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/mholt/archiver/v3"
 	"github.com/palantir/distgo/distgo"
+	"github.com/palantir/pkg/gittest"
 	"github.com/stretchr/testify/require"
 )
 
@@ -134,4 +138,87 @@ func TestOCIOutputDir(t *testing.T) {
 
 	_, err = ociOutputDir(info("", "", nil), "builder")
 	require.EqualError(t, err, "no output directory is available for OCI output for configuration builder: the product declares neither a Docker nor a dist output directory")
+}
+
+func TestOCIImageMetadataArgs(t *testing.T) {
+	// Only buildx inspect executes during a dry run. Stub it so these tests need no Docker daemon.
+	binDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(binDir, "docker"), []byte("#!/bin/sh\nif [ \"$1 $2\" = \"buildx inspect\" ]; then echo 'Driver: docker-container'; else exit 1; fi\n"), 0755))
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	for _, tc := range []struct {
+		name      string
+		platforms []string
+		scope     string
+		origin    string
+		source    string
+		metadata  bool
+	}{
+		{name: "host", scope: "manifest", origin: "git@github.com:example/project.git", source: "https://github.com/example/project", metadata: true},
+		{name: "single", platforms: []string{"linux/amd64"}, scope: "manifest", origin: "git@github.com:example/project.git", source: "https://github.com/example/project", metadata: true},
+		{name: "multi", platforms: []string{"linux/amd64", "linux/arm64"}, scope: "index,manifest,manifest-descriptor", origin: "git@github.com:example/project.git", source: "https://github.com/example/project", metadata: true},
+		{name: "no origin", platforms: []string{"linux/amd64", "linux/arm64"}, scope: "index,manifest,manifest-descriptor", metadata: true},
+		{name: "local origin", scope: "manifest", origin: "/tmp/project.git", source: "https:///tmp/project", metadata: true},
+		{name: "opt in required", platforms: []string{"linux/amd64", "linux/arm64"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir := t.TempDir()
+			gittest.RunGitCommand(t, projectDir, "init")
+			if tc.origin != "" {
+				gittest.RunGitCommand(t, projectDir, "remote", "add", "origin", tc.origin)
+			}
+			info := distgo.ProductTaskOutputInfo{
+				Project: distgo.ProjectInfo{ProjectDir: projectDir, Version: "1.2.3"},
+				Product: distgo.ProductOutputInfo{
+					ID: "product",
+					DockerOutputInfos: &distgo.DockerOutputInfos{
+						DockerOutputDir: "out/docker",
+						DockerBuilderOutputInfos: map[distgo.DockerID]distgo.DockerBuilderOutputInfo{
+							"image": {ContextDir: "context", DockerfilePath: "Dockerfile"},
+						},
+					},
+				},
+			}
+			options := []Option{WithBuildxOutput(OCILayout | DockerDaemon), WithBuildxPlatforms(tc.platforms)}
+			var userArgs []string
+			if tc.metadata {
+				options = append(options, WithOCIImageMetadata())
+				userArgs = []string{"--label", distgo.OCIImageVersionAnnotation + "=user-version"}
+				options = append(options, WithBuildArgs(userArgs), WithBuildArgsScript("#!/bin/sh\nprintf '%s\\n' '--label' '"+distgo.OCIImageVersionAnnotation+"=script-version'\n"))
+			}
+			builder := NewDefaultDockerBuilderWithOptions(options...)
+			var stdout bytes.Buffer
+			require.NoError(t, builder.RunDockerBuild("image", info, true, true, &stdout))
+			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
+			require.Len(t, lines, 2, stdout.String())
+			oci, daemon := lines[0], lines[1]
+			require.Contains(t, oci, "--output=type=oci,")
+			require.Contains(t, daemon, "--output=type=docker,")
+			require.NotContains(t, daemon, "--annotation")
+			require.NotContains(t, daemon, "--platform")
+			if len(tc.platforms) == 0 {
+				require.NotContains(t, oci, "--platform")
+			} else {
+				require.Contains(t, oci, "--platform="+strings.Join(tc.platforms, ","))
+			}
+			if !tc.metadata {
+				require.NotContains(t, stdout.String(), "--label")
+				require.NotContains(t, stdout.String(), "--annotation")
+				return
+			}
+			labels := fmt.Sprintf("--label %s=%s --label %s=1.2.3", distgo.OCIImageSourceAnnotation, tc.source, distgo.OCIImageVersionAnnotation)
+			for _, line := range lines {
+				require.Contains(t, line, labels)
+				require.Contains(t, line, "--label "+distgo.OCIImageVersionAnnotation+"=user-version --label "+distgo.OCIImageVersionAnnotation+"=script-version")
+				require.Less(t, strings.Index(line, labels), strings.Index(line, "=user-version"))
+			}
+			annotations := "--annotation " + tc.scope + ":" + distgo.OCIImageVersionAnnotation + "=1.2.3"
+			if tc.source != "" {
+				annotations = "--annotation " + tc.scope + ":" + distgo.OCIImageSourceAnnotation + "=" + tc.source + " " + annotations
+			} else {
+				require.NotContains(t, oci, ":"+distgo.OCIImageSourceAnnotation+"=")
+			}
+			require.Contains(t, oci, labels+" "+annotations+" "+strings.Join(userArgs, " "))
+		})
+	}
 }

@@ -35,6 +35,12 @@ const DockerBuildContextLayoutSubdir = "docker-build-context"
 // descriptor; the build-context consumer reads it back to pin each reference to its digest.
 const OCIRefNameAnnotation = "org.opencontainers.image.ref.name"
 
+// OCIImageSourceAnnotation identifies the source repository of an image.
+const OCIImageSourceAnnotation = "org.opencontainers.image.source"
+
+// OCIImageVersionAnnotation identifies the version of an image.
+const OCIImageVersionAnnotation = "org.opencontainers.image.version"
+
 // WriteDockerBuildContextLayout writes the buildx-consumable wrapper OCI layout (see DockerBuildContextLayoutSubdir)
 // into the OCI layout at ociLayoutDir, exposing the image under each of renderedTags so a dependent product's
 // "FROM <tag>" can resolve it from disk with no registry.
