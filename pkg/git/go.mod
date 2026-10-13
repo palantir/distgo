@@ -9,6 +9,7 @@ require (
 	github.com/palantir/pkg/gittest v1.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.12.0
+	github.com/whilp/git-urls v1.0.0
 )
 
 require (

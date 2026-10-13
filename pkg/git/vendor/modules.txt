@@ -17,6 +17,9 @@ github.com/stretchr/testify/assert/yaml
 github.com/stretchr/testify/internal/difflib
 github.com/stretchr/testify/internal/spew
 github.com/stretchr/testify/require
+# github.com/whilp/git-urls v1.0.0
+## explicit; go 1.13
+github.com/whilp/git-urls
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
