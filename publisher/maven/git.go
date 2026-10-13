@@ -15,11 +15,7 @@
 package maven
 
 import (
-	"net/url"
-	"os/exec"
-	"strings"
-
-	giturls "github.com/whilp/git-urls"
+	"github.com/palantir/distgo/pkg/git"
 )
 
 type gitParams struct {
@@ -28,29 +24,9 @@ type gitParams struct {
 }
 
 func getRepoOrigin() gitParams {
-	out, err := exec.Command("git", "remote", "get-url", "origin").CombinedOutput()
-	if err != nil {
-		// TODO: Log warning?
-		return gitParams{}
-	}
-	remote := strings.TrimSpace(string(out))
-	if len(remote) == 0 {
-		return gitParams{}
-	}
-	return parseRepoOrigin(remote)
-}
-
-func parseRepoOrigin(remote string) gitParams {
-	u, err := giturls.Parse(remote)
-	if err != nil {
-		return gitParams{
-			gitURL: remote,
-		}
-	}
-	path := strings.TrimSuffix(strings.TrimSuffix(u.Path, "/"), ".git")
-	webURL := (&url.URL{Scheme: "https", Host: u.Host, Path: path}).String()
+	gitURL, webURL := git.RepoOrigin("")
 	return gitParams{
-		gitURL: remote,
+		gitURL: gitURL,
 		webURL: webURL,
 	}
 }
