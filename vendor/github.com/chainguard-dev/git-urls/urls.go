@@ -30,9 +30,12 @@ import (
 	"strings"
 )
 
+// Max length of the scpUrl to prevent reDOS attacks
+const maxLen = 2048
+
 var (
 	// scpSyntax was modified from https://golang.org/src/cmd/go/vcs.go.
-	scpSyntax = regexp.MustCompile(`^([a-zA-Z0-9_]+@)?([a-zA-Z0-9._-]+):([a-zA-Z0-9./._-]+)(?:\?||$)(.*)$`)
+	scpSyntax = regexp.MustCompile(`^([a-zA-Z0-9-._~]+@)?([a-zA-Z0-9._-]+):([a-zA-Z0-9./._-]+)(?:\?||$)(.*)$`)
 
 	// Transports is a set of known Git URL schemes.
 	Transports = NewTransportSet(
@@ -90,6 +93,9 @@ func ParseTransport(rawurl string) (*url.URL, error) {
 // ParseScp parses rawurl into a URL object. The rawurl must be
 // an SCP-like URL, otherwise ParseScp returns an error.
 func ParseScp(rawurl string) (*url.URL, error) {
+	if len(rawurl) > maxLen {
+		return nil, fmt.Errorf("URL too long: %q", rawurl)
+	}
 	match := scpSyntax.FindAllStringSubmatch(rawurl, -1)
 	if len(match) == 0 {
 		return nil, fmt.Errorf("no scp URL found in %q", rawurl)

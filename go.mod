@@ -11,7 +11,7 @@ require (
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/nmiyake/pkg/dirs v1.1.0
 	github.com/nmiyake/pkg/gofiles v1.2.0
-	github.com/palantir/distgo/pkg/git v1.0.0
+	github.com/palantir/distgo/pkg/git v1.1.0
 	github.com/palantir/godel/pkg/products/v2 v2.0.0
 	github.com/palantir/godel/v2 v2.190.0
 	github.com/palantir/pkg/cobracli v1.4.0
@@ -25,7 +25,6 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.12.1
 	github.com/termie/go-shutil v0.0.0-20140729215957-bcacb06fecae
-	github.com/whilp/git-urls v1.0.0
 	golang.org/x/exp v0.0.0-20261011100332-faecfb24eb49
 	golang.org/x/tools v0.52.0
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
@@ -35,6 +34,7 @@ require (
 require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/andybalholm/brotli v1.2.6 // indirect
+	github.com/chainguard-dev/git-urls v1.0.2 // indirect
 	github.com/cheggaaa/pb/v3 v3.2.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/docker/cli v29.9.0+incompatible // indirect
