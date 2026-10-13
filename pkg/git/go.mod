@@ -5,6 +5,7 @@ go 1.27.0
 toolchain go1.27.2
 
 require (
+	github.com/chainguard-dev/git-urls v1.0.2
 	github.com/nmiyake/pkg/dirs v1.1.0
 	github.com/palantir/pkg/gittest v1.3.0
 	github.com/pkg/errors v0.9.1
