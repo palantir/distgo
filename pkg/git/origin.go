@@ -1,4 +1,4 @@
-// Copyright 2022 Palantir Technologies, Inc.
+// Copyright 2026 Palantir Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import (
 	"net/url"
 	"strings"
 
-	giturls "github.com/whilp/git-urls"
+	giturls "github.com/chainguard-dev/git-urls"
 )
 
 // RepoOrigin returns the origin remote of the Git repository containing dir and its HTTPS web URL.
