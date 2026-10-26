@@ -76,12 +76,26 @@ func disterRequiresDist(distID distgo.DistID, productTaskOutputInfo distgo.Produ
 
 // disterRequiresDistReason returns an empty string when the distribution is current.
 func disterRequiresDistReason(distID distgo.DistID, productTaskOutputInfo distgo.ProductTaskOutputInfo, configModTime *time.Time) string {
-	// determine oldest dist artifact for current Dister. If any artifact is missing, Dister needs to be run.
+	// Determine the oldest dist output for the current Dister. The work path must be a directory and artifacts must be
+	// regular files: existence and a current timestamp alone are not sufficient for downstream consumers.
 	oldestDistTime := time.Now()
-	for _, currArtifactPath := range productTaskOutputInfo.ProductDistWorkDirsAndArtifactPaths()[distID] {
-		fi, err := os.Stat(currArtifactPath)
+	workDir := productTaskOutputInfo.ProductDistWorkDirs()[distID]
+	fi, err := os.Stat(workDir)
+	if err != nil {
+		return fmt.Sprintf("cannot inspect output %s: %v", workDir, err)
+	}
+	if !fi.IsDir() {
+		return fmt.Sprintf("distribution work path is not a directory: %s", workDir)
+	}
+	oldestDistTime = fi.ModTime()
+
+	for _, artifactPath := range productTaskOutputInfo.ProductDistArtifactPaths()[distID] {
+		fi, err := os.Stat(artifactPath)
 		if err != nil {
-			return fmt.Sprintf("cannot inspect output %s: %v", currArtifactPath, err)
+			return fmt.Sprintf("cannot inspect output %s: %v", artifactPath, err)
+		}
+		if !fi.Mode().IsRegular() {
+			return fmt.Sprintf("distribution artifact is not a regular file: %s", artifactPath)
 		}
 		if fiModTime := fi.ModTime(); fiModTime.Before(oldestDistTime) {
 			oldestDistTime = fiModTime

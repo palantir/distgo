@@ -160,8 +160,8 @@ func TestNoDependentTasksRejectsPrerequisites(t *testing.T) {
 					name = "dry-run"
 				}
 				t.Run(name, func(t *testing.T) {
-					for _, scenario := range []string{"missing build", "stale build", "unverifiable build", "missing dist", "missing work directory", "stale configuration", "unknown configuration", "transitive build"} {
-						if operation == "dist" && (strings.Contains(scenario, "dist") || strings.Contains(scenario, "configuration") || scenario == "missing work directory") {
+					for _, scenario := range []string{"missing build", "stale build", "unverifiable build", "missing dist", "artifact is directory", "missing work directory", "stale configuration", "unknown configuration", "transitive build"} {
+						if operation == "dist" && (strings.Contains(scenario, "dist") || strings.Contains(scenario, "configuration") || scenario == "artifact is directory" || scenario == "missing work directory") {
 							continue
 						}
 						t.Run(scenario, func(t *testing.T) {
@@ -176,6 +176,9 @@ func TestNoDependentTasksRejectsPrerequisites(t *testing.T) {
 								require.NoError(t, os.Remove(f.source))
 							case "missing dist":
 								require.NoError(t, os.Remove(f.archive))
+							case "artifact is directory":
+								require.NoError(t, os.Remove(f.archive))
+								require.NoError(t, os.Mkdir(f.archive, 0755))
 							case "missing work directory":
 								require.NoError(t, os.RemoveAll(f.workDir))
 							case "stale configuration":
