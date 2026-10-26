@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/palantir/distgo/dister/manual"
 	"github.com/palantir/distgo/distgo"
 	"github.com/palantir/distgo/distgo/dist"
 	"github.com/palantir/distgo/distgo/docker"
@@ -242,6 +243,27 @@ func TestNoDependentTasksRunsRequestedStage(t *testing.T) {
 			require.True(t, os.IsNotExist(err))
 		})
 	}
+}
+
+func TestNoDependentTasksAcceptsExtensionlessManualDistribution(t *testing.T) {
+	f := newTaskFixture(t)
+	product := f.project.Products["foo"]
+	distParam := product.Dist.DistParams["tgz"]
+	distParam.Dister = &manual.Dister{}
+	product.Dist.DistParams["tgz"] = distParam
+	f.project.Products["foo"] = product
+
+	info, err := distgo.ToProductTaskOutputInfo(f.info, product)
+	require.NoError(t, err)
+	workPath := info.ProductDistWorkDirs()["tgz"]
+	artifactPaths := info.ProductDistArtifactPaths()["tgz"]
+	require.Equal(t, []string{workPath}, artifactPaths)
+	require.NoError(t, os.RemoveAll(workPath))
+	writeTaskFile(t, workPath, "extensionless manual artifact", f.configTime.Add(2*time.Minute))
+
+	require.NoError(t, f.run("publish", false))
+	require.Zero(t, f.distRuns)
+	require.Equal(t, 1, f.publishRuns)
 }
 
 func TestNoDependentTasksRespectsSelection(t *testing.T) {

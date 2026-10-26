@@ -77,19 +77,28 @@ func disterRequiresDist(distID distgo.DistID, productTaskOutputInfo distgo.Produ
 // disterRequiresDistReason returns an empty string when the distribution is current.
 func disterRequiresDistReason(distID distgo.DistID, productTaskOutputInfo distgo.ProductTaskOutputInfo, configModTime *time.Time) string {
 	// Determine the oldest dist output for the current Dister. The work path must be a directory and artifacts must be
-	// regular files: existence and a current timestamp alone are not sufficient for downstream consumers.
+	// regular files: existence and a current timestamp alone are not sufficient for downstream consumers. An
+	// extensionless manual distribution intentionally uses the same path for both, and leaves a regular file there.
 	oldestDistTime := time.Now()
 	workDir := productTaskOutputInfo.ProductDistWorkDirs()[distID]
+	artifactPaths := productTaskOutputInfo.ProductDistArtifactPaths()[distID]
+	workDirIsArtifact := false
+	for _, artifactPath := range artifactPaths {
+		if artifactPath == workDir {
+			workDirIsArtifact = true
+			break
+		}
+	}
 	fi, err := os.Stat(workDir)
 	if err != nil {
 		return fmt.Sprintf("cannot inspect output %s: %v", workDir, err)
 	}
-	if !fi.IsDir() {
+	if !fi.IsDir() && !(workDirIsArtifact && fi.Mode().IsRegular()) {
 		return fmt.Sprintf("distribution work path is not a directory: %s", workDir)
 	}
 	oldestDistTime = fi.ModTime()
 
-	for _, artifactPath := range productTaskOutputInfo.ProductDistArtifactPaths()[distID] {
+	for _, artifactPath := range artifactPaths {
 		fi, err := os.Stat(artifactPath)
 		if err != nil {
 			return fmt.Sprintf("cannot inspect output %s: %v", artifactPath, err)
