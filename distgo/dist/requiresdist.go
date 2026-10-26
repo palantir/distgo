@@ -15,7 +15,9 @@
 package dist
 
 import (
+	"fmt"
 	"os"
+	"sort"
 	"time"
 
 	"github.com/palantir/distgo/distgo"
@@ -69,12 +71,17 @@ func RequiresDist(projectInfo distgo.ProjectInfo, productParam distgo.ProductPar
 }
 
 func disterRequiresDist(distID distgo.DistID, productTaskOutputInfo distgo.ProductTaskOutputInfo, configModTime *time.Time) bool {
+	return disterRequiresDistReason(distID, productTaskOutputInfo, configModTime) != ""
+}
+
+// disterRequiresDistReason returns an empty string when the distribution is current.
+func disterRequiresDistReason(distID distgo.DistID, productTaskOutputInfo distgo.ProductTaskOutputInfo, configModTime *time.Time) string {
 	// determine oldest dist artifact for current Dister. If any artifact is missing, Dister needs to be run.
 	oldestDistTime := time.Now()
 	for _, currArtifactPath := range productTaskOutputInfo.ProductDistWorkDirsAndArtifactPaths()[distID] {
 		fi, err := os.Stat(currArtifactPath)
 		if err != nil {
-			return true
+			return fmt.Sprintf("cannot inspect output %s: %v", currArtifactPath, err)
 		}
 		if fiModTime := fi.ModTime(); fiModTime.Before(oldestDistTime) {
 			oldestDistTime = fiModTime
@@ -83,27 +90,36 @@ func disterRequiresDist(distID distgo.DistID, productTaskOutputInfo distgo.Produ
 
 	// if the newest build artifact is more recent than the oldest dist, consider dist out-of-date
 	if newestBuildArtifactForDist := newestArtifactModTime(buildArtifactPaths(productTaskOutputInfo.Project, productTaskOutputInfo.Product)); newestBuildArtifactForDist != nil && newestBuildArtifactForDist.Truncate(time.Second).After(oldestDistTime.Truncate(time.Second)) {
-		return true
+		return "distribution is older than its build outputs"
 	}
 
 	// if the configuration modification time was not provided or was modified more recently than the oldest dist
 	// artifact, consider it out-of-date. Truncate times to second granularity for purposes of comparison. If mod time
 	// and artifact generation time are the same, consider out-of-date and run.
-	if configModTime == nil || !configModTime.Truncate(time.Second).Before(oldestDistTime.Truncate(time.Second)) {
-		return true
+	if configModTime == nil {
+		return "configuration modification time is unavailable"
+	}
+	if !configModTime.Truncate(time.Second).Before(oldestDistTime.Truncate(time.Second)) {
+		return "distribution is not newer than its configuration"
 	}
 
 	// if any dependent artifact (build or dist) is newer than the oldest dist artifact, consider dist artifact out-of-date
-	for _, depProductOutputInfo := range productTaskOutputInfo.Deps {
+	var dependencyIDs []distgo.ProductID
+	for id := range productTaskOutputInfo.Deps {
+		dependencyIDs = append(dependencyIDs, id)
+	}
+	sort.Sort(distgo.ByProductID(dependencyIDs))
+	for _, id := range dependencyIDs {
+		depProductOutputInfo := productTaskOutputInfo.Deps[id]
 		newestDependencyTime := newestArtifactModTime(append(
 			buildArtifactPaths(productTaskOutputInfo.Project, depProductOutputInfo),
 			distArtifactPaths(productTaskOutputInfo.Project, distID, depProductOutputInfo)...,
 		))
 		if newestDependencyTime != nil && newestDependencyTime.After(oldestDistTime) {
-			return true
+			return fmt.Sprintf("distribution is older than dependency %s", depProductOutputInfo.ID)
 		}
 	}
-	return false
+	return ""
 }
 
 func buildArtifactPaths(projectInfo distgo.ProjectInfo, productInfo distgo.ProductOutputInfo) []string {
