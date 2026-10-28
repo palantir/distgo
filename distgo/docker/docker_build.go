@@ -34,7 +34,14 @@ import (
 	"github.com/pkg/errors"
 )
 
+// BuildProducts creates Docker images, generating prerequisite outputs when necessary.
 func BuildProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDockerIDs []distgo.ProductDockerID, tagKeys []string, verbose, dryRun bool, stdout io.Writer) error {
+	return BuildProductsWithOptions(projectInfo, projectParam, configModTime, productDockerIDs, tagKeys, verbose, dryRun, stdout, distgo.TaskOptions{})
+}
+
+// BuildProductsWithOptions creates Docker images using the specified prerequisite execution policy.
+// NoDependentTasks validates all build and distribution prerequisites before executing any Docker action.
+func BuildProductsWithOptions(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDockerIDs []distgo.ProductDockerID, tagKeys []string, verbose, dryRun bool, stdout io.Writer, opts distgo.TaskOptions) error {
 	// determine products that match specified productDockerIDs
 	productParams, err := distgo.ProductParamsForDockerProductArgs(projectParam.Products, productDockerIDs...)
 	if err != nil {
@@ -42,36 +49,72 @@ func BuildProducts(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectPa
 	}
 	productParams = distgo.ProductParamsForDockerTagKeys(productParams, tagKeys)
 
-	// run build for products that require build artifact generation (not sufficient to just run dist because product
-	// may declare build output but not dist output)
-	var productParamsToBuild []distgo.ProductParam
-	for _, currProduct := range productParams {
-		requiresBuildParam, err := build.RequiresBuild(projectInfo, currProduct)
-		if err != nil {
-			return err
+	if opts.NoDependentTasks {
+		var active []distgo.ProductParam
+		for _, product := range productParams {
+			if product.Docker != nil && len(product.Docker.DockerBuilderParams) != 0 {
+				active = append(active, product)
+			}
 		}
-		if requiresBuildParam == nil {
-			continue
-		}
-		productParamsToBuild = append(productParamsToBuild, *requiresBuildParam)
-	}
-	if len(productParamsToBuild) != 0 {
-		if err := build.Run(projectInfo, productParamsToBuild, build.Options{
-			Parallel: true,
-			DryRun:   dryRun,
-		}, stdout); err != nil {
-			return err
+		productParams = active
+		if len(productParams) == 0 {
+			return nil
 		}
 	}
-
 	// create a ProductBuildID and ProductDistID for all of the products for which a Docker action will be run
 	var productDistIDs []distgo.ProductDistID
 	for _, currProductParam := range productParams {
 		productDistIDs = append(productDistIDs, distgo.ProductDistID(currProductParam.ID))
 	}
-	// run dist for products that require dist artifact generation
-	if err := dist.Products(projectInfo, projectParam, configModTime, productDistIDs, dryRun, true, stdout); err != nil {
-		return err
+	if opts.NoDependentTasks {
+		allProducts, _, _ := distgo.ClassifyProductParams(productParams)
+		var ids []distgo.ProductID
+		for id := range allProducts {
+			ids = append(ids, id)
+		}
+		sort.Sort(distgo.ByProductID(ids))
+		var buildProducts []distgo.ProductParam
+		for _, id := range ids {
+			buildProducts = append(buildProducts, projectParam.Products[id])
+		}
+		required, err := build.RequiredTasks(projectInfo, buildProducts)
+		if err != nil {
+			return err
+		}
+		distributions, err := dist.RequiredTasks(projectInfo, projectParam, configModTime, productDistIDs)
+		if err != nil {
+			return err
+		}
+		if err := distgo.RequiredTasksError("docker build", append(required, distributions...)); err != nil {
+			return err
+		}
+	} else {
+		// run build for products that require build artifact generation (not sufficient to just run dist because product
+		// may declare build output but not dist output)
+		var productParamsToBuild []distgo.ProductParam
+		for _, currProduct := range productParams {
+			requiresBuildParam, err := build.RequiresBuild(projectInfo, currProduct)
+			if err != nil {
+				return err
+			}
+			if requiresBuildParam == nil {
+				continue
+			}
+			productParamsToBuild = append(productParamsToBuild, *requiresBuildParam)
+		}
+		if len(productParamsToBuild) != 0 {
+			if err := build.Run(projectInfo, productParamsToBuild, build.Options{
+				Parallel: true,
+				DryRun:   dryRun,
+			}, stdout); err != nil {
+				return err
+			}
+		}
+
+		// run dist for products that require dist artifact generation
+		if err := dist.Products(projectInfo, projectParam, configModTime, productDistIDs, dryRun, true, stdout); err != nil {
+			return err
+		}
 	}
 
 	filteredDockerProductsMap := make(map[distgo.ProductID]distgo.ProductParam)

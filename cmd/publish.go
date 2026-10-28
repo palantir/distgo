@@ -45,6 +45,7 @@ func addPublishSubcommands(publisherTypes []string, publishers []distgo.Publishe
 		if err != nil {
 			panic(errors.Wrapf(err, "failed to get flags for publisher %s", publisherType))
 		}
+		var noDependentTasks bool
 		currPublisherSubCmd := &cobra.Command{
 			Use: fmt.Sprintf("%s [flags] [products]", publisherType),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -64,10 +65,14 @@ func addPublishSubcommands(publisherTypes []string, publishers []distgo.Publishe
 					}
 					flagVals[currFlag.Name] = val
 				}
-				return publish.Products(projectInfo, projectParam, distgoConfigModTime(), distgo.ToProductDistIDs(args), publisher, flagVals, publishDryRunFlagVal, cmd.OutOrStdout())
+				return publish.ProductsWithOptions(projectInfo, projectParam, distgoConfigModTime(), distgo.ToProductDistIDs(args), publisher, flagVals, publishDryRunFlagVal, cmd.OutOrStdout(), distgo.TaskOptions{NoDependentTasks: noDependentTasks})
 			},
 		}
+		addNoDependentTasksFlag(currPublisherSubCmd, &noDependentTasks)
 		for _, currFlag := range currFlags {
+			if string(currFlag.Name) == noDependentTasksFlagName {
+				panic(errors.Errorf("publisher %s uses reserved flag --%s", publisherType, noDependentTasksFlagName))
+			}
 			if _, err := currFlag.AddFlag(currPublisherSubCmd.Flags()); err != nil {
 				panic(errors.Wrapf(err, "failed to add flag %v for publisher %s", currFlag, publisherType))
 			}
