@@ -135,7 +135,7 @@ github.com/palantir/distgo/pkg/git
 # github.com/palantir/godel/pkg/products/v2 v2.0.0
 ## explicit; go 1.13
 github.com/palantir/godel/pkg/products/v2
-# github.com/palantir/godel/v2 v2.203.0
+# github.com/palantir/godel/v2 v2.204.0
 ## explicit; go 1.27.0
 github.com/palantir/godel/v2/framework/artifactresolver
 github.com/palantir/godel/v2/framework/builtintasks
@@ -170,6 +170,9 @@ github.com/palantir/pkg/cobracli
 # github.com/palantir/pkg/gittest v1.3.0
 ## explicit; go 1.25.0
 github.com/palantir/pkg/gittest
+# github.com/palantir/pkg/gotoolchain v0.1.0
+## explicit; go 1.27.0
+github.com/palantir/pkg/gotoolchain
 # github.com/palantir/pkg/matcher v1.3.0
 ## explicit; go 1.25.0
 github.com/palantir/pkg/matcher
