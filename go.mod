@@ -35,7 +35,7 @@ require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/andybalholm/brotli v1.2.8 // indirect
 	github.com/chainguard-dev/git-urls v1.0.2 // indirect
-	github.com/cheggaaa/pb/v3 v3.2.1 // indirect
+	github.com/cheggaaa/pb/v3 v3.3.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/docker/cli v29.9.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.12 // indirect
