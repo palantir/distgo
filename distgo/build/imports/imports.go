@@ -51,6 +51,16 @@ func (g BuildInputFiles) NewerThan(fi os.FileInfo) (bool, error) {
 // package: .go source files (excluding Cgo and test files), files embedded via //go:embed, and other non-Go source
 // files (assembly, C, etc.).
 func AllFiles(pkgDir, goos, goarch string) (BuildInputFiles, error) {
+	return allFiles(pkgDir, goos, goarch, false)
+}
+
+// AllFilesChecked is AllFiles with strict package-loading validation. It returns an error if a package cannot be
+// loaded, including errors reported in package diagnostics rather than as packages.Load's return value.
+func AllFilesChecked(pkgDir, goos, goarch string) (BuildInputFiles, error) {
+	return allFiles(pkgDir, goos, goarch, true)
+}
+
+func allFiles(pkgDir, goos, goarch string, checked bool) (BuildInputFiles, error) {
 	// package or module name to all files required to build the package
 	pkgFiles := make(map[string][]string)
 
@@ -70,10 +80,16 @@ func AllFiles(pkgDir, goos, goarch string) (BuildInputFiles, error) {
 	if err != nil {
 		return nil, err
 	}
+	if checked && len(pkgs) == 0 {
+		return nil, errors.Errorf("no packages found in %s", pkgDir)
+	}
 	pkgsToProcess := pkgs
 
 	for len(pkgsToProcess) > 0 {
 		currPkg := pkgsToProcess[0]
+		if checked && len(currPkg.Errors) > 0 {
+			return nil, errors.Errorf("failed to load %s: %s", currPkg.PkgPath, currPkg.Errors[0])
+		}
 		pkgsToProcess = pkgsToProcess[1:]
 		if _, ok := pkgFiles[currPkg.PkgPath]; ok {
 			continue
