@@ -25,8 +25,8 @@ require (
 	github.com/spf13/pflag v1.1.0
 	github.com/stretchr/testify v1.12.1
 	github.com/termie/go-shutil v0.0.0-20140729215957-bcacb06fecae
-	golang.org/x/exp v0.0.0-20261106112924-d498a4c2cc9a
-	golang.org/x/tools v0.52.0
+	golang.org/x/exp v0.0.0-20261106192419-47ce03d25ef0
+	golang.org/x/tools v0.52.1-0.20261106145633-d407941a339a
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gopkg.in/yaml.v2 v2.4.0
 )
