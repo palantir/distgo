@@ -53,7 +53,7 @@ require (
 	github.com/nwaples/rardecode v1.1.3 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
-	github.com/palantir/pkg v1.2.0 // indirect
+	github.com/palantir/pkg v1.3.0 // indirect
 	github.com/palantir/pkg/gotoolchain v0.1.0 // indirect
 	github.com/palantir/witchcraft-go-error v1.51.0 // indirect
 	github.com/palantir/witchcraft-go-params v1.50.0 // indirect
