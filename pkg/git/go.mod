@@ -2,7 +2,7 @@ module github.com/palantir/distgo/pkg/git
 
 go 1.27.0
 
-toolchain go1.27.3
+toolchain go1.27.4
 
 require (
 	github.com/chainguard-dev/git-urls v1.0.2
