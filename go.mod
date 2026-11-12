@@ -55,7 +55,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/palantir/pkg v1.3.0 // indirect
 	github.com/palantir/pkg/gotoolchain v0.1.0 // indirect
-	github.com/palantir/witchcraft-go-error v1.51.0 // indirect
+	github.com/palantir/witchcraft-go-error v1.52.0 // indirect
 	github.com/palantir/witchcraft-go-params v1.51.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/rogpeppe/go-internal v1.16.0 // indirect
