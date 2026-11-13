@@ -32,60 +32,48 @@ import (
 	"github.com/termie/go-shutil"
 )
 
+// Products creates distributions, generating prerequisite outputs when necessary.
 func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDistIDs []distgo.ProductDistID, dryRun, parallel bool, stdout io.Writer) error {
-	// pre-filter step: expand productDistIDs to include all dependent products
-	var allDepProductDistIDs []distgo.ProductDistID
-	for _, currDistID := range productDistIDs {
-		productID, _ := currDistID.Parse()
-		productParam := projectParam.Products[productID]
-		for _, depProductID := range productParam.AllDependenciesSortedIDs() {
-			allDepProductDistIDs = append(allDepProductDistIDs, distgo.ProductDistID(depProductID))
-		}
-	}
-	productDistIDs = append(productDistIDs, allDepProductDistIDs...)
+	return ProductsWithOptions(projectInfo, projectParam, configModTime, productDistIDs, dryRun, parallel, stdout, distgo.TaskOptions{})
+}
 
-	productParams, err := distgo.ProductParamsForDistProductArgs(projectParam.Products, productDistIDs...)
+// ProductsWithOptions creates distributions using the specified prerequisite execution policy.
+// NoDependentTasks validates every build prerequisite before executing any distribution action.
+func ProductsWithOptions(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDistIDs []distgo.ProductDistID, dryRun, parallel bool, stdout io.Writer, opts distgo.TaskOptions) error {
+	projectParam, productParams, err := selectProducts(projectParam, productDistIDs)
 	if err != nil {
 		return err
 	}
-
-	filteredDistProductsMap := make(map[distgo.ProductID]distgo.ProductParam)
-	// copy old values into new map
-	maps.Copy(filteredDistProductsMap, projectParam.Products)
-	// copy computed params into map, which may filter dists for products
-	for _, v := range productParams {
-		filteredDistProductsMap[v.ID] = v
-	}
-	// update products for projectParam
-	projectParam.Products = filteredDistProductsMap
-
-	allProducts, _, dependentProducts := distgo.ClassifyProductParams(productParams)
-	var productParamsToBuild []distgo.ProductParam
-	for _, currProductID := range sortedMapKeys(allProducts) {
-		currProduct := projectParam.Products[currProductID]
-		if _, ok := dependentProducts[currProductID]; !ok && currProduct.Dist == nil {
-			// current product is not a dependency of any specified product and doesn't declare a dist output. In this
-			// case, no need to build the build outputs because they will not be used.
-			continue
-		}
-		requiresBuildParam, err := build.RequiresBuild(projectInfo, projectParam.Products[currProductID])
+	allProducts, _, _ := distgo.ClassifyProductParams(productParams)
+	buildProducts := buildPrerequisites(projectParam, productParams)
+	if opts.NoDependentTasks {
+		required, err := build.RequiredTasks(projectInfo, buildProducts)
 		if err != nil {
 			return err
 		}
-		if requiresBuildParam == nil {
-			continue
-		}
-		productParamsToBuild = append(productParamsToBuild, *requiresBuildParam)
-	}
-	if len(productParamsToBuild) != 0 {
-		if err := build.Run(projectInfo, productParamsToBuild, build.Options{
-			Parallel: parallel,
-			DryRun:   dryRun,
-		}, stdout); err != nil {
+		if err := distgo.RequiredTasksError("dist", required); err != nil {
 			return err
 		}
-		// if any of the products needed to be re-built, require dist to be performed
-		configModTime = nil
+	} else {
+		var productParamsToBuild []distgo.ProductParam
+		for _, product := range buildProducts {
+			required, err := build.RequiresBuild(projectInfo, product)
+			if err != nil {
+				return err
+			}
+			if required != nil {
+				productParamsToBuild = append(productParamsToBuild, *required)
+			}
+		}
+		if len(productParamsToBuild) != 0 {
+			if err := build.Run(projectInfo, productParamsToBuild, build.Options{
+				Parallel: parallel,
+				DryRun:   dryRun,
+			}, stdout); err != nil {
+				return err
+			}
+			configModTime = nil
+		}
 	}
 
 	// sort dist product tasks in topological order
@@ -106,6 +94,50 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 		}
 	}
 	return nil
+}
+
+// selectProducts applies the same dependency expansion and distribution filtering to execution and validation.
+func selectProducts(projectParam distgo.ProjectParam, productDistIDs []distgo.ProductDistID) (distgo.ProjectParam, []distgo.ProductParam, error) {
+	// pre-filter step: expand productDistIDs to include all dependent products
+	var allDepProductDistIDs []distgo.ProductDistID
+	for _, currDistID := range productDistIDs {
+		productID, _ := currDistID.Parse()
+		productParam := projectParam.Products[productID]
+		for _, depProductID := range productParam.AllDependenciesSortedIDs() {
+			allDepProductDistIDs = append(allDepProductDistIDs, distgo.ProductDistID(depProductID))
+		}
+	}
+	productDistIDs = append(productDistIDs, allDepProductDistIDs...)
+
+	productParams, err := distgo.ProductParamsForDistProductArgs(projectParam.Products, productDistIDs...)
+	if err != nil {
+		return distgo.ProjectParam{}, nil, err
+	}
+
+	filteredDistProductsMap := make(map[distgo.ProductID]distgo.ProductParam)
+	// copy old values into new map
+	maps.Copy(filteredDistProductsMap, projectParam.Products)
+	// copy computed params into map, which may filter dists for products
+	for _, v := range productParams {
+		filteredDistProductsMap[v.ID] = v
+	}
+	// update products for projectParam
+	projectParam.Products = filteredDistProductsMap
+
+	return projectParam, productParams, nil
+}
+
+func buildPrerequisites(projectParam distgo.ProjectParam, products []distgo.ProductParam) []distgo.ProductParam {
+	allProducts, _, dependentProducts := distgo.ClassifyProductParams(products)
+	var prerequisites []distgo.ProductParam
+	for _, id := range sortedMapKeys(allProducts) {
+		product := projectParam.Products[id]
+		if _, dependent := dependentProducts[id]; !dependent && product.Dist == nil {
+			continue
+		}
+		prerequisites = append(prerequisites, product)
+	}
+	return prerequisites
 }
 
 // Run executes the Dist action for the specified product. Produces both the dist output directory and the dist
