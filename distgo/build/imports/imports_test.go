@@ -505,3 +505,38 @@ func main() { fmt.Println(data) }`), 0644))
 	require.NoError(t, err)
 	assert.True(t, newer)
 }
+
+func TestAllFilesWithOptionsStrictRejectsMissingStandardImport(t *testing.T) {
+	t.Setenv("GOWORK", "off")
+	t.Setenv("GOFLAGS", "")
+	t.Setenv("GOTOOLCHAIN", "local")
+	for _, tc := range []struct {
+		name  string
+		files map[string]string
+	}{
+		{
+			name:  "direct import",
+			files: map[string]string{"main.go": "package main\n\nimport _ \"encoding/jsno\"\n\nfunc main() {}\n"},
+		},
+		{
+			name: "import of a project dependency",
+			files: map[string]string{
+				"main.go":    "package main\n\nimport _ \"example.com/fixture/lib\"\n\nfunc main() {}\n",
+				"lib/lib.go": "package lib\n\nimport _ \"encoding/jsno\"\n",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			tc.files["go.mod"] = "module example.com/fixture\n\ngo 1.21\n"
+			for name, content := range tc.files {
+				require.NoError(t, os.MkdirAll(filepath.Dir(filepath.Join(dir, name)), 0755))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte(content), 0644))
+			}
+			_, err := imports.AllFilesWithOptions(imports.LoadOptions{Dir: dir, Pattern: "."})
+			require.NoError(t, err)
+			_, err = imports.AllFilesWithOptions(imports.LoadOptions{Dir: dir, Pattern: ".", Strict: true})
+			assert.ErrorContains(t, err, "encoding/jsno")
+		})
+	}
+}

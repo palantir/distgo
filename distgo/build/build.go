@@ -205,15 +205,7 @@ func doBuildAction(unit buildUnit, outputArtifactPath string, dryRun bool, stdou
 	if osArch.Arch != "" {
 		env = append(env, "GOARCH="+osArch.Arch)
 	}
-	for _, k := range slices.Sorted(maps.Keys(unit.buildParam.Environment)) {
-		env = append(env, fmt.Sprintf("%s=%s", k, unit.buildParam.Environment[k]))
-	}
-	for _, k := range slices.Sorted(maps.Keys(unit.buildParam.OSEnvironment[osArch.OS])) {
-		env = append(env, fmt.Sprintf("%s=%s", k, unit.buildParam.OSEnvironment[osArch.OS][k]))
-	}
-	for _, k := range slices.Sorted(maps.Keys(unit.buildParam.OSArchsEnvironment[osArch.String()])) {
-		env = append(env, fmt.Sprintf("%s=%s", k, unit.buildParam.OSArchsEnvironment[osArch.String()][k]))
-	}
+	env = append(env, productBuildEnv(unit.buildParam, osArch)...)
 	cmd.Env = append(os.Environ(), env...)
 
 	args := []string{cmd.Path}
@@ -254,6 +246,21 @@ func doBuildAction(unit buildUnit, outputArtifactPath string, dryRun bool, stdou
 		}
 	}
 	return nil
+}
+
+// productBuildEnv returns the configured environment variables used to build buildParam for osArch.
+func productBuildEnv(buildParam distgo.BuildParam, osArch osarch.OSArch) []string {
+	var env []string
+	for _, k := range slices.Sorted(maps.Keys(buildParam.Environment)) {
+		env = append(env, fmt.Sprintf("%s=%s", k, buildParam.Environment[k]))
+	}
+	for _, k := range slices.Sorted(maps.Keys(buildParam.OSEnvironment[osArch.OS])) {
+		env = append(env, fmt.Sprintf("%s=%s", k, buildParam.OSEnvironment[osArch.OS][k]))
+	}
+	for _, k := range slices.Sorted(maps.Keys(buildParam.OSArchsEnvironment[osArch.String()])) {
+		env = append(env, fmt.Sprintf("%s=%s", k, buildParam.OSArchsEnvironment[osArch.String()][k]))
+	}
+	return env
 }
 
 const installPermissionDenied = `(?s)^go build [a-zA-Z0-9_/]+: mkdir [^:]+: permission denied.+`

@@ -15,11 +15,13 @@
 package dist_test
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"path"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/nmiyake/pkg/dirs"
@@ -523,6 +525,140 @@ tar -cf "$DIST_DIR/$DIST_NAME".tar -C "$DIST_WORK_DIR" out.txt
 			require.NoError(t, err)
 			pluginProvider := pluginapitester.NewPluginProvider(pluginPath)
 			distertester.RunRepeatedDistTest(t, pluginProvider, nil, tc.distersCfg)
+		})
+	}
+}
+
+var fooDistIDs = []distgo.ProductDistID{distgo.ProductDistID("foo." + string(testfuncs.TaskOptionsDistID))}
+
+// runNoDependentDist runs a forced dist with --no-dependent-tasks and returns the number of distributions created.
+func runNoDependentDist(p *testfuncs.TaskOptionsProject, distIDs []distgo.ProductDistID, dryRun bool) (int, error) {
+	buf := &bytes.Buffer{}
+	err := dist.ProductsWithOptions(p.Info, p.Project, nil, distIDs, dryRun, true, buf, distgo.TaskOptions{NoDependentTasks: true})
+	return strings.Count(buf.String(), "Creating distribution for"), err
+}
+
+func TestDistNoDependentTasksRejectsPrerequisites(t *testing.T) {
+	for _, dryRun := range []bool{false, true} {
+		for _, scenario := range testfuncs.PrerequisiteScenarios() {
+			if !scenario.BuildOnly {
+				continue
+			}
+			t.Run(fmt.Sprintf("%s dry-run=%t", scenario.Name, dryRun), func(t *testing.T) {
+				p := testfuncs.NewTaskOptionsProject(t, nil)
+				scenario.Prepare(t, p)
+				runs, err := runNoDependentDist(p, fooDistIDs, dryRun)
+				require.ErrorContains(t, err, "--no-dependent-tasks")
+				assert.Zero(t, runs)
+				p.RequireNoHooks(t)
+			})
+		}
+	}
+}
+
+func TestDistNoDependentTasksRunsRequestedStage(t *testing.T) {
+	p := testfuncs.NewTaskOptionsProject(t, nil)
+	before, err := os.Stat(p.Binary)
+	require.NoError(t, err)
+	runs, err := runNoDependentDist(p, fooDistIDs, false)
+	require.NoError(t, err)
+	assert.Equal(t, 1, runs)
+	after, err := os.Stat(p.Binary)
+	require.NoError(t, err)
+	assert.Equal(t, before.ModTime(), after.ModTime())
+	assert.NoFileExists(t, path.Join(p.Info.ProjectDir, "build-hook"))
+}
+
+func TestDistNoDependentTasksRespectsSelection(t *testing.T) {
+	p := testfuncs.NewTaskOptionsProject(t, nil)
+	foo := p.Project.Products["foo"]
+	unused := foo
+	unused.ID, unused.Name = "unused", "unused"
+	p.Project.Products["unused"] = unused
+	// The selected distribution exists; this additional, unselected configuration does not.
+	foo.Dist.DistParams["unused"] = distgo.DisterParam{NameTemplate: "missing", Dister: osarchbin.New(osarch.Current())}
+	p.Project.Products["foo"] = foo
+	_, err := runNoDependentDist(p, fooDistIDs, false)
+	require.NoError(t, err)
+}
+
+func TestDistNoDependentTasksChecksEveryBuildTarget(t *testing.T) {
+	p := testfuncs.NewTaskOptionsProject(t, nil)
+	target, err := osarch.New("linux-arm64")
+	require.NoError(t, err)
+	if target == osarch.Current() {
+		target, err = osarch.New("linux-amd64")
+		require.NoError(t, err)
+	}
+	p.Project.Products["foo"].Build.OSArchs = append(p.Project.Products["foo"].Build.OSArchs, target)
+	runs, err := runNoDependentDist(p, fooDistIDs, false)
+	require.ErrorContains(t, err, target.String())
+	assert.Zero(t, runs)
+}
+
+func TestDistNoDependentTasksAllowsDependentDists(t *testing.T) {
+	p := testfuncs.NewTaskOptionsProject(t, nil)
+	_, _, _ = p.AddDependency(t)
+	runs, err := runNoDependentDist(p, fooDistIDs, false)
+	require.NoError(t, err)
+	assert.Equal(t, 2, runs)
+	assert.NoFileExists(t, path.Join(p.Info.ProjectDir, "build-hook"))
+}
+
+func TestDistNoDependentTasksRejectsUnusableBuildOutputs(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		prepare func(t *testing.T, p *testfuncs.TaskOptionsProject)
+		reason  string
+	}{
+		{
+			name: "package diagnostics",
+			prepare: func(t *testing.T, p *testfuncs.TaskOptionsProject) {
+				testfuncs.WriteFileWithModTime(t, p.Source, "package main\nimport _ \"example.invalid/missing\"\nfunc main() {}\n", p.ConfigTime)
+			},
+			reason: "cannot inspect build inputs",
+		},
+		{
+			name: "directory as binary",
+			prepare: func(t *testing.T, p *testfuncs.TaskOptionsProject) {
+				require.NoError(t, os.Remove(p.Binary))
+				require.NoError(t, os.Mkdir(p.Binary, 0755))
+			},
+			reason: "output is a directory",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := testfuncs.NewTaskOptionsProject(t, nil)
+			tc.prepare(t, p)
+			runs, err := runNoDependentDist(p, fooDistIDs, false)
+			require.ErrorContains(t, err, tc.reason)
+			assert.Zero(t, runs)
+			p.RequireNoHooks(t)
+		})
+	}
+}
+
+func TestDistNoDependentTasksSkipsUnselectedOutputs(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		distIDs []distgo.ProductDistID
+		prepare func(p *testfuncs.TaskOptionsProject)
+	}{
+		{name: "empty dist selection", distIDs: []distgo.ProductDistID{}},
+		{name: "product without dist outputs", prepare: func(p *testfuncs.TaskOptionsProject) {
+			p.Project.Products["foo"].Dist.DistParams = nil
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := testfuncs.NewTaskOptionsProject(t, nil)
+			if tc.prepare != nil {
+				tc.prepare(p)
+			}
+			require.NoError(t, os.Remove(p.Binary))
+			runs, err := runNoDependentDist(p, tc.distIDs, false)
+			require.NoError(t, err)
+			assert.Zero(t, runs)
+			p.RequireNoHooks(t)
 		})
 	}
 }
