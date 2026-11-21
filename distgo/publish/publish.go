@@ -25,9 +25,23 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Products publishes distributions, generating prerequisite outputs when necessary.
 func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDistIDs []distgo.ProductDistID, publisher distgo.Publisher, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer) error {
-	// run dist for products (will only run dist for productDistIDs that require dist artifact generation)
-	if err := dist.Products(projectInfo, projectParam, configModTime, productDistIDs, dryRun, true, stdout); err != nil {
+	return ProductsWithOptions(projectInfo, projectParam, configModTime, productDistIDs, publisher, flagVals, dryRun, stdout, distgo.TaskOptions{})
+}
+
+// ProductsWithOptions publishes distributions using the specified prerequisite execution policy.
+// NoDependentTasks validates the complete prerequisite graph before invoking the publisher.
+func ProductsWithOptions(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, configModTime *time.Time, productDistIDs []distgo.ProductDistID, publisher distgo.Publisher, flagVals map[distgo.PublisherFlagName]any, dryRun bool, stdout io.Writer, opts distgo.TaskOptions) error {
+	if opts.NoDependentTasks {
+		required, err := dist.RequiredTasks(projectInfo, projectParam, configModTime, productDistIDs)
+		if err != nil {
+			return err
+		}
+		if err := distgo.RequiredTasksError("publish", required); err != nil {
+			return err
+		}
+	} else if err := dist.Products(projectInfo, projectParam, configModTime, productDistIDs, dryRun, true, stdout); err != nil {
 		return err
 	}
 

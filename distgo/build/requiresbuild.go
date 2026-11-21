@@ -15,6 +15,7 @@
 package build
 
 import (
+	"fmt"
 	"os"
 	"path"
 
@@ -45,14 +46,8 @@ func RequiresBuild(projectInfo distgo.ProjectInfo, productParam distgo.ProductPa
 	pathsMap := productTaskOutputInfo.ProductBuildArtifactPaths()
 	var requiresBuildOSArchs []osarch.OSArch
 	for _, currOSArch := range productParam.Build.OSArchs {
-		if fi, err := os.Stat(pathsMap[currOSArch]); err == nil {
-			if buildFiles, err := imports.AllFiles(path.Join(projectInfo.ProjectDir, productParam.Build.MainPkg), currOSArch.OS, currOSArch.Arch); err == nil {
-				if newerThan, err := buildFiles.NewerThan(fi); err == nil && !newerThan {
-					// if the build artifact for the product already exists and none of the input files for the
-					// product are newer than the build artifact, consider spec up-to-date
-					continue
-				}
-			}
+		if buildOutputReason(projectInfo, productParam, currOSArch, pathsMap[currOSArch], false) == "" {
+			continue
 		}
 		requiresBuildOSArchs = append(requiresBuildOSArchs, currOSArch)
 	}
@@ -62,4 +57,63 @@ func RequiresBuild(projectInfo distgo.ProjectInfo, productParam distgo.ProductPa
 	}
 	productParam.Build.OSArchs = requiresBuildOSArchs
 	return &productParam, nil
+}
+
+// RequiredTasks reports missing, stale, or unverifiable build outputs without executing build actions.
+func RequiredTasks(projectInfo distgo.ProjectInfo, products []distgo.ProductParam) ([]distgo.RequiredTask, error) {
+	var required []distgo.RequiredTask
+	for _, product := range products {
+		if product.Build == nil {
+			continue
+		}
+		info, err := distgo.ToProductTaskOutputInfo(projectInfo, product)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to compute output information for %s", product.ID)
+		}
+		paths := info.ProductBuildArtifactPaths()
+		for _, target := range product.Build.OSArchs {
+			output := paths[target]
+			reason := buildOutputReason(projectInfo, product, target, output, true)
+			if reason == "" {
+				// A directory cannot serve as an executable, even if its timestamp appears current.
+				if fi, err := os.Stat(output); err != nil {
+					reason = fmt.Sprintf("cannot inspect output: %v", err)
+				} else if fi.IsDir() {
+					reason = "output is a directory"
+				}
+			}
+			if reason != "" {
+				required = append(required, distgo.RequiredTask{
+					Task: "build", Product: product.ID, Target: target.String(),
+					Outputs: []string{output}, Reason: reason,
+				})
+			}
+		}
+	}
+	return required, nil
+}
+
+// buildOutputReason returns an empty string when the output is current. Inspection failures require rebuilding,
+// preserving RequiresBuild's existing conservative behavior.
+func buildOutputReason(projectInfo distgo.ProjectInfo, product distgo.ProductParam, target osarch.OSArch, output string, checked bool) string {
+	fi, err := os.Stat(output)
+	if err != nil {
+		return fmt.Sprintf("cannot inspect output: %v", err)
+	}
+	loadFiles := imports.AllFiles
+	if checked {
+		loadFiles = imports.AllFilesChecked
+	}
+	files, err := loadFiles(path.Join(projectInfo.ProjectDir, product.Build.MainPkg), target.OS, target.Arch)
+	if err != nil {
+		return fmt.Sprintf("cannot inspect build inputs: %v", err)
+	}
+	newer, err := files.NewerThan(fi)
+	if err != nil {
+		return fmt.Sprintf("cannot compare input timestamps: %v", err)
+	}
+	if newer {
+		return "output is older than its build inputs"
+	}
+	return ""
 }
