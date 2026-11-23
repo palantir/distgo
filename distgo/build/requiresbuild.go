@@ -15,7 +15,6 @@
 package build
 
 import (
-	"fmt"
 	"os"
 	"sync"
 
@@ -47,7 +46,7 @@ func RequiresBuild(projectInfo distgo.ProjectInfo, productParam distgo.ProductPa
 	buildArgs := productBuildArgs(productTaskOutputInfo, *productParam.Build)
 	var requiresBuildOSArchs []osarch.OSArch
 	for _, currOSArch := range productParam.Build.OSArchs {
-		if buildOutputReason(productTaskOutputInfo, *productParam.Build, buildArgs, currOSArch, pathsMap[currOSArch], false) == "" {
+		if checkBuildOutputCurrent(productTaskOutputInfo, *productParam.Build, buildArgs, currOSArch, pathsMap[currOSArch], false) == nil {
 			// if the build artifact for the product already exists and none of the input files for the
 			// product are newer than the build artifact, consider spec up-to-date
 			continue
@@ -77,10 +76,10 @@ func RequiredTasks(projectInfo distgo.ProjectInfo, products []distgo.ProductPara
 		buildArgs := productBuildArgs(info, *product.Build)
 		for _, target := range product.Build.OSArchs {
 			output := paths[target]
-			if reason := buildOutputReason(info, *product.Build, buildArgs, target, output, true); reason != "" {
+			if err := checkBuildOutputCurrent(info, *product.Build, buildArgs, target, output, true); err != nil {
 				required = append(required, distgo.RequiredTask{
 					Task: "build", Product: product.ID, Target: target.String(),
-					Outputs: []string{output}, Reason: reason,
+					Outputs: []string{output}, Reason: err.Error(),
 				})
 			}
 		}
@@ -88,22 +87,22 @@ func RequiredTasks(projectInfo distgo.ProjectInfo, products []distgo.ProductPara
 	return required, nil
 }
 
-// buildOutputReason returns an empty string when the output is current. Packages are loaded as go build loads them:
-// from the project directory with the product's environment and build arguments. Inspection failures require
-// rebuilding, preserving RequiresBuild's existing conservative behavior. Checked mode, used by --no-dependent-tasks, also
-// rejects package load errors and directory outputs.
-func buildOutputReason(info distgo.ProductTaskOutputInfo, buildParam distgo.BuildParam, buildArgs func() ([]string, error), target osarch.OSArch, output string, checked bool) string {
+// checkBuildOutputCurrent returns nil if the output is current, or an error describing why it must be rebuilt.
+// Packages are loaded as go build loads them: from the project directory with the product's environment and build
+// arguments. Inspection failures require rebuilding, preserving RequiresBuild's existing conservative behavior. Checked
+// mode, used by --no-dependent-tasks, also rejects package load errors and directory outputs.
+func checkBuildOutputCurrent(info distgo.ProductTaskOutputInfo, buildParam distgo.BuildParam, buildArgs func() ([]string, error), target osarch.OSArch, output string, checked bool) error {
 	fi, err := os.Stat(output)
 	if err != nil {
-		return fmt.Sprintf("cannot inspect output: %v", err)
+		return errors.Wrap(err, "cannot inspect output")
 	}
 	if checked && fi.IsDir() {
 		// A directory cannot serve as an executable, even if its timestamp appears current.
-		return "output is a directory"
+		return errors.New("output is a directory")
 	}
 	args, err := buildArgs()
 	if err != nil {
-		return fmt.Sprintf("cannot compute build arguments: %v", err)
+		return errors.Wrap(err, "cannot compute build arguments")
 	}
 	files, err := imports.AllFilesWithOptions(imports.LoadOptions{
 		Dir:        info.Project.ProjectDir,
@@ -115,16 +114,16 @@ func buildOutputReason(info distgo.ProductTaskOutputInfo, buildParam distgo.Buil
 		Strict:     checked,
 	})
 	if err != nil {
-		return fmt.Sprintf("cannot inspect build inputs: %v", err)
+		return errors.Wrap(err, "cannot inspect build inputs")
 	}
 	newer, err := files.NewerThan(fi)
 	if err != nil {
-		return fmt.Sprintf("cannot compare input timestamps: %v", err)
+		return errors.Wrap(err, "cannot compare input timestamps")
 	}
 	if newer {
-		return "output is older than its build inputs"
+		return errors.New("output is older than its build inputs")
 	}
-	return ""
+	return nil
 }
 
 // productBuildArgs returns a function that computes the product's build arguments at most once. The build args script

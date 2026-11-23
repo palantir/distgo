@@ -68,10 +68,10 @@ func requiredDistTasks(projectInfo distgo.ProjectInfo, projectParam distgo.Proje
 		}
 		outputs := info.ProductDistWorkDirsAndArtifactPaths()
 		for _, distID := range info.Product.DistOutputInfos.DistIDs {
-			if reason := disterRequiresDistReason(distID, info, configModTime, true); reason != "" {
+			if err := checkDistCurrent(distID, info, configModTime, true); err != nil {
 				required = append(required, distgo.RequiredTask{
 					Task: "dist", Product: id, Target: string(distID),
-					Outputs: outputs[distID], Reason: reason,
+					Outputs: outputs[distID], Reason: err.Error(),
 				})
 			}
 		}
