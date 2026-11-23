@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/nmiyake/pkg/dirs"
+	"github.com/palantir/distgo/dister/manual"
 	"github.com/palantir/distgo/dister/osarchbin"
 	osarchbinconfig "github.com/palantir/distgo/dister/osarchbin/config"
 	"github.com/palantir/distgo/distgo"
@@ -278,4 +279,99 @@ func mustOSArch(in string) osarch.OSArch {
 		panic(err)
 	}
 	return osArch
+}
+
+var fooDistIDs = []distgo.ProductDistID{distgo.ProductDistID("foo." + string(testfuncs.TaskOptionsDistID))}
+
+// runNoDependentPublish publishes foo with --no-dependent-tasks and returns the number of products published and
+// distributions created.
+func runNoDependentPublish(p *testfuncs.TaskOptionsProject, dryRun bool) (publishRuns, distRuns int, err error) {
+	buf := &bytes.Buffer{}
+	err = publish.ProductsWithOptions(p.Info, p.Project, p.ConfigModTime(), fooDistIDs, &testPublisher{}, nil, dryRun, buf, distgo.TaskOptions{NoDependentTasks: true})
+	return strings.Count(buf.String(), "Publish the following dist outputs"), strings.Count(buf.String(), "Creating distribution for"), err
+}
+
+func TestPublishNoDependentTasksRejectsPrerequisites(t *testing.T) {
+	for _, dryRun := range []bool{false, true} {
+		for _, scenario := range testfuncs.PrerequisiteScenarios() {
+			t.Run(fmt.Sprintf("%s dry-run=%t", scenario.Name, dryRun), func(t *testing.T) {
+				p := testfuncs.NewTaskOptionsProject(t, nil)
+				scenario.Prepare(t, p)
+				publishRuns, distRuns, err := runNoDependentPublish(p, dryRun)
+				require.ErrorContains(t, err, "--no-dependent-tasks")
+				assert.Zero(t, publishRuns)
+				assert.Zero(t, distRuns)
+				p.RequireNoHooks(t)
+			})
+		}
+	}
+}
+
+func TestPublishNoDependentTasksRejectsStaleDistributions(t *testing.T) {
+	for _, scenario := range testfuncs.StaleDistributionScenarios() {
+		t.Run(scenario.Name, func(t *testing.T) {
+			p := testfuncs.NewTaskOptionsProject(t, nil)
+			scenario.Prepare(t, p)
+			publishRuns, distRuns, err := runNoDependentPublish(p, false)
+			require.ErrorContains(t, err, scenario.Reason)
+			assert.Zero(t, publishRuns)
+			assert.Zero(t, distRuns)
+			p.RequireNoHooks(t)
+		})
+	}
+}
+
+func TestPublishNoDependentTasksRunsRequestedStage(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		prepare func(t *testing.T, p *testfuncs.TaskOptionsProject)
+	}{
+		{name: "current outputs"},
+		{name: "restored timestamps", prepare: func(t *testing.T, p *testfuncs.TaskOptionsProject) {
+			p.RestoreTimestamps(t)
+		}},
+		{name: "unselected configuration missing", prepare: func(t *testing.T, p *testfuncs.TaskOptionsProject) {
+			foo := p.Project.Products["foo"]
+			unused := foo
+			unused.ID, unused.Name = "unused", "unused"
+			p.Project.Products["unused"] = unused
+			foo.Dist.DistParams["unused"] = distgo.DisterParam{NameTemplate: "missing", Dister: osarchbin.New(osarch.Current())}
+			p.Project.Products["foo"] = foo
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := testfuncs.NewTaskOptionsProject(t, nil)
+			if tc.prepare != nil {
+				tc.prepare(t, p)
+			}
+			before, err := os.Stat(p.Binary)
+			require.NoError(t, err)
+			publishRuns, distRuns, err := runNoDependentPublish(p, false)
+			require.NoError(t, err)
+			assert.Equal(t, 1, publishRuns)
+			assert.Zero(t, distRuns)
+			after, err := os.Stat(p.Binary)
+			require.NoError(t, err)
+			assert.Equal(t, before.ModTime(), after.ModTime())
+			p.RequireNoHooks(t)
+		})
+	}
+}
+
+func TestPublishNoDependentTasksAcceptsExtensionlessManualDistribution(t *testing.T) {
+	p := testfuncs.NewTaskOptionsProject(t, nil)
+	product := p.Project.Products["foo"]
+	distParam := product.Dist.DistParams[testfuncs.TaskOptionsDistID]
+	distParam.Dister = &manual.Dister{}
+	product.Dist.DistParams[testfuncs.TaskOptionsDistID] = distParam
+	info, err := distgo.ToProductTaskOutputInfo(p.Info, product)
+	require.NoError(t, err)
+	workPath := info.ProductDistWorkDirs()[testfuncs.TaskOptionsDistID]
+	require.Equal(t, []string{workPath}, info.ProductDistArtifactPaths()[testfuncs.TaskOptionsDistID])
+	require.NoError(t, os.RemoveAll(workPath))
+	testfuncs.WriteFileWithModTime(t, workPath, "extensionless manual artifact", p.ConfigTime.Add(2*time.Minute))
+	publishRuns, distRuns, err := runNoDependentPublish(p, false)
+	require.NoError(t, err)
+	assert.Equal(t, 1, publishRuns)
+	assert.Zero(t, distRuns)
 }

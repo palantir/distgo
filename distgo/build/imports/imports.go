@@ -51,29 +51,61 @@ func (g BuildInputFiles) NewerThan(fi os.FileInfo) (bool, error) {
 // package: .go source files (excluding Cgo and test files), files embedded via //go:embed, and other non-Go source
 // files (assembly, C, etc.).
 func AllFiles(pkgDir, goos, goarch string) (BuildInputFiles, error) {
+	return AllFilesWithOptions(LoadOptions{Dir: pkgDir, Pattern: ".", GOOS: goos, GOARCH: goarch})
+}
+
+// LoadOptions configures how AllFilesWithOptions loads packages.
+type LoadOptions struct {
+	// Dir is the working directory from which Pattern is loaded.
+	Dir string
+	// Pattern is the package pattern to load. If empty, "." is used.
+	Pattern string
+	GOOS    string
+	GOARCH  string
+	// Env contains environment variables added after os.Environ, GOOS, and GOARCH.
+	Env        []string
+	BuildFlags []string
+	// Strict returns an error if a package cannot be loaded, including errors reported in package diagnostics.
+	Strict bool
+}
+
+// AllFilesWithOptions is AllFiles for the package pattern and load settings in opts.
+func AllFilesWithOptions(opts LoadOptions) (BuildInputFiles, error) {
 	// package or module name to all files required to build the package
 	pkgFiles := make(map[string][]string)
 
 	env := os.Environ()
-	if goos != "" {
-		env = append(env, fmt.Sprintf("GOOS=%s", goos))
+	if opts.GOOS != "" {
+		env = append(env, fmt.Sprintf("GOOS=%s", opts.GOOS))
 	}
-	if goarch != "" {
-		env = append(env, fmt.Sprintf("GOARCH=%s", goarch))
+	if opts.GOARCH != "" {
+		env = append(env, fmt.Sprintf("GOARCH=%s", opts.GOARCH))
 	}
+	env = append(env, opts.Env...)
 	cfg := &packages.Config{
-		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles | packages.NeedImports | packages.NeedEmbedFiles,
-		Dir:  pkgDir,
-		Env:  env,
+		Mode:       packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles | packages.NeedImports | packages.NeedEmbedFiles,
+		Dir:        opts.Dir,
+		Env:        env,
+		BuildFlags: opts.BuildFlags,
 	}
-	pkgs, err := packages.Load(cfg, ".")
+	pattern := opts.Pattern
+	if pattern == "" {
+		pattern = "."
+	}
+	pkgs, err := packages.Load(cfg, pattern)
 	if err != nil {
 		return nil, err
+	}
+	if opts.Strict && len(pkgs) == 0 {
+		return nil, errors.Errorf("no packages found for %s in %s", pattern, opts.Dir)
 	}
 	pkgsToProcess := pkgs
 
 	for len(pkgsToProcess) > 0 {
 		currPkg := pkgsToProcess[0]
+		if opts.Strict && len(currPkg.Errors) > 0 {
+			return nil, errors.Errorf("failed to load %s: %s", currPkg.PkgPath, currPkg.Errors[0])
+		}
 		pkgsToProcess = pkgsToProcess[1:]
 		if _, ok := pkgFiles[currPkg.PkgPath]; ok {
 			continue
@@ -90,7 +122,10 @@ func AllFiles(pkgDir, goos, goarch string) (BuildInputFiles, error) {
 		// convert all non-built-in imports into packages and add to packages to process
 		for importPath, importPkg := range currPkg.Imports {
 			if !strings.Contains(importPath, ".") {
-				// if import is a standard package, skip
+				// standard packages are not build inputs, but a missing one (such as a misspelled import) still fails
+				if opts.Strict && len(importPkg.Errors) > 0 {
+					return nil, errors.Errorf("failed to load %s imported by %s: %s", importPath, currPkg.PkgPath, importPkg.Errors[0])
+				}
 				continue
 			}
 			pkgsToProcess = append(pkgsToProcess, importPkg)

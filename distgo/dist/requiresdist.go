@@ -15,7 +15,9 @@
 package dist
 
 import (
+	"maps"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/palantir/distgo/distgo"
@@ -69,41 +71,81 @@ func RequiresDist(projectInfo distgo.ProjectInfo, productParam distgo.ProductPar
 }
 
 func disterRequiresDist(distID distgo.DistID, productTaskOutputInfo distgo.ProductTaskOutputInfo, configModTime *time.Time) bool {
+	return checkDistCurrent(distID, productTaskOutputInfo, configModTime, false) != nil
+}
+
+// checkDistCurrent returns nil if the distribution is current, or an error describing why it must be regenerated.
+func checkDistCurrent(distID distgo.DistID, productTaskOutputInfo distgo.ProductTaskOutputInfo, configModTime *time.Time, checked bool) error {
 	// determine oldest dist artifact for current Dister. If any artifact is missing, Dister needs to be run.
 	oldestDistTime := time.Now()
+	if checked {
+		// Restored artifacts may be touched ahead of checkout; do not cap their timestamps at the current time.
+		oldestDistTime = time.Time{}
+		if err := checkDistOutputShape(distID, productTaskOutputInfo); err != nil {
+			return err
+		}
+	}
 	for _, currArtifactPath := range productTaskOutputInfo.ProductDistWorkDirsAndArtifactPaths()[distID] {
 		fi, err := os.Stat(currArtifactPath)
 		if err != nil {
-			return true
+			return errors.Wrapf(err, "cannot inspect output %s", currArtifactPath)
 		}
-		if fiModTime := fi.ModTime(); fiModTime.Before(oldestDistTime) {
+		if fiModTime := fi.ModTime(); (checked && oldestDistTime.IsZero()) || fiModTime.Before(oldestDistTime) {
 			oldestDistTime = fiModTime
 		}
 	}
 
 	// if the newest build artifact is more recent than the oldest dist, consider dist out-of-date
 	if newestBuildArtifactForDist := newestArtifactModTime(buildArtifactPaths(productTaskOutputInfo.Project, productTaskOutputInfo.Product)); newestBuildArtifactForDist != nil && newestBuildArtifactForDist.Truncate(time.Second).After(oldestDistTime.Truncate(time.Second)) {
-		return true
+		return errors.New("distribution is older than its build outputs")
 	}
 
 	// if the configuration modification time was not provided or was modified more recently than the oldest dist
 	// artifact, consider it out-of-date. Truncate times to second granularity for purposes of comparison. If mod time
 	// and artifact generation time are the same, consider out-of-date and run.
-	if configModTime == nil || !configModTime.Truncate(time.Second).Before(oldestDistTime.Truncate(time.Second)) {
-		return true
+	if configModTime == nil {
+		return errors.New("configuration modification time is unavailable")
+	}
+	if !configModTime.Truncate(time.Second).Before(oldestDistTime.Truncate(time.Second)) {
+		return errors.New("distribution is not newer than its configuration")
 	}
 
 	// if any dependent artifact (build or dist) is newer than the oldest dist artifact, consider dist artifact out-of-date
-	for _, depProductOutputInfo := range productTaskOutputInfo.Deps {
+	for _, id := range slices.Sorted(maps.Keys(productTaskOutputInfo.Deps)) {
+		depProductOutputInfo := productTaskOutputInfo.Deps[id]
 		newestDependencyTime := newestArtifactModTime(append(
 			buildArtifactPaths(productTaskOutputInfo.Project, depProductOutputInfo),
 			distArtifactPaths(productTaskOutputInfo.Project, distID, depProductOutputInfo)...,
 		))
 		if newestDependencyTime != nil && newestDependencyTime.After(oldestDistTime) {
-			return true
+			return errors.Errorf("distribution is older than dependency %s", depProductOutputInfo.ID)
 		}
 	}
-	return false
+	return nil
+}
+
+// checkDistOutputShape returns nil if the dist work path is a directory and every artifact is a regular
+// file. An extensionless manual distribution uses the same path for both, so a regular file is accepted there.
+func checkDistOutputShape(distID distgo.DistID, productTaskOutputInfo distgo.ProductTaskOutputInfo) error {
+	workDir := productTaskOutputInfo.ProductDistWorkDirs()[distID]
+	artifactPaths := productTaskOutputInfo.ProductDistArtifactPaths()[distID]
+	fi, err := os.Stat(workDir)
+	if err != nil {
+		return errors.Wrapf(err, "cannot inspect output %s", workDir)
+	}
+	if !fi.IsDir() && !(fi.Mode().IsRegular() && slices.Contains(artifactPaths, workDir)) {
+		return errors.Errorf("distribution work path is not a directory: %s", workDir)
+	}
+	for _, artifactPath := range artifactPaths {
+		fi, err := os.Stat(artifactPath)
+		if err != nil {
+			return errors.Wrapf(err, "cannot inspect output %s", artifactPath)
+		}
+		if !fi.Mode().IsRegular() {
+			return errors.Errorf("distribution artifact is not a regular file: %s", artifactPath)
+		}
+	}
+	return nil
 }
 
 func buildArtifactPaths(projectInfo distgo.ProjectInfo, productInfo distgo.ProductOutputInfo) []string {

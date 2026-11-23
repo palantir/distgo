@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,6 +33,7 @@ import (
 	distgoconfig "github.com/palantir/distgo/distgo/config"
 	"github.com/palantir/distgo/distgo/dist"
 	"github.com/palantir/distgo/distgo/docker"
+	"github.com/palantir/distgo/distgo/testfuncs"
 	"github.com/palantir/distgo/dockerbuilder"
 	"github.com/palantir/distgo/dockerbuilder/dockerbuilderfactory"
 	"github.com/palantir/distgo/projectversioner/projectversionerfactory"
@@ -822,4 +824,98 @@ func mustTagTemplatesMap(nameAndVal ...string) *distgoconfig.TagTemplatesMap {
 		out.OrderedKeys = append(out.OrderedKeys, tagID)
 	}
 	return out
+}
+
+// runNoDependentDockerBuild builds the foo image with --no-dependent-tasks and returns the number of images and
+// distributions built.
+func runNoDependentDockerBuild(p *testfuncs.TaskOptionsProject, tagKeys []string, dryRun bool) (dockerRuns, distRuns int, err error) {
+	var dockerIDs []distgo.ProductDockerID
+	if tagKeys == nil {
+		dockerIDs = []distgo.ProductDockerID{"foo.image"}
+	}
+	buf := &bytes.Buffer{}
+	err = docker.BuildProductsWithOptions(p.Info, p.Project, p.ConfigModTime(), dockerIDs, tagKeys, false, dryRun, buf, distgo.TaskOptions{NoDependentTasks: true})
+	return strings.Count(buf.String(), "FROM scratch"), strings.Count(buf.String(), "Creating distribution for"), err
+}
+
+func TestDockerBuildNoDependentTasksRejectsPrerequisites(t *testing.T) {
+	for _, dryRun := range []bool{false, true} {
+		for _, scenario := range testfuncs.PrerequisiteScenarios() {
+			t.Run(fmt.Sprintf("%s dry-run=%t", scenario.Name, dryRun), func(t *testing.T) {
+				p := testfuncs.NewTaskOptionsProject(t, &printDockerfileDockerBuilder{})
+				scenario.Prepare(t, p)
+				dockerRuns, distRuns, err := runNoDependentDockerBuild(p, nil, dryRun)
+				require.ErrorContains(t, err, "--no-dependent-tasks")
+				assert.Zero(t, dockerRuns)
+				assert.Zero(t, distRuns)
+				p.RequireNoHooks(t)
+			})
+		}
+	}
+}
+
+func TestDockerBuildNoDependentTasksRejectsStaleDistributions(t *testing.T) {
+	for _, scenario := range testfuncs.StaleDistributionScenarios() {
+		t.Run(scenario.Name, func(t *testing.T) {
+			p := testfuncs.NewTaskOptionsProject(t, &printDockerfileDockerBuilder{})
+			scenario.Prepare(t, p)
+			dockerRuns, distRuns, err := runNoDependentDockerBuild(p, nil, false)
+			require.ErrorContains(t, err, scenario.Reason)
+			assert.Zero(t, dockerRuns)
+			assert.Zero(t, distRuns)
+			p.RequireNoHooks(t)
+		})
+	}
+}
+
+func TestDockerBuildNoDependentTasksRunsRequestedStage(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		prepare func(t *testing.T, p *testfuncs.TaskOptionsProject)
+	}{
+		{name: "current outputs"},
+		{name: "restored timestamps", prepare: func(t *testing.T, p *testfuncs.TaskOptionsProject) {
+			p.RestoreTimestamps(t)
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := testfuncs.NewTaskOptionsProject(t, &printDockerfileDockerBuilder{})
+			if tc.prepare != nil {
+				tc.prepare(t, p)
+			}
+			before, err := os.Stat(p.Binary)
+			require.NoError(t, err)
+			dockerRuns, distRuns, err := runNoDependentDockerBuild(p, nil, false)
+			require.NoError(t, err)
+			assert.Equal(t, 1, dockerRuns)
+			assert.Zero(t, distRuns)
+			after, err := os.Stat(p.Binary)
+			require.NoError(t, err)
+			assert.Equal(t, before.ModTime(), after.ModTime())
+			assert.NoFileExists(t, path.Join(p.Info.ProjectDir, "build-hook"))
+		})
+	}
+}
+
+func TestDockerBuildNoDependentTasksChecksBuildWithoutDist(t *testing.T) {
+	p := testfuncs.NewTaskOptionsProject(t, &printDockerfileDockerBuilder{})
+	foo := p.Project.Products["foo"]
+	foo.Dist = nil
+	p.Project.Products["foo"] = foo
+	require.NoError(t, os.Remove(p.Binary))
+	dockerRuns, _, err := runNoDependentDockerBuild(p, nil, false)
+	require.ErrorContains(t, err, "build required for foo")
+	assert.Zero(t, dockerRuns)
+}
+
+func TestDockerBuildNoDependentTasksSkipsUnmatchedTags(t *testing.T) {
+	p := testfuncs.NewTaskOptionsProject(t, &printDockerfileDockerBuilder{})
+	require.NoError(t, os.Remove(p.Binary))
+	require.NoError(t, os.Remove(p.Archive))
+	p.ConfigTime = time.Time{}
+	dockerRuns, distRuns, err := runNoDependentDockerBuild(p, []string{"unmatched"}, false)
+	require.NoError(t, err)
+	assert.Zero(t, dockerRuns)
+	assert.Zero(t, distRuns)
+	p.RequireNoHooks(t)
 }
