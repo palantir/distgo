@@ -40,24 +40,27 @@ var (
 				osArchs = append(osArchs, osArchVal)
 			}
 			return build.Products(projectInfo, projectParam, distgo.ToProductBuildIDs(args), build.Options{
-				Parallel: buildParallelFlagVal,
-				DryRun:   buildDryRunFlagVal,
-				OSArchs:  osArchs,
+				Parallel:    buildParallelFlagVal,
+				DryRun:      buildDryRunFlagVal,
+				OSArchs:     osArchs,
+				GoCacheRoot: buildGoCacheRootFlagVal,
 			}, cmd.OutOrStdout())
 		},
 	}
 )
 
 var (
-	buildParallelFlagVal bool
-	buildOSArchsFlagVal  []string
-	buildDryRunFlagVal   bool
+	buildParallelFlagVal    bool
+	buildOSArchsFlagVal     []string
+	buildDryRunFlagVal      bool
+	buildGoCacheRootFlagVal string
 )
 
 func init() {
 	buildCmd.Flags().BoolVar(&buildParallelFlagVal, "parallel", true, "build binaries in parallel")
 	buildCmd.Flags().StringSliceVar(&buildOSArchsFlagVal, "os-arch", nil, "if specified, only builds the binaries for the specified GOOS-GOARCH(s)")
 	buildCmd.Flags().BoolVar(&buildDryRunFlagVal, "dry-run", false, "print the operations that would be performed")
+	buildCmd.Flags().StringVar(&buildGoCacheRootFlagVal, "go-cache-root", "", "store Go build caches under this directory in GOOS-GOARCH subdirectories, overriding GOCACHE")
 
 	rootCmd.AddCommand(buildCmd)
 }

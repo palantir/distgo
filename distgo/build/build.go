@@ -44,6 +44,9 @@ type Options struct {
 	Parallel bool
 	DryRun   bool
 	OSArchs  []osarch.OSArch
+	// GoCacheRoot stores Go build caches in GOOS-GOARCH subdirectories, overriding inherited and configured GOCACHE.
+	// Relative paths are resolved against the working directory. Empty preserves the existing cache settings.
+	GoCacheRoot string
 }
 
 func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, productBuildIDs []distgo.ProductBuildID, buildOpts Options, stdout io.Writer) error {
@@ -61,6 +64,13 @@ func Products(projectInfo distgo.ProjectInfo, projectParam distgo.ProjectParam, 
 // returns an error, the first error returned is propagated back (and any builds that have not started will not be
 // started).
 func Run(projectInfo distgo.ProjectInfo, productParams []distgo.ProductParam, buildOpts Options, stdout io.Writer) error {
+	if buildOpts.GoCacheRoot != "" {
+		cacheRoot, err := filepath.Abs(buildOpts.GoCacheRoot)
+		if err != nil {
+			return errors.Wrap(err, "failed to resolve Go cache root")
+		}
+		buildOpts.GoCacheRoot = cacheRoot
+	}
 	var units []buildUnit
 	for _, currProductParam := range productParams {
 		currProductTaskOutputInfo, err := distgo.ToProductTaskOutputInfo(projectInfo, currProductParam)
@@ -183,7 +193,7 @@ func executeBuild(unit buildUnit, buildOpts Options, stdout io.Writer) error {
 			return errors.Wrapf(err, "failed to create directories for %s", path.Dir(outputArtifactPath))
 		}
 	}
-	if err := doBuildAction(unit, outputArtifactPath, buildOpts.DryRun, stdout); err != nil {
+	if err := doBuildAction(unit, outputArtifactPath, buildOpts, stdout); err != nil {
 		return errors.Wrapf(err, "go build failed")
 	}
 
@@ -192,7 +202,7 @@ func executeBuild(unit buildUnit, buildOpts Options, stdout io.Writer) error {
 	return nil
 }
 
-func doBuildAction(unit buildUnit, outputArtifactPath string, dryRun bool, stdout io.Writer) error {
+func doBuildAction(unit buildUnit, outputArtifactPath string, buildOpts Options, stdout io.Writer) error {
 	osArch := unit.osArch
 
 	cmd := exec.Command("go")
@@ -206,6 +216,9 @@ func doBuildAction(unit buildUnit, outputArtifactPath string, dryRun bool, stdou
 		env = append(env, "GOARCH="+osArch.Arch)
 	}
 	env = append(env, productBuildEnv(unit.buildParam, osArch)...)
+	if buildOpts.GoCacheRoot != "" {
+		env = append(env, "GOCACHE="+filepath.Join(buildOpts.GoCacheRoot, osArch.String()))
+	}
 	cmd.Env = append(os.Environ(), env...)
 
 	args := []string{cmd.Path}
@@ -228,7 +241,7 @@ func doBuildAction(unit buildUnit, outputArtifactPath string, dryRun bool, stdou
 	args = append(args, mainPkg)
 	cmd.Args = args
 
-	if dryRun {
+	if buildOpts.DryRun {
 		dryRunMsg := fmt.Sprintf("Run: %s", strings.Join(cmd.Args, " "))
 		if len(env) > 0 {
 			dryRunMsg += fmt.Sprintf(" with additional environment variables %v", env)

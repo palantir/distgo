@@ -20,12 +20,15 @@ import (
 	"strings"
 )
 
-// TaskOptions controls automatic prerequisite execution. The zero value preserves normal task behavior.
+// TaskOptions controls task and prerequisite execution. The zero value preserves normal task behavior.
 type TaskOptions struct {
 	// NoDependentTasks requires prerequisite outputs to be current, including in dry-run mode.
 	// Only the requested stage may execute, including for dependent products. Explicit commands
 	// run by scripts or assets are outside this policy.
 	NoDependentTasks bool
+	// GoCacheRoot stores prerequisite Go build caches in GOOS-GOARCH subdirectories, overriding GOCACHE.
+	// Relative paths are resolved against the working directory. Empty preserves the existing cache settings.
+	GoCacheRoot string
 }
 
 // RequiredTask describes prerequisite work that would be needed to make an output current.

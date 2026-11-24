@@ -21,6 +21,23 @@ distgo provides the following tasks:
 * `publish`: publishes the distribution artifacts for the specified products.
 * `run`: runs the build output for the specified product.
 
+Go build caches
+---------------
+The `build` and `dist` tasks accept `--go-cache-root` to store Go build caches in a separate directory for each target:
+
+```bash
+./godelw build --go-cache-root /cache/go-build
+./godelw dist --go-cache-root /cache/go-build
+```
+
+For example, Linux builds use `/cache/go-build/linux-amd64` and `/cache/go-build/linux-arm64`. The option also applies
+when `dist` rebuilds missing or stale binaries. It preserves target selection, parallel builds, and product hook execution.
+Relative cache roots are resolved against the command's working directory.
+
+An explicit cache root overrides inherited and product-configured `GOCACHE` values for compiler processes started by
+distgo. Omitting the option preserves existing cache settings. Build and distribution scripts retain their existing
+environment; the option does not configure Go commands launched by those scripts.
+
 Assets
 ------
 distgo assets are executables that provide specific functionality for distgo. Assets can provide distribution actions

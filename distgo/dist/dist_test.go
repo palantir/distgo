@@ -20,6 +20,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -530,6 +531,15 @@ tar -cf "$DIST_DIR/$DIST_NAME".tar -C "$DIST_WORK_DIR" out.txt
 }
 
 var fooDistIDs = []distgo.ProductDistID{distgo.ProductDistID("foo." + string(testfuncs.TaskOptionsDistID))}
+
+func TestDistGoCacheRoot(t *testing.T) {
+	p := testfuncs.NewTaskOptionsProject(t, nil)
+	require.NoError(t, os.Remove(p.Binary))
+	cacheRoot := t.TempDir()
+	buf := &bytes.Buffer{}
+	require.NoError(t, dist.ProductsWithOptions(p.Info, p.Project, nil, fooDistIDs, true, true, buf, distgo.TaskOptions{GoCacheRoot: cacheRoot}))
+	assert.Contains(t, buf.String(), "GOCACHE="+filepath.Join(cacheRoot, osarch.Current().String()))
+}
 
 // runNoDependentDist runs a forced dist with --no-dependent-tasks and returns the number of distributions created.
 func runNoDependentDist(p *testfuncs.TaskOptionsProject, distIDs []distgo.ProductDistID, dryRun bool) (int, error) {

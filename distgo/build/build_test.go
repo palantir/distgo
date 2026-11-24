@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -237,9 +238,13 @@ echo "-X \"main.testVersionVar=$VALUE\""`
 }
 
 func TestBuildEnvVars(t *testing.T) {
+	cacheRoot := filepath.Join(t.TempDir(), "compiler cache")
+	workingDir, err := os.Getwd()
+	require.NoError(t, err)
 	for _, tc := range []struct {
 		name             string
 		productParam     distgo.ProductParam
+		goCacheRoot      string
 		wantBuildOutputs []string
 	}{
 		{
@@ -289,6 +294,30 @@ func TestBuildEnvVars(t *testing.T) {
 				regexp.QuoteMeta(`[DRY RUN] Run: `) + `.+/windows-amd64/.+ \./foo with additional environment variables ` + regexp.QuoteMeta(`[GOOS=windows GOARCH=amd64 TEST_ENV_VAR_KEY=TEST_ENV_VAR_VALUE]`),
 			},
 		},
+		{
+			name:        "cache root separates targets and overrides configured caches",
+			goCacheRoot: cacheRoot,
+			productParam: createBuildProductParam(func(param *distgo.ProductParam) {
+				param.Build.OSArchs = []osarch.OSArch{{OS: "linux", Arch: "amd64"}, {OS: "linux", Arch: "arm64"}}
+				param.Build.Environment = map[string]string{"GOCACHE": "product-cache"}
+				param.Build.OSEnvironment = map[string]map[string]string{"linux": {"GOCACHE": "os-cache"}}
+				param.Build.OSArchsEnvironment = map[string]map[string]string{"linux-arm64": {"GOCACHE": "target-cache"}}
+			}),
+			wantBuildOutputs: []string{
+				regexp.QuoteMeta("[GOOS=linux GOARCH=amd64 GOCACHE=product-cache GOCACHE=os-cache GOCACHE=" + filepath.Join(cacheRoot, "linux-amd64") + "]"),
+				regexp.QuoteMeta("[GOOS=linux GOARCH=arm64 GOCACHE=product-cache GOCACHE=os-cache GOCACHE=target-cache GOCACHE=" + filepath.Join(cacheRoot, "linux-arm64") + "]"),
+			},
+		},
+		{
+			name:        "relative cache root resolves against the caller working directory",
+			goCacheRoot: "relative-cache",
+			productParam: createBuildProductParam(func(param *distgo.ProductParam) {
+				param.Build.OSArchs = []osarch.OSArch{{OS: "linux", Arch: "amd64"}}
+			}),
+			wantBuildOutputs: []string{
+				regexp.QuoteMeta("[GOOS=linux GOARCH=amd64 GOCACHE=" + filepath.Join(workingDir, "relative-cache", "linux-amd64") + "]"),
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			currTmpDir := t.TempDir()
@@ -323,8 +352,9 @@ func TestBuildEnvVars(t *testing.T) {
 			err = build.Run(projectInfo, []distgo.ProductParam{
 				tc.productParam,
 			}, build.Options{
-				Parallel: false,
-				DryRun:   true,
+				Parallel:    false,
+				DryRun:      true,
+				GoCacheRoot: tc.goCacheRoot,
 			}, outBuf)
 			require.NoError(t, err)
 
@@ -333,6 +363,26 @@ func TestBuildEnvVars(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBuildGoCacheRoot(t *testing.T) {
+	t.Setenv("GOWORK", "off")
+	t.Setenv("GOFLAGS", "")
+	t.Setenv("GOTOOLCHAIN", "local")
+	t.Setenv("GOCACHE", "off")
+	projectDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(projectDir, "go.mod"), []byte("module example.com/cachetest\n\ngo 1.21\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main\nfunc main() {}\n"), 0644))
+	product := createBuildProductParam(func(param *distgo.ProductParam) {
+		param.Build.MainPkg = "."
+		param.Build.Environment = map[string]string{"CGO_ENABLED": "0", "GOCACHE": "off"}
+	})
+	cacheRoot := filepath.Join(t.TempDir(), "compiler-cache")
+	require.NoError(t, build.Run(distgo.ProjectInfo{ProjectDir: projectDir, Version: testVersionValue}, []distgo.ProductParam{product}, build.Options{GoCacheRoot: cacheRoot}, io.Discard))
+	entries, err := filepath.Glob(filepath.Join(cacheRoot, osarch.Current().String(), "??", "*-a"))
+	require.NoError(t, err)
+	assert.NotEmpty(t, entries)
+	assert.Equal(t, "off", os.Getenv("GOCACHE"))
 }
 
 func TestBuildOnlySpecifiedOSArchs(t *testing.T) {

@@ -43,7 +43,7 @@ func ProductsWithOptions(projectInfo distgo.ProjectInfo, projectParam distgo.Pro
 		}
 	} else {
 		// run dist for products (will only run dist for productDistIDs that require dist artifact generation)
-		if err := dist.Products(projectInfo, projectParam, configModTime, productDistIDs, dryRun, true, stdout); err != nil {
+		if err := dist.ProductsWithOptions(projectInfo, projectParam, configModTime, productDistIDs, dryRun, true, stdout, opts); err != nil {
 			return err
 		}
 	}

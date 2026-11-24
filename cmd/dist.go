@@ -37,7 +37,10 @@ var (
 				// if force flag is false, use modification time of configuration file
 				configFileModTime = distgoConfigModTime()
 			}
-			return dist.ProductsWithOptions(projectInfo, projectParam, configFileModTime, distgo.ToProductDistIDs(args), distDryRunFlagVal, distParallelRunFlagVal, cmd.OutOrStdout(), distgo.TaskOptions{NoDependentTasks: distNoDependentTasksFlagVal})
+			return dist.ProductsWithOptions(projectInfo, projectParam, configFileModTime, distgo.ToProductDistIDs(args), distDryRunFlagVal, distParallelRunFlagVal, cmd.OutOrStdout(), distgo.TaskOptions{
+				NoDependentTasks: distNoDependentTasksFlagVal,
+				GoCacheRoot:      distGoCacheRootFlagVal,
+			})
 		},
 	}
 )
@@ -47,6 +50,7 @@ var (
 	distParallelRunFlagVal      bool
 	distForceFlagVal            bool
 	distNoDependentTasksFlagVal bool
+	distGoCacheRootFlagVal      string
 )
 
 func init() {
@@ -54,6 +58,7 @@ func init() {
 	distCmd.Flags().BoolVar(&distDryRunFlagVal, "dry-run", false, "print the operations that would be performed")
 	distCmd.Flags().BoolVar(&distParallelRunFlagVal, "parallel", true, "runs the builds in parallel")
 	distCmd.Flags().BoolVar(&distForceFlagVal, "force", false, "create distribution outputs even if they are considered up-to-date")
+	distCmd.Flags().StringVar(&distGoCacheRootFlagVal, "go-cache-root", "", "store Go build caches under this directory in GOOS-GOARCH subdirectories, overriding GOCACHE")
 
 	rootCmd.AddCommand(distCmd)
 }

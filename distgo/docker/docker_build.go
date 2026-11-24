@@ -101,15 +101,16 @@ func BuildProductsWithOptions(projectInfo distgo.ProjectInfo, projectParam distg
 		}
 		if len(productParamsToBuild) != 0 {
 			if err := build.Run(projectInfo, productParamsToBuild, build.Options{
-				Parallel: true,
-				DryRun:   dryRun,
+				Parallel:    true,
+				DryRun:      dryRun,
+				GoCacheRoot: opts.GoCacheRoot,
 			}, stdout); err != nil {
 				return err
 			}
 		}
 
 		// run dist for products that require dist artifact generation
-		if err := dist.Products(projectInfo, projectParam, configModTime, productDistIDs, dryRun, true, stdout); err != nil {
+		if err := dist.ProductsWithOptions(projectInfo, projectParam, configModTime, productDistIDs, dryRun, true, stdout, opts); err != nil {
 			return err
 		}
 	}

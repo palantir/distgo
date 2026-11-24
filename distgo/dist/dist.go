@@ -70,8 +70,9 @@ func ProductsWithOptions(projectInfo distgo.ProjectInfo, projectParam distgo.Pro
 		}
 		if len(productParamsToBuild) != 0 {
 			if err := build.Run(projectInfo, productParamsToBuild, build.Options{
-				Parallel: parallel,
-				DryRun:   dryRun,
+				Parallel:    parallel,
+				DryRun:      dryRun,
+				GoCacheRoot: opts.GoCacheRoot,
 			}, stdout); err != nil {
 				return err
 			}
