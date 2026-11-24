@@ -60,7 +60,7 @@ func init() {
 	buildCmd.Flags().BoolVar(&buildParallelFlagVal, "parallel", true, "build binaries in parallel")
 	buildCmd.Flags().StringSliceVar(&buildOSArchsFlagVal, "os-arch", nil, "if specified, only builds the binaries for the specified GOOS-GOARCH(s)")
 	buildCmd.Flags().BoolVar(&buildDryRunFlagVal, "dry-run", false, "print the operations that would be performed")
-	buildCmd.Flags().StringVar(&buildGoCacheRootFlagVal, "go-cache-root", "", "store Go build caches under this directory in GOOS-GOARCH subdirectories, overriding GOCACHE")
+	addGoCacheRootFlag(buildCmd, &buildGoCacheRootFlagVal)
 
 	rootCmd.AddCommand(buildCmd)
 }

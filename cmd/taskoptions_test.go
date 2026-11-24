@@ -40,12 +40,12 @@ func TestNoDependentTasksFlag(t *testing.T) {
 	}
 }
 
-type flagPublisher struct{ reserved bool }
+type flagPublisher struct{ reservedFlag string }
 
 func (p flagPublisher) TypeName() (string, error) { return "flag-test", nil }
 func (p flagPublisher) Flags() ([]distgo.PublisherFlag, error) {
-	if p.reserved {
-		return []distgo.PublisherFlag{{Name: distgo.PublisherFlagName(noDependentTasksFlagName), Type: distgo.BoolFlag}}, nil
+	if p.reservedFlag != "" {
+		return []distgo.PublisherFlag{{Name: distgo.PublisherFlagName(p.reservedFlag), Type: distgo.BoolFlag}}, nil
 	}
 	return nil, nil
 }
@@ -61,19 +61,25 @@ func TestPublishSubcommandsRegisterIndependentFlags(t *testing.T) {
 		require.Equal(t, name, command.Name())
 		t.Cleanup(func() { publishCmd.RemoveCommand(command) })
 		require.NotNil(t, command.Flags().Lookup(noDependentTasksFlagName))
+		require.NotNil(t, command.Flags().Lookup(goCacheRootFlagName))
 	}
 	first, _, err := publishCmd.Find([]string{"flag-test-one"})
 	require.NoError(t, err)
 	second, _, err := publishCmd.Find([]string{"flag-test-two"})
 	require.NoError(t, err)
-	require.NoError(t, first.ParseFlags([]string{"--no-dependent-tasks"}))
+	require.NoError(t, first.ParseFlags([]string{"--no-dependent-tasks", "--go-cache-root", t.TempDir()}))
 	enabled, err := second.Flags().GetBool(noDependentTasksFlagName)
 	require.NoError(t, err)
 	require.False(t, enabled)
+	cacheRoot, err := second.Flags().GetString(goCacheRootFlagName)
+	require.NoError(t, err)
+	require.Empty(t, cacheRoot)
 }
 
-func TestPublisherCannotShadowNoDependentTasksFlag(t *testing.T) {
-	require.Panics(t, func() {
-		addPublishSubcommands([]string{"flag-test-conflict"}, []distgo.Publisher{flagPublisher{reserved: true}})
-	})
+func TestPublisherCannotShadowTaskFlags(t *testing.T) {
+	for _, name := range []string{noDependentTasksFlagName, goCacheRootFlagName} {
+		require.Panics(t, func() {
+			addPublishSubcommands([]string{"flag-test-conflict"}, []distgo.Publisher{flagPublisher{reservedFlag: name}})
+		})
+	}
 }

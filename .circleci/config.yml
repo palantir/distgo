@@ -85,6 +85,9 @@ workflows:
       - go-jobs/godel_dist:
           name: "dist"
           executor: "standard-executor"
+          post-steps:
+            - store_artifacts:
+                path: out/dist
           requires:
             - build
           <<: *all-tags-filter

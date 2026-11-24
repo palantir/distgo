@@ -23,15 +23,19 @@ distgo provides the following tasks:
 
 Go build caches
 ---------------
-The `build` and `dist` tasks accept `--go-cache-root` to store Go build caches in a separate directory for each target:
+The `build`, `dist`, `docker build`, and `publish` tasks accept `--go-cache-root` to store Go build caches in a separate
+directory for each target:
 
 ```bash
 ./godelw build --go-cache-root /cache/go-build
 ./godelw dist --go-cache-root /cache/go-build
+./godelw docker build --go-cache-root /cache/go-build
+./godelw publish mavenlocal --go-cache-root /cache/go-build
 ```
 
 For example, Linux builds use `/cache/go-build/linux-amd64` and `/cache/go-build/linux-arm64`. The option also applies
-when `dist` rebuilds missing or stale binaries. It preserves target selection, parallel builds, and product hook execution.
+when a later task rebuilds missing or stale prerequisite binaries. It preserves target selection, parallel builds, and
+product hook execution.
 Relative cache roots are resolved against the command's working directory.
 
 An explicit cache root overrides inherited and product-configured `GOCACHE` values for compiler processes started by

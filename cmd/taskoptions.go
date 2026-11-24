@@ -18,9 +18,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const noDependentTasksFlagName = "no-dependent-tasks"
+const (
+	noDependentTasksFlagName = "no-dependent-tasks"
+	goCacheRootFlagName      = "go-cache-root"
+)
 
 func addNoDependentTasksFlag(cmd *cobra.Command, value *bool) {
 	cmd.Flags().BoolVar(value, noDependentTasksFlagName, false,
 		"fail instead of running earlier stages (build, dist) whose outputs are missing or stale, including in dry-run mode")
+}
+
+func addGoCacheRootFlag(cmd *cobra.Command, value *string) {
+	cmd.Flags().StringVar(value, goCacheRootFlagName, "",
+		"store Go build caches under this directory in GOOS-GOARCH subdirectories, overriding GOCACHE")
 }

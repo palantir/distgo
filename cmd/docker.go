@@ -36,7 +36,10 @@ var (
 			if dockerBuildRepositoryFlagVal != "" {
 				docker.SetDockerRepository(projectParam, dockerBuildRepositoryFlagVal)
 			}
-			return docker.BuildProductsWithOptions(projectInfo, projectParam, distgoConfigModTime(), distgo.ToProductDockerIDs(args), dockerBuildTagKeysFlagVal, dockerBuildVerboseFlagVal, dockerBuildDryRunFlagVal, cmd.OutOrStdout(), distgo.TaskOptions{NoDependentTasks: dockerBuildNoDependentTasksFlagVal})
+			return docker.BuildProductsWithOptions(projectInfo, projectParam, distgoConfigModTime(), distgo.ToProductDockerIDs(args), dockerBuildTagKeysFlagVal, dockerBuildVerboseFlagVal, dockerBuildDryRunFlagVal, cmd.OutOrStdout(), distgo.TaskOptions{
+				NoDependentTasks: dockerBuildNoDependentTasksFlagVal,
+				GoCacheRoot:      dockerBuildGoCacheRootFlagVal,
+			})
 		},
 	}
 	dockerPushSubCmd = &cobra.Command{
@@ -61,6 +64,7 @@ var (
 	dockerBuildDryRunFlagVal           bool
 	dockerBuildTagKeysFlagVal          []string
 	dockerBuildNoDependentTasksFlagVal bool
+	dockerBuildGoCacheRootFlagVal      string
 
 	dockerPushRepositoryFlagVal string
 	dockerPushDryRunFlagVal     bool
@@ -70,6 +74,7 @@ var (
 
 func init() {
 	addNoDependentTasksFlag(dockerBuildSubCmd, &dockerBuildNoDependentTasksFlagVal)
+	addGoCacheRootFlag(dockerBuildSubCmd, &dockerBuildGoCacheRootFlagVal)
 	addRepositoryFlag(dockerBuildSubCmd, &dockerBuildRepositoryFlagVal)
 	dockerBuildSubCmd.Flags().BoolVar(&dockerBuildVerboseFlagVal, "verbose", false, "print verbose output for the operation")
 	addDryRunFlag(dockerBuildSubCmd, &dockerBuildDryRunFlagVal)

@@ -58,7 +58,7 @@ func init() {
 	distCmd.Flags().BoolVar(&distDryRunFlagVal, "dry-run", false, "print the operations that would be performed")
 	distCmd.Flags().BoolVar(&distParallelRunFlagVal, "parallel", true, "runs the builds in parallel")
 	distCmd.Flags().BoolVar(&distForceFlagVal, "force", false, "create distribution outputs even if they are considered up-to-date")
-	distCmd.Flags().StringVar(&distGoCacheRootFlagVal, "go-cache-root", "", "store Go build caches under this directory in GOOS-GOARCH subdirectories, overriding GOCACHE")
+	addGoCacheRootFlag(distCmd, &distGoCacheRootFlagVal)
 
 	rootCmd.AddCommand(distCmd)
 }

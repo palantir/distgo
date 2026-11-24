@@ -61,6 +61,7 @@ func TestNoDependentTasksCLI(t *testing.T) {
 		output, err := exec.Command(cli, args...).CombinedOutput()
 		require.NoError(t, err, string(output))
 		require.Contains(t, string(output), "--no-dependent-tasks")
+		require.Contains(t, string(output), "--go-cache-root")
 	}
 	for _, task := range append([][]string{{"dist"}}, tasks[2:]...) {
 		args := append([]string{"--project-dir", dir, "--config", config}, task...)
