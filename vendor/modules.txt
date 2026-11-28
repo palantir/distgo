@@ -239,7 +239,7 @@ github.com/xi2/xz
 # go.yaml.in/yaml/v3 v3.0.6
 ## explicit; go 1.16
 go.yaml.in/yaml/v3
-# golang.org/x/exp v0.0.0-20261127181632-b10a66b71b35
+# golang.org/x/exp v0.0.0-20261128033645-f63ec7c7eed0
 ## explicit; go 1.26.0
 golang.org/x/exp/maps
 # golang.org/x/mod v0.43.0
